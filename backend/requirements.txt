@@ -10,3 +10,5 @@ drf-spectacular
 resend
 requests
 Pillow
+whitenoise
+gunicorn

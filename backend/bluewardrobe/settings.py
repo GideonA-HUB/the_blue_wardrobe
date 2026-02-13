@@ -28,6 +28,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -39,10 +40,16 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'bluewardrobe.urls'
 
+# Template directories - include frontend build directory
+FRONTEND_BUILD_DIR = BASE_DIR.parent / 'frontend' / 'dist'
+TEMPLATE_DIRS = [BASE_DIR / 'templates']
+if FRONTEND_BUILD_DIR.exists():
+    TEMPLATE_DIRS.append(FRONTEND_BUILD_DIR)
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': TEMPLATE_DIRS,
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -78,6 +85,15 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Frontend static files (React build)
+FRONTEND_DIR = BASE_DIR.parent / 'frontend' / 'dist'
+STATICFILES_DIRS = [
+    FRONTEND_DIR,
+] if FRONTEND_DIR.exists() else []
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -104,6 +120,16 @@ SPECTACULAR_SETTINGS = {
 }
 
 CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
+CORS_ALLOW_CREDENTIALS = True
+
+# Security settings for production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
 
 # Resend, Paystack and owner contact
 RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')

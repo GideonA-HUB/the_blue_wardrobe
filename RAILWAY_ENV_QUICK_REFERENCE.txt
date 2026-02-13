@@ -1,0 +1,38 @@
+================================================================================
+RAILWAY ENVIRONMENT VARIABLES - QUICK REFERENCE
+================================================================================
+SINGLE-SERVICE DEPLOYMENT (Frontend + Backend together)
+================================================================================
+
+Copy and paste these into Railway Variables tab:
+--------------------------------------------------------------------------------
+
+DJANGO_SECRET_KEY=gacyab(zb_9ukwwe75ntg14$9dh&20la=d*=9vj%eqwiy-u(q2
+
+DEBUG=False
+
+ALLOWED_HOSTS=thebluewardrobe-production.up.railway.app,localhost,127.0.0.1
+
+CORS_ALLOWED_ORIGINS=https://thebluewardrobe-production.up.railway.app
+
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+
+PAYSTACK_SECRET=sk_live_your_paystack_secret_key
+
+RESEND_API_KEY=re_your_resend_api_key
+
+OWNER_EMAIL=your-email@example.com
+
+--------------------------------------------------------------------------------
+NOTE: 
+- DATABASE_URL is automatically set by Railway when you add Postgres service.
+- VITE_API_URL is NOT needed - frontend uses relative paths (/api) automatically.
+- Both frontend and backend are served from the same domain.
+--------------------------------------------------------------------------------
+
+================================================================================
+
