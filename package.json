@@ -1,0 +1,14 @@
+{
+  "name": "the-blue-wardrobe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Blue Wardrobe - Luxury Fashion E-commerce Platform",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
+

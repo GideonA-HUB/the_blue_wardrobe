@@ -1,0 +1,19 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "python311"]
+
+[phases.install]
+cmds = [
+  "cd frontend && npm install",
+  "cd ../backend && pip install --upgrade pip && pip install -r requirements.txt"
+]
+
+[phases.build]
+cmds = [
+  "cd frontend && npm run build",
+  "cd ../backend && python manage.py migrate --noinput",
+  "cd ../backend && python manage.py collectstatic --noinput"
+]
+
+[start]
+cmd = "cd backend && gunicorn bluewardrobe.wsgi:application --bind 0.0.0.0:$PORT"
+
