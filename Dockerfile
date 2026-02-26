@@ -33,4 +33,4 @@ COPY backend ./backend
 RUN python backend/manage.py collectstatic --noinput || true
 
 # Start app
-CMD ["gunicorn", "bluewardrobe.wsgi:application", "--bind", "0.0.0.0:$PORT"]
+CMD sh -c "gunicorn bluewardrobe.wsgi:application --bind 0.0.0.0:$PORT"
