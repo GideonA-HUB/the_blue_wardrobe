@@ -1,11 +1,17 @@
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
+from django.http import JsonResponse
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView
 from rest_framework.authtoken.views import obtain_auth_token
 from pathlib import Path
+
+
+def health_check(request):
+    return JsonResponse({"status": "ok"})
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -13,6 +19,7 @@ urlpatterns = [
     path('api/docs/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path('api/auth/token/', obtain_auth_token, name='api-token-auth'),
     path('api/', include('store.urls')),
+    path("", health_check),
 ]
 
 # Serve media files (uploaded assets like logo_primary and favicon) in development.

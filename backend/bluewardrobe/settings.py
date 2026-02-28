@@ -7,8 +7,13 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'replace-me')
-DEBUG = os.getenv('DEBUG', 'False') == 'False'
-ALLOWED_HOSTS = ["*"]
+DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
+ALLOWED_HOSTS = [
+    "thebluewardrobe-production.up.railway.app",
+    ".up.railway.app",
+    "localhost",
+    "127.0.0.1",
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -66,8 +71,13 @@ WSGI_APPLICATION = 'bluewardrobe.wsgi.application'
 
 # Database
 import dj_database_url
-DATABASE_URL = os.getenv('DATABASE_URL', f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
-DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
+DATABASES = {
+    "default": dj_database_url.config(
+        default=os.getenv("DATABASE_URL"),
+        conn_max_age=600,
+        ssl_require=True,
+    )
+}
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
