@@ -7,18 +7,19 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'replace-me')
-DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
+DEBUG = os.getenv("DJANGO_DEBUG", os.getenv("DEBUG", "False")) == "True"
 default_allowed_hosts = [
     "thebluewardrobe-production.up.railway.app",
     ".up.railway.app",
     "localhost",
     "127.0.0.1",
 ]
-ALLOWED_HOSTS = [
+env_allowed_hosts = [
     host.strip()
-    for host in os.getenv("ALLOWED_HOSTS", ",".join(default_allowed_hosts)).split(",")
+    for host in os.getenv("ALLOWED_HOSTS", "").split(",")
     if host.strip()
 ]
+ALLOWED_HOSTS = list(dict.fromkeys(default_allowed_hosts + env_allowed_hosts))
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -152,7 +153,9 @@ CORS_ALLOW_CREDENTIALS = True
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     USE_X_FORWARDED_HOST = True
-    SECURE_SSL_REDIRECT = True
+    # Keep redirect opt-in to avoid reverse-proxy redirect loops that can cause
+    # failed health checks and Railway 502 responses.
+    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False") == "True"
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
