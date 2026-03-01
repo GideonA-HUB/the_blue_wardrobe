@@ -19,7 +19,7 @@ urlpatterns = [
     path('api/docs/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path('api/auth/token/', obtain_auth_token, name='api-token-auth'),
     path('api/', include('store.urls')),
-    path("", health_check),
+    path('health/', health_check),
 ]
 
 # Serve media files (uploaded assets like logo_primary and favicon) in development.
