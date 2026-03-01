@@ -24,8 +24,15 @@ RUN pip install --upgrade pip && pip install -r backend/requirements.txt
 
 COPY backend ./backend
 
-# Collect static files
+# Copy entrypoint and make executable
+COPY backend/entrypoint.sh ./backend/entrypoint.sh
+RUN chmod +x ./backend/entrypoint.sh
+
+# Collect static files (build-time, best-effort)
 RUN python backend/manage.py collectstatic --noinput || true
 
-# ✅ THIS IS THE KEY FIX
-CMD sh -c "gunicorn --chdir backend bluewardrobe.wsgi:application --bind 0.0.0.0:$PORT"
+# Set working directory to backend so manage.py is accessible to entrypoint
+WORKDIR /app/backend
+
+# Use entrypoint to run migrations, collectstatic and start gunicorn
+ENTRYPOINT ["/app/backend/entrypoint.sh"]
