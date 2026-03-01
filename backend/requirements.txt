@@ -1,6 +1,5 @@
 Django>=4.2
 djangorestframework
-dj-database-url
 psycopg2-binary
 python-dotenv
 django-cors-headers
@@ -9,6 +8,7 @@ django-cloudinary-storage
 drf-spectacular
 resend
 requests
+dj-database-url
 Pillow
 whitenoise
 gunicorn

@@ -23,6 +23,20 @@ Quick start (local, using sqlite)
 Docker (dev)
 - docker-compose up --build
 
+Production / Deploy (Docker)
+ - Build and run the production container (this image runs migrations and collectstatic at container start):
+	 ```bash
+	 cd backend
+	 docker build -t the_blue_wardrobe_web:latest .
+	 docker run --env-file .env -p 8080:8080 the_blue_wardrobe_web:latest
+	 # the app will run on http://localhost:8080 and uses PORT env (default 8080)
+	 ```
+
+ - Or use the included `docker-compose.prod.yml` for a local production-like setup:
+	 ```bash
+	 docker-compose -f docker-compose.prod.yml up --build
+	 ```
+
 Next steps (frontend & extras)
 - Scaffold frontend (React + Vite + TypeScript) with Tailwind and Zustand
 - Implement storefront pages: Home, Collections, Product, Cart, Checkout, Success
