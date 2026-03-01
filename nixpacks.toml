@@ -9,11 +9,9 @@ cmds = [
 
 [phases.build]
 cmds = [
-  "cd frontend && npm run build",
-  "cd backend && python3 manage.py migrate --noinput",
-  "cd backend && python3 manage.py collectstatic --noinput"
+  "cd frontend && npm run build"
 ]
 
 [start]
-cmd = "cd backend && gunicorn bluewardrobe.wsgi:application --bind 0.0.0.0:$PORT"
+cmd = "cd backend && python3 manage.py migrate --noinput || true && python3 manage.py collectstatic --noinput || true && gunicorn bluewardrobe.wsgi:application --bind 0.0.0.0:$PORT"
 
