@@ -18,6 +18,11 @@ WORKDIR /app
 COPY frontend ./frontend
 RUN cd frontend && npm install && npm run build
 
+# Ensure the built frontend index.html is available to Django templates at runtime.
+# Copy the frontend build into the backend templates directory so TemplateView can
+# always find index.html even if collectstatic/other runtime steps vary.
+RUN mkdir -p backend/templates && cp -r frontend/dist/* backend/templates/ || true
+
 # ---------- Backend ----------
 COPY backend/requirements.txt ./backend/requirements.txt
 RUN pip install --upgrade pip && pip install -r backend/requirements.txt
