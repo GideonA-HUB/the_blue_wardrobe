@@ -28,8 +28,10 @@ COPY backend ./backend
 COPY backend/entrypoint.sh ./backend/entrypoint.sh
 RUN chmod +x ./backend/entrypoint.sh
 
-# Collect static files (build-time, best-effort)
-RUN python backend/manage.py collectstatic --noinput || true
+# NOTE: We intentionally DO NOT run collectstatic at build-time here.
+# Running collectstatic at build-time can cause stale/deleted files when the
+# container later runs collectstatic at startup. We rely on the entrypoint
+# to run migrations and collectstatic when the container starts (runtime).
 
 # Set working directory to backend so manage.py is accessible to entrypoint
 WORKDIR /app/backend

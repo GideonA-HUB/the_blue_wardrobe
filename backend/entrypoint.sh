@@ -43,9 +43,18 @@ echo "Running migrations..."
 python manage.py migrate --noinput
 
 echo "Collecting static files..."
-python manage.py collectstatic --noinput --clear
+# Avoid --clear here to prevent removing previously-built frontend assets unexpectedly.
+python manage.py collectstatic --noinput
 
 # Start gunicorn using PORT env var (Railway/Heroku-style)
 : ${PORT:=8080}
 echo "Starting gunicorn on 0.0.0.0:${PORT}"
-exec gunicorn bluewardrobe.wsgi:application --bind 0.0.0.0:${PORT} --workers 3 --threads 3 --log-level info
+# Use access/error logging to stdout so Railway captures request errors and tracebacks.
+exec gunicorn bluewardrobe.wsgi:application \
+	--bind 0.0.0.0:${PORT} \
+	--workers 3 \
+	--threads 3 \
+	--log-level info \
+	--access-logfile - \
+	--error-logfile - \
+	--capture-output
