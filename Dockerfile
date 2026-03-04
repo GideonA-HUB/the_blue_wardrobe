@@ -1,3 +1,62 @@
+### Multi-stage Dockerfile (clean)
+# Stage 1: Build frontend using a lightweight Node image
+FROM node:18-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy package files first to leverage caching
+COPY frontend/package*.json ./
+COPY frontend/package-lock.json ./
+
+# Install dependencies
+RUN if [ -f package-lock.json ]; then npm ci --silent; else npm install --silent; fi
+
+# Copy frontend source and build
+COPY frontend/ ./
+RUN npm run build --silent
+
+
+# Stage 2: Python runtime
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# System deps required to build some Python packages and for DB client
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install Python dependencies
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r backend/requirements.txt
+
+# Copy backend application
+COPY backend ./backend
+
+# Copy the built frontend from the builder stage into multiple places the
+# backend code may look for. This maximizes compatibility between different
+# project layouts (HEDDIEKITCHEN vs BlueWardrobe variants):
+#  - backend/frontend_dist (used by HEDDIEKITCHEN settings)
+#  - backend/frontend/dist (used by other setups)
+#  - backend/templates/index.html (so Django TemplateView will always find it)
+COPY --from=frontend-builder /app/frontend/dist ./backend/frontend_dist
+RUN mkdir -p backend/frontend/dist && cp -r backend/frontend_dist/* backend/frontend/dist/ || true
+RUN mkdir -p backend/templates && cp -r backend/frontend_dist/* backend/templates/ || true
+
+# Ensure entrypoint is present and executable
+COPY backend/entrypoint.sh ./backend/entrypoint.sh
+RUN chmod +x ./backend/entrypoint.sh
+
+# Make backend the working dir
+WORKDIR /app/backend
+
+# Entrypoint will wait for DB, run migrations, collectstatic and start gunicorn
+ENTRYPOINT ["/app/backend/entrypoint.sh"]
 ### Multi-stage Dockerfile
 # Stage 1: Build frontend using a lightweight Node image
 FROM node:18-alpine AS frontend-builder
