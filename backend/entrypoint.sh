@@ -3,6 +3,16 @@ set -euo pipefail
 
 echo "Entrypoint: waiting for DB, running migrations, collectstatic, then starting gunicorn"
 
+# Quick debug mode: if USE_DEBUG_SERVER=true is set in the environment,
+# start a minimal Python HTTP server bound to $PORT and exit. This helps
+# determine whether Railway's proxy/routing is working independently of Django.
+if [ "${USE_DEBUG_SERVER:-false}" = "true" ]; then
+	echo "DEBUG MODE: starting simple HTTP server on port ${PORT:-8080}"
+	# Serve the current directory (backend) root. This returns 200 for / and /favicon.ico
+	python -m http.server ${PORT:-8080} --bind 0.0.0.0
+	exit 0
+fi
+
 # Ensure DJANGO_SETTINGS_MODULE is set. If not provided, try to auto-detect
 # the Django project package by looking for a subdirectory containing wsgi.py.
 if [ -z "${DJANGO_SETTINGS_MODULE:-}" ]; then
@@ -71,11 +81,14 @@ python manage.py collectstatic --noinput
 : ${PORT:=8080}
 echo "Starting gunicorn on 0.0.0.0:${PORT} (WSGI=${WSGI_MODULE}:application)"
 # Use access/error logging to stdout so Railway captures request errors and tracebacks.
+# For troubleshooting, use the sync worker class which is simpler and more predictable
+# on small hosts. If you need concurrency later, switch back to gthread or guncorn defaults.
 exec gunicorn ${WSGI_MODULE}:application \
 	--bind 0.0.0.0:${PORT} \
-	--workers 3 \
-	--threads 3 \
-	--log-level info \
+	--workers 1 \
+	--worker-class sync \
+	--timeout 30 \
+	--log-level debug \
 	--access-logfile - \
 	--error-logfile - \
 	--capture-output
