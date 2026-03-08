@@ -6,7 +6,10 @@ from django.db import transaction
 from django.utils import timezone
 from django.conf import settings
 import requests
-import resend
+try:
+    import resend
+except ImportError:
+    resend = None
 
 from .models import (
     Collection, Design, SiteAsset, ContactMessage, Subscriber, Order,
@@ -227,7 +230,7 @@ def verify_paystack(request):
 
     # Fire-and-forget notifications via Resend / webhook
     try:
-        if settings.RESEND_API_KEY and customer_email:
+        if settings.RESEND_API_KEY and resend and customer_email:
             resend.api_key = settings.RESEND_API_KEY
             resend.Emails.send({
                 "from": f"THE BLUE WARDROBE <no-reply@bluewardrobe.luxury>",
@@ -237,7 +240,7 @@ def verify_paystack(request):
             })
 
         owner_email = getattr(settings, 'OWNER_EMAIL', '')
-        if settings.RESEND_API_KEY and owner_email:
+        if settings.RESEND_API_KEY and resend and owner_email:
             resend.api_key = settings.RESEND_API_KEY
             resend.Emails.send({
                 "from": f"THE BLUE WARDROBE <no-reply@bluewardrobe.luxury>",
