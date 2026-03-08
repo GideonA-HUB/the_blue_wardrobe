@@ -12,6 +12,13 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', ''),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY', ''),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', ''),
+}
+USE_CLOUDINARY = all(CLOUDINARY_STORAGE.values())
+
 SENTRY_DSN = os.getenv('SENTRY_DSN', '')
 if sentry_sdk and DjangoIntegration and SENTRY_DSN:
     sentry_sdk.init(
@@ -26,6 +33,8 @@ DEBUG = os.getenv("DJANGO_DEBUG", os.getenv("DEBUG", "False")) == "True"
 default_allowed_hosts = [
     "thebluewardrobe-production.up.railway.app",
     ".up.railway.app",
+    ".railway.app",
+    ".railway.internal",
     "localhost",
     "127.0.0.1",
 ]
@@ -47,10 +56,14 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'drf_spectacular',
     'corsheaders',
-    'cloudinary',
-    'cloudinary_storage',
     'store',
 ]
+
+if USE_CLOUDINARY:
+    INSTALLED_APPS += [
+        'cloudinary',
+        'cloudinary_storage',
+    ]
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -140,20 +153,18 @@ STATICFILES_DIRS = [
     FRONTEND_BUILD_DIR,
 ] if FRONTEND_BUILD_DIR.exists() else []
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Cloudinary storage (optional)
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', ''),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY', ''),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', ''),
+STORAGES = {
+    'default': {
+        'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage' if USE_CLOUDINARY else 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
 }
-USE_CLOUDINARY = all(CLOUDINARY_STORAGE.values())
-if USE_CLOUDINARY:
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
@@ -175,7 +186,6 @@ CORS_ALLOW_CREDENTIALS = True
 # Security settings for production
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    USE_X_FORWARDED_HOST = True
     CSRF_TRUSTED_ORIGINS = [
         origin.strip()
         for origin in os.getenv(
@@ -198,4 +208,35 @@ RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
 PAYSTACK_SECRET = os.getenv('PAYSTACK_SECRET', '')
 OWNER_EMAIL = os.getenv('OWNER_EMAIL', '')
 OWNER_NOTIFICATION_WEBHOOK = os.getenv('OWNER_NOTIFICATION_WEBHOOK', '')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'bluewardrobe': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}
 

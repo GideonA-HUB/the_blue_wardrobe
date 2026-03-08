@@ -37,6 +37,10 @@ COPY --from=frontend-builder /app/frontend/dist /app/frontend_dist
 # Ensure runtime scripts exist and are executable
 RUN chmod +x /app/start.sh
 
+# Validate Django configuration during build so request-time import failures
+# surface before deployment
+RUN python manage.py check
+
 # Collect static files during image build for a simpler runtime startup
 RUN python manage.py collectstatic --noinput
 
