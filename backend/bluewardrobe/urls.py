@@ -9,10 +9,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def health_check(request):
-    return JsonResponse({"status": "ok"})
-
-
 def service_unavailable(detail):
     def view(request, *args, **kwargs):
         return JsonResponse({"detail": detail}, status=503)
@@ -26,32 +22,42 @@ def frontend_app(request):
         settings.BASE_DIR / 'templates' / 'index.html',
     ]
     for index_file in index_candidates:
-        if index_file.exists():
-            return HttpResponse(index_file.read_text(encoding='utf-8'), content_type='text/html')
+        try:
+            if index_file.exists():
+                return HttpResponse(index_file.read_text(encoding='utf-8'), content_type='text/html')
+        except Exception as exc:
+            logger.exception('Failed to serve frontend index from %s: %s', index_file, exc)
     return HttpResponse('Frontend build is not available.', status=503, content_type='text/plain')
 
 
 def favicon(request):
-    try:
-        from store.models import SiteAsset
-    except Exception:
-        SiteAsset = None
-
-    if SiteAsset is not None:
-        asset = SiteAsset.objects.filter(name='favicon').order_by('-uploaded_at').first()
-        if asset and asset.file:
-            try:
-                return HttpResponseRedirect(asset.file.url)
-            except Exception:
-                pass
-
     favicon_candidates = [
         settings.FRONTEND_BUILD_DIR / 'favicon.ico',
         settings.STATIC_ROOT / 'favicon.ico',
     ]
     for icon_file in favicon_candidates:
-        if icon_file.exists():
-            return HttpResponse(icon_file.read_bytes(), content_type='image/x-icon')
+        try:
+            if icon_file.exists():
+                return HttpResponse(icon_file.read_bytes(), content_type='image/x-icon')
+        except Exception as exc:
+            logger.exception('Failed to serve favicon file from %s: %s', icon_file, exc)
+
+    try:
+        from store.models import SiteAsset
+    except Exception as exc:
+        logger.exception('Failed to import SiteAsset for favicon handling: %s', exc)
+        SiteAsset = None
+
+    if SiteAsset is not None:
+        try:
+            asset = SiteAsset.objects.filter(name='favicon').order_by('-uploaded_at').first()
+            if asset and asset.file:
+                try:
+                    return HttpResponseRedirect(asset.file.url)
+                except Exception as exc:
+                    logger.exception('Failed to resolve uploaded favicon URL: %s', exc)
+        except Exception as exc:
+            logger.exception('Failed to query uploaded favicon asset: %s', exc)
     return HttpResponse(status=204)
 
 
@@ -63,7 +69,6 @@ urlpatterns = [
     path('', frontend_app, name='frontend-root'),
     path('assets/<path:asset_path>', legacy_asset_redirect, name='legacy-asset-redirect'),
     path('favicon.ico', favicon, name='favicon'),
-    path('health/', health_check),
 ]
 
 try:

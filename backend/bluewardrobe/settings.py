@@ -114,12 +114,13 @@ WSGI_APPLICATION = 'bluewardrobe.wsgi.application'
 import dj_database_url
 
 database_url = os.getenv("DATABASE_URL")
+db_conn_max_age = int(os.getenv("DB_CONN_MAX_AGE", "0"))
 
 if database_url:
     DATABASES = {
         "default": dj_database_url.parse(
             database_url,
-            conn_max_age=600,
+            conn_max_age=db_conn_max_age,
             ssl_require=database_url.startswith("postgres"),
         )
     }
@@ -144,6 +145,7 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'

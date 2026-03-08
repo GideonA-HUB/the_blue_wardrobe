@@ -17,10 +17,14 @@ class StoreApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
 
-    def test_health_endpoint_returns_ok(self):
-        response = self.client.get('/health/')
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['status'], 'ok')
+    def test_favicon_endpoint_uses_frontend_fallback(self):
+        with TemporaryDirectory() as temp_dir:
+            build_dir = Path(temp_dir)
+            (build_dir / 'favicon.ico').write_bytes(b'ico')
+            with self.settings(FRONTEND_BUILD_DIR=build_dir, STATIC_ROOT=build_dir):
+                response = self.client.get('/favicon.ico')
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.content, b'ico')
 
 
 class FrontendShellTests(SimpleTestCase):

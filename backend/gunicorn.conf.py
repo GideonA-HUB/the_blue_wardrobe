@@ -6,5 +6,5 @@ worker_class = 'sync'
 timeout = int(os.getenv('GUNICORN_TIMEOUT', '60'))
 accesslog = '-'
 errorlog = '-'
-loglevel = os.getenv('GUNICORN_LOG_LEVEL', 'info')
+loglevel = os.getenv('GUNICORN_LOG_LEVEL', 'debug')
 capture_output = True
