@@ -5,11 +5,8 @@ from rest_framework.response import Response
 from django.db import transaction
 from django.utils import timezone
 from django.conf import settings
+from importlib import import_module
 import requests
-try:
-    import resend
-except ImportError:
-    resend = None
 
 from .models import (
     Collection, Design, SiteAsset, ContactMessage, Subscriber, Order,
@@ -20,6 +17,13 @@ from .serializers import (
     ContactMessageSerializer, SubscriberSerializer, OrderSerializer,
     VideoSerializer, InfoCardSerializer, MaterialSerializer, CustomerSerializer
 )
+
+
+def get_resend_client():
+    try:
+        return import_module('resend')
+    except Exception:
+        return None
 
 
 class CollectionViewSet(viewsets.ReadOnlyModelViewSet):
@@ -230,9 +234,11 @@ def verify_paystack(request):
 
     # Fire-and-forget notifications via Resend / webhook
     try:
-        if settings.RESEND_API_KEY and resend and customer_email:
-            resend.api_key = settings.RESEND_API_KEY
-            resend.Emails.send({
+        resend_client = get_resend_client()
+
+        if settings.RESEND_API_KEY and resend_client and customer_email:
+            resend_client.api_key = settings.RESEND_API_KEY
+            resend_client.Emails.send({
                 "from": f"THE BLUE WARDROBE <no-reply@bluewardrobe.luxury>",
                 "to": [customer_email],
                 "subject": "Your order with THE BLUE WARDROBE",
@@ -240,9 +246,9 @@ def verify_paystack(request):
             })
 
         owner_email = getattr(settings, 'OWNER_EMAIL', '')
-        if settings.RESEND_API_KEY and resend and owner_email:
-            resend.api_key = settings.RESEND_API_KEY
-            resend.Emails.send({
+        if settings.RESEND_API_KEY and resend_client and owner_email:
+            resend_client.api_key = settings.RESEND_API_KEY
+            resend_client.Emails.send({
                 "from": f"THE BLUE WARDROBE <no-reply@bluewardrobe.luxury>",
                 "to": [owner_email],
                 "subject": "New order placed",

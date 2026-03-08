@@ -1,10 +1,25 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+try:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+except ImportError:
+    sentry_sdk = None
+    DjangoIntegration = None
 
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+SENTRY_DSN = os.getenv('SENTRY_DSN', '')
+if sentry_sdk and DjangoIntegration and SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=float(os.getenv('SENTRY_TRACES_SAMPLE_RATE', '0')),
+        send_default_pii=True,
+    )
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'replace-me')
 DEBUG = os.getenv("DJANGO_DEBUG", os.getenv("DEBUG", "False")) == "True"
@@ -55,7 +70,11 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'bluewardrobe.urls'
 
 # Template directories - include frontend build directory
-FRONTEND_BUILD_DIR = BASE_DIR.parent / 'frontend' / 'dist'
+frontend_build_candidates = [
+    BASE_DIR / 'frontend_dist',
+    BASE_DIR.parent / 'frontend' / 'dist',
+]
+FRONTEND_BUILD_DIR = next((path for path in frontend_build_candidates if path.exists()), frontend_build_candidates[0])
 TEMPLATE_DIRS = [BASE_DIR / 'templates']
 if FRONTEND_BUILD_DIR.exists():
     TEMPLATE_DIRS.append(FRONTEND_BUILD_DIR)
@@ -117,10 +136,9 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Frontend static files (React build)
-FRONTEND_DIR = BASE_DIR.parent / 'frontend' / 'dist'
 STATICFILES_DIRS = [
-    FRONTEND_DIR,
-] if FRONTEND_DIR.exists() else []
+    FRONTEND_BUILD_DIR,
+] if FRONTEND_BUILD_DIR.exists() else []
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
@@ -133,7 +151,9 @@ CLOUDINARY_STORAGE = {
     'API_KEY': os.getenv('CLOUDINARY_API_KEY', ''),
     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', ''),
 }
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+USE_CLOUDINARY = all(CLOUDINARY_STORAGE.values())
+if USE_CLOUDINARY:
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
@@ -156,6 +176,14 @@ CORS_ALLOW_CREDENTIALS = True
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     USE_X_FORWARDED_HOST = True
+    CSRF_TRUSTED_ORIGINS = [
+        origin.strip()
+        for origin in os.getenv(
+            'CSRF_TRUSTED_ORIGINS',
+            'https://thebluewardrobe-production.up.railway.app,https://*.up.railway.app'
+        ).split(',')
+        if origin.strip()
+    ]
     # Keep redirect opt-in to avoid reverse-proxy redirect loops that can cause
     # failed health checks and Railway 502 responses.
     SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False") == "True"

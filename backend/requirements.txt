@@ -12,3 +12,4 @@ dj-database-url
 Pillow
 whitenoise
 gunicorn
+sentry-sdk[django]

@@ -1,11 +1,10 @@
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
-from django.http import FileResponse, HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView
 from rest_framework.authtoken.views import obtain_auth_token
-from pathlib import Path
 
 
 def health_check(request):
@@ -13,14 +12,13 @@ def health_check(request):
 
 
 def frontend_app(request):
-    frontend_dir = Path(settings.BASE_DIR).parent / 'frontend' / 'dist'
     index_candidates = [
-        Path(settings.BASE_DIR) / 'templates' / 'index.html',
-        frontend_dir / 'index.html',
+        settings.FRONTEND_BUILD_DIR / 'index.html',
+        settings.BASE_DIR / 'templates' / 'index.html',
     ]
     for index_file in index_candidates:
         if index_file.exists():
-            return FileResponse(index_file.open('rb'), content_type='text/html')
+            return HttpResponse(index_file.read_text(encoding='utf-8'), content_type='text/html')
     return HttpResponse('Frontend build is not available.', status=503, content_type='text/plain')
 
 
@@ -29,16 +27,18 @@ def favicon(request):
 
     asset = SiteAsset.objects.filter(name='favicon').order_by('-uploaded_at').first()
     if asset and asset.file:
-        return HttpResponseRedirect(asset.file.url)
+        try:
+            return HttpResponseRedirect(asset.file.url)
+        except Exception:
+            pass
 
-    frontend_dir = Path(settings.BASE_DIR).parent / 'frontend' / 'dist'
     favicon_candidates = [
-        frontend_dir / 'favicon.ico',
-        Path(settings.STATIC_ROOT) / 'favicon.ico',
+        settings.FRONTEND_BUILD_DIR / 'favicon.ico',
+        settings.STATIC_ROOT / 'favicon.ico',
     ]
     for icon_file in favicon_candidates:
         if icon_file.exists():
-            return FileResponse(icon_file.open('rb'), content_type='image/x-icon')
+            return HttpResponse(icon_file.read_bytes(), content_type='image/x-icon')
     return HttpResponse(status=204)
 
 
@@ -65,8 +65,7 @@ if settings.DEBUG:
 
 # Serve React app for all non-API routes (must be last)
 # This allows React Router to handle client-side routing
-frontend_dir = Path(settings.BASE_DIR).parent / 'frontend' / 'dist'
-if frontend_dir.exists():
+if settings.FRONTEND_BUILD_DIR.exists():
     # Serve React app's index.html for all non-API routes
     urlpatterns += [
         re_path(r'^(?!api|admin|static|media).*$', frontend_app, name='react-app'),
