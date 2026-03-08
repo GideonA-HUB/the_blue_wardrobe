@@ -17,6 +17,7 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PORT=8000
 ENV DJANGO_SETTINGS_MODULE=bluewardrobe.settings
 
 # System deps required for runtime connectivity
@@ -44,6 +45,6 @@ RUN python manage.py check
 # Collect static files during image build for a simpler runtime startup
 RUN python manage.py collectstatic --noinput
 
-EXPOSE 8080
+EXPOSE 8000
 
 CMD ["/app/start.sh"]
