@@ -71,6 +71,9 @@ The frontend talks to `/api` in production and `http://localhost:8000/api` in de
 - `DEBUG=False`
 - `CORS_ALLOWED_ORIGINS=https://thebluewardrobe-production.up.railway.app`
 - `CSRF_TRUSTED_ORIGINS=https://thebluewardrobe-production.up.railway.app`
+- `DJANGO_SUPERUSER_USERNAME`
+- `DJANGO_SUPERUSER_EMAIL`
+- `DJANGO_SUPERUSER_PASSWORD`
 - `PAYSTACK_SECRET`
 - `OWNER_EMAIL`
 
@@ -106,7 +109,8 @@ This repository is configured for a **single-service Railway deployment**:
 4. Docker runs `python manage.py collectstatic --noinput`
 5. Container starts with `start.sh`
 6. `start.sh` runs `python manage.py migrate --noinput`
-7. Gunicorn serves Django on port `8080`
+7. `start.sh` runs `python manage.py ensure_superuser`
+8. Gunicorn serves Django on port `8080`
 
 ### Railway Checklist
 
@@ -128,6 +132,18 @@ This repository is configured for a **single-service Railway deployment**:
 - WhiteNoise serves collected static files from `/static/`
 - legacy `/assets/...` requests are redirected to `/static/assets/...`
 - `/favicon.ico` resolves either from uploaded site assets or built/static fallback files
+
+## Django Admin Access on Railway
+
+If you do not have shell access on Railway, set these service variables in Railway and redeploy:
+
+- `DJANGO_SUPERUSER_USERNAME`
+- `DJANGO_SUPERUSER_EMAIL`
+- `DJANGO_SUPERUSER_PASSWORD`
+
+On startup, the app will create the superuser if it does not exist, or update that same user's password and privileges if it already exists.
+
+Then sign in at `/admin/` using the configured username and password.
 
 ## API Documentation
 
