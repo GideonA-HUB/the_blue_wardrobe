@@ -33,12 +33,15 @@ def frontend_app(request):
 def favicon(request):
     favicon_candidates = [
         settings.FRONTEND_BUILD_DIR / 'favicon.ico',
+        settings.FRONTEND_BUILD_DIR / 'favicon.svg',
         settings.STATIC_ROOT / 'favicon.ico',
+        settings.STATIC_ROOT / 'favicon.svg',
     ]
     for icon_file in favicon_candidates:
         try:
             if icon_file.exists():
-                return HttpResponse(icon_file.read_bytes(), content_type='image/x-icon')
+                content_type = 'image/svg+xml' if icon_file.suffix == '.svg' else 'image/x-icon'
+                return HttpResponse(icon_file.read_bytes(), content_type=content_type)
         except Exception as exc:
             logger.exception('Failed to serve favicon file from %s: %s', icon_file, exc)
 
@@ -58,7 +61,14 @@ def favicon(request):
                     logger.exception('Failed to resolve uploaded favicon URL: %s', exc)
         except Exception as exc:
             logger.exception('Failed to query uploaded favicon asset: %s', exc)
-    return HttpResponse(status=204)
+    fallback_svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+        '<rect width="64" height="64" rx="12" fill="#dbeafe"/>'
+        '<text x="50%" y="54%" text-anchor="middle" font-size="24" '
+        'font-family="Georgia, serif" fill="#0f172a">TB</text>'
+        '</svg>'
+    )
+    return HttpResponse(fallback_svg, content_type='image/svg+xml')
 
 
 def legacy_asset_redirect(request, asset_path):

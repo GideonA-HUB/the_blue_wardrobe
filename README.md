@@ -113,9 +113,10 @@ This repository is configured for a **single-service Railway deployment**:
 - Add a Railway PostgreSQL service
 - Set the required environment variables
 - Deploy from GitHub using the root `Dockerfile`
+- Ensure Railway Public Networking points the service domain to port `8080`
 - Verify:
   - `/`
-  - `/health/`
+  - `/favicon.ico`
   - `/api/collections/`
   - `/api/docs/`
   - `/admin/`
