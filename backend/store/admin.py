@@ -3,7 +3,8 @@ from django import forms
 from django.core.exceptions import ValidationError
 from .models import (
     Material, Collection, Design, SiteAsset, Customer, Order, OrderItem,
-    ContactMessage, Subscriber, PaymentLog, Video, InfoCard
+    ContactMessage, Subscriber, PaymentLog, Video, InfoCard,
+    BusinessProfile, BlogPost, BlogPostMedia, BlogComment, BlogPostLike, BlogCommentLike,
 )
 
 
@@ -123,3 +124,73 @@ class InfoCardAdmin(admin.ModelAdmin):
     list_filter = ('color', 'is_active')
     search_fields = ('title', 'description')
     list_editable = ('is_active', 'order', 'color')
+
+
+@admin.register(BusinessProfile)
+class BusinessProfileAdmin(admin.ModelAdmin):
+    list_display = ('title', 'ceo_name', 'ceo_title', 'is_active', 'updated_at')
+    list_filter = ('is_active', 'updated_at')
+    search_fields = ('title', 'ceo_name', 'ceo_title')
+    list_editable = ('is_active',)
+
+
+class BlogPostMediaInline(admin.TabularInline):
+    model = BlogPostMedia
+    extra = 0
+    fields = ('media_type', 'file', 'caption', 'alt_text', 'order')
+
+
+class BlogCommentInline(admin.TabularInline):
+    model = BlogComment
+    extra = 0
+    fields = ('author_name', 'author_email', 'body', 'parent', 'is_approved', 'created_at')
+    readonly_fields = ('created_at',)
+
+
+@admin.register(BlogPost)
+class BlogPostAdmin(admin.ModelAdmin):
+    list_display = ('title', 'slug', 'is_published', 'is_featured', 'allow_comments', 'published_at', 'likes_count', 'comments_count')
+    list_filter = ('is_published', 'is_featured', 'allow_comments', 'published_at')
+    search_fields = ('title', 'slug', 'excerpt', 'content')
+    list_editable = ('is_published', 'is_featured', 'allow_comments')
+    prepopulated_fields = {'slug': ('title',)}
+    inlines = [BlogPostMediaInline, BlogCommentInline]
+
+    def likes_count(self, obj):
+        return obj.likes.count()
+
+    def comments_count(self, obj):
+        return obj.comments.count()
+
+
+@admin.register(BlogPostMedia)
+class BlogPostMediaAdmin(admin.ModelAdmin):
+    list_display = ('post', 'media_type', 'order', 'created_at')
+    list_filter = ('media_type', 'created_at')
+    search_fields = ('post__title', 'caption', 'alt_text')
+    list_editable = ('order',)
+
+
+@admin.register(BlogComment)
+class BlogCommentAdmin(admin.ModelAdmin):
+    list_display = ('author_name', 'author_email', 'post', 'parent', 'is_approved', 'likes_count', 'created_at')
+    list_filter = ('is_approved', 'created_at')
+    search_fields = ('author_name', 'author_email', 'body', 'post__title')
+    list_editable = ('is_approved',)
+
+    def likes_count(self, obj):
+        return obj.likes.count()
+
+
+@admin.register(BlogPostLike)
+class BlogPostLikeAdmin(admin.ModelAdmin):
+    list_display = ('post', 'visitor_name', 'visitor_email', 'visitor_id', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('post__title', 'visitor_name', 'visitor_email', 'visitor_id')
+
+
+@admin.register(BlogCommentLike)
+class BlogCommentLikeAdmin(admin.ModelAdmin):
+    list_display = ('comment', 'visitor_name', 'visitor_email', 'visitor_id', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('comment__body', 'comment__post__title', 'visitor_name', 'visitor_email', 'visitor_id')

@@ -1,5 +1,16 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from .content_views import (
+    AdminBlogCommentLikeViewSet,
+    AdminBlogCommentViewSet,
+    AdminBlogPostLikeViewSet,
+    AdminBlogPostMediaViewSet,
+    AdminBlogPostViewSet,
+    AdminBusinessProfileViewSet,
+    BlogPostViewSet,
+    BusinessProfileViewSet,
+    toggle_comment_like,
+)
 from .views import (
     CollectionViewSet,
     DesignViewSet,
@@ -29,6 +40,8 @@ router.register('designs', DesignViewSet, basename='designs')
 router.register('assets', SiteAssetViewSet, basename='assets')
 router.register('videos', VideoViewSet, basename='videos')
 router.register('info-cards', InfoCardViewSet, basename='info-cards')
+router.register('business-profile', BusinessProfileViewSet, basename='business-profile')
+router.register('blog', BlogPostViewSet, basename='blog')
 
 # Admin routes
 admin_router = DefaultRouter()
@@ -41,9 +54,16 @@ admin_router.register('contact-messages', AdminContactMessageViewSet, basename='
 admin_router.register('subscribers', AdminSubscriberViewSet, basename='admin-subscribers')
 admin_router.register('customers', AdminCustomerViewSet, basename='admin-customers')
 admin_router.register('materials', AdminMaterialViewSet, basename='admin-materials')
+admin_router.register('business-profile', AdminBusinessProfileViewSet, basename='admin-business-profile')
+admin_router.register('blog-posts', AdminBlogPostViewSet, basename='admin-blog-posts')
+admin_router.register('blog-media', AdminBlogPostMediaViewSet, basename='admin-blog-media')
+admin_router.register('blog-comments', AdminBlogCommentViewSet, basename='admin-blog-comments')
+admin_router.register('blog-post-likes', AdminBlogPostLikeViewSet, basename='admin-blog-post-likes')
+admin_router.register('blog-comment-likes', AdminBlogCommentLikeViewSet, basename='admin-blog-comment-likes')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('blog/comments/<int:comment_id>/toggle-like/', toggle_comment_like, name='blog-comment-toggle-like'),
     path('subscribe/', subscribe, name='subscribe'),
     path('contact/', contact, name='contact'),
     path('paystack/initiate/', initiate_paystack, name='paystack-initiate'),

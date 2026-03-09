@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fa'
 import api from '../lib/api'
 import { useLoading } from '../hooks/useLoading'
+import ContentManager from '../components/owner/ContentManager'
 
 type Metrics = {
   total_sales: number
@@ -119,7 +120,7 @@ export default function AdminDashboard() {
   const [designs, setDesigns] = useState<Design[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [materials, setMaterials] = useState<Material[]>([])
-  const [activeTab, setActiveTab] = useState<'overview' | 'collections' | 'designs' | 'videos' | 'info-cards' | 'orders' | 'messages' | 'subscribers' | 'customers'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'collections' | 'designs' | 'videos' | 'info-cards' | 'orders' | 'messages' | 'subscribers' | 'customers' | 'content'>('overview')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState<{ type: string; item?: any } | null>(null)
@@ -367,6 +368,7 @@ export default function AdminDashboard() {
             { id: 'messages', label: 'Messages', icon: FaEnvelope },
             { id: 'subscribers', label: 'Subscribers', icon: FaUsers },
             { id: 'customers', label: 'Customers', icon: FaUser },
+            { id: 'content', label: 'Content', icon: FaBox },
           ].map((tab) => {
             const Icon = tab.icon
             return (
@@ -935,6 +937,15 @@ export default function AdminDashboard() {
                 </table>
               </div>
             )}
+          </motion.div>
+        )}
+
+        {activeTab === 'content' && token && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <ContentManager token={token} />
           </motion.div>
         )}
 

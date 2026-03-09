@@ -109,6 +109,16 @@ export default function Footer() {
             <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider">Explore</h4>
             <ul className="space-y-2 text-sm text-gray-300">
               <li>
+                <Link to="/about" className="hover:text-white transition-colors">
+                  About the Brand
+                </Link>
+              </li>
+              <li>
+                <Link to="/blog" className="hover:text-white transition-colors">
+                  Journal
+                </Link>
+              </li>
+              <li>
                 <Link to="/collections" className="hover:text-white transition-colors">
                   Collections
                 </Link>

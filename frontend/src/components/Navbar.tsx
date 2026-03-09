@@ -64,6 +64,18 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-8">
           <Link 
+            to="/about" 
+            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full"
+          >
+            About
+          </Link>
+          <Link 
+            to="/blog" 
+            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full"
+          >
+            Journal
+          </Link>
+          <Link 
             to="/collections" 
             className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full"
           >

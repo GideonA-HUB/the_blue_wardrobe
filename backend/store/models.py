@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.db import models
+from django.utils.text import slugify
 from django.utils import timezone
 
 
@@ -154,6 +156,135 @@ class Video(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class BusinessProfile(models.Model):
+    title = models.CharField(max_length=200, default='About THE BLUE WARDROBE')
+    subtitle = models.CharField(max_length=255, blank=True)
+    ceo_name = models.CharField(max_length=200)
+    ceo_title = models.CharField(max_length=200, blank=True)
+    ceo_photo = models.ImageField(upload_to='business/', blank=True, null=True)
+    about_ceo = models.TextField()
+    business_idea = models.TextField()
+    business_aims = models.TextField()
+    business_agenda = models.TextField()
+    future_prospects = models.TextField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at', '-created_at']
+
+    def __str__(self):
+        return f"{self.title} — {self.ceo_name}"
+
+
+class BlogPost(models.Model):
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    excerpt = models.TextField(blank=True)
+    content = models.TextField()
+    cover_image = models.ImageField(upload_to='blog/covers/', blank=True, null=True)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blog_posts', on_delete=models.SET_NULL, null=True, blank=True)
+    is_featured = models.BooleanField(default=False)
+    is_published = models.BooleanField(default=True)
+    allow_comments = models.BooleanField(default=True)
+    published_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-published_at', '-created_at']
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.title)[:240] or 'blog-post'
+            slug = base_slug
+            suffix = 1
+            while BlogPost.objects.exclude(pk=self.pk).filter(slug=slug).exists():
+                slug = f'{base_slug}-{suffix}'[:255]
+                suffix += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+
+class BlogPostMedia(models.Model):
+    MEDIA_TYPE_CHOICES = [
+        ('image', 'Image'),
+        ('video', 'Video'),
+        ('gif', 'GIF'),
+        ('sticker', 'Sticker'),
+    ]
+
+    post = models.ForeignKey(BlogPost, related_name='media_items', on_delete=models.CASCADE)
+    file = models.FileField(upload_to='blog/media/')
+    media_type = models.CharField(max_length=20, choices=MEDIA_TYPE_CHOICES, default='image')
+    caption = models.CharField(max_length=255, blank=True)
+    alt_text = models.CharField(max_length=255, blank=True)
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
+
+    def __str__(self):
+        return f'{self.post.title} — {self.media_type}'
+
+
+class BlogComment(models.Model):
+    post = models.ForeignKey(BlogPost, related_name='comments', on_delete=models.CASCADE)
+    parent = models.ForeignKey('self', related_name='replies', on_delete=models.CASCADE, null=True, blank=True)
+    author_name = models.CharField(max_length=200)
+    author_email = models.EmailField()
+    visitor_id = models.CharField(max_length=120, db_index=True, blank=True)
+    body = models.TextField()
+    is_approved = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f'{self.author_name} on {self.post.title}'
+
+
+class BlogPostLike(models.Model):
+    post = models.ForeignKey(BlogPost, related_name='likes', on_delete=models.CASCADE)
+    visitor_id = models.CharField(max_length=120, db_index=True)
+    visitor_name = models.CharField(max_length=200, blank=True)
+    visitor_email = models.EmailField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['post', 'visitor_id'], name='unique_post_like_per_visitor'),
+        ]
+
+    def __str__(self):
+        return self.visitor_name or self.visitor_email or self.visitor_id
+
+
+class BlogCommentLike(models.Model):
+    comment = models.ForeignKey(BlogComment, related_name='likes', on_delete=models.CASCADE)
+    visitor_id = models.CharField(max_length=120, db_index=True)
+    visitor_name = models.CharField(max_length=200, blank=True)
+    visitor_email = models.EmailField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['comment', 'visitor_id'], name='unique_comment_like_per_visitor'),
+        ]
+
+    def __str__(self):
+        return self.visitor_name or self.visitor_email or self.visitor_id
 
 
 class InfoCard(models.Model):

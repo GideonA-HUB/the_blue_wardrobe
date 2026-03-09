@@ -4,6 +4,9 @@ import Home from './pages/Home'
 import Collections from './pages/Collections'
 import CollectionDetail from './pages/CollectionDetail'
 import Product from './pages/Product'
+import About from './pages/About'
+import Blog from './pages/Blog'
+import BlogPostDetail from './pages/BlogPostDetail'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Success from './pages/Success'
@@ -44,6 +47,9 @@ export default function App() {
       <main className="flex-grow container mx-auto px-4 py-8">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPostDetail />} />
           <Route path="/collections" element={<Collections />} />
           <Route path="/collections/:id" element={<CollectionDetail />} />
           <Route path="/designs/:id" element={<Product />} />
