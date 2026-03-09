@@ -186,8 +186,8 @@ export default function AdminDashboard() {
       localStorage.setItem('adminToken', newToken)
       setToken(newToken)
       await fetchAllData()
-    } catch (err) {
-      setError('Login failed. Invalid credentials.')
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Login failed. Invalid credentials.')
     } finally {
       setLoading(false)
     }

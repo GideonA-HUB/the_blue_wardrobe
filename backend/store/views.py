@@ -1,7 +1,9 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
+from django.contrib.auth import authenticate
 from django.db import transaction
 from django.utils import timezone
 from django.conf import settings
@@ -109,6 +111,30 @@ class AdminCustomerViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Customer.objects.all().order_by('-created_at')
     serializer_class = CustomerSerializer
     permission_classes = [IsAdminUser]
+
+
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def owner_token(request):
+    username = (request.data.get('username') or '').strip()
+    password = request.data.get('password') or ''
+
+    if not username or not password:
+        return Response({'detail': 'Username and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = authenticate(request=request, username=username, password=password)
+    if user is None:
+        return Response({'detail': 'Unable to log in with provided credentials.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not user.is_active:
+        return Response({'detail': 'This account is inactive.'}, status=status.HTTP_403_FORBIDDEN)
+
+    if not user.is_staff:
+        return Response({'detail': 'You do not have owner dashboard access.'}, status=status.HTTP_403_FORBIDDEN)
+
+    token, _ = Token.objects.get_or_create(user=user)
+    return Response({'token': token.key})
 
 
 @api_view(['POST'])

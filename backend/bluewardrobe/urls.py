@@ -105,10 +105,10 @@ except Exception as exc:
     ]
 
 try:
-    from rest_framework.authtoken.views import obtain_auth_token
+    from store.views import owner_token
 
     urlpatterns += [
-        path('api/auth/token/', obtain_auth_token, name='api-token-auth'),
+        path('api/auth/token/', owner_token, name='api-token-auth'),
     ]
 except Exception as exc:
     logger.exception('Failed to register API auth URLs: %s', exc)
