@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 from django.utils import timezone
+from django.core.files.storage import default_storage
 
 
 class Material(models.Model):
@@ -29,6 +30,16 @@ class Collection(models.Model):
         return f"{self.code} - {self.title}"
 
 
+def get_video_storage():
+    """Get the appropriate video storage backend"""
+    from django.core.files.storage import storages
+    try:
+        return storages['video_storage']
+    except (KeyError, ImportError):
+        # Fallback to default storage if video_storage is not configured
+        return default_storage
+
+
 class Design(models.Model):
     collection = models.ForeignKey(Collection, related_name='designs', on_delete=models.CASCADE)
     sku = models.CharField(max_length=100, unique=True)
@@ -41,7 +52,7 @@ class Design(models.Model):
         null=True, 
         blank=True, 
         help_text='Product video file (MP4, WebM, etc.)',
-        storage='video_storage'
+        storage=get_video_storage
     )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
