@@ -2,7 +2,7 @@ from django.contrib import admin
 from django import forms
 from django.core.exceptions import ValidationError
 from .models import (
-    Material, Collection, Design, SiteAsset, Customer, Order, OrderItem,
+    Material, Collection, Design, DesignImage, SizeInventory, Cart, CartItem, SiteAsset, Customer, Order, OrderItem,
     ContactMessage, Subscriber, PaymentLog, Video, InfoCard,
     BusinessProfile, BlogPost, BlogPostMedia, BlogComment, BlogPostLike, BlogCommentLike,
 )
@@ -23,11 +23,77 @@ class CollectionAdmin(admin.ModelAdmin):
     filter_horizontal = ('materials',)
 
 
+class DesignImageInline(admin.TabularInline):
+    model = DesignImage
+    extra = 1
+    fields = ('image', 'alt_text', 'order')
+
+
+class SizeInventoryInline(admin.TabularInline):
+    model = SizeInventory
+    extra = 0
+    fields = ('size', 'stock', 'is_active')
+
+
 @admin.register(Design)
 class DesignAdmin(admin.ModelAdmin):
-    list_display = ('sku', 'title', 'price', 'stock')
+    list_display = ('sku', 'title', 'price', 'discount_price', 'get_total_stock', 'collection')
     search_fields = ('sku', 'title')
-    list_filter = ('collection',)
+    list_filter = ('collection', 'created_at')
+    readonly_fields = ('created_at', 'updated_at')
+    inlines = [DesignImageInline, SizeInventoryInline]
+    
+    def get_total_stock(self, obj):
+        total = sum(inventory.stock for inventory in obj.size_inventory.all())
+        return total
+    get_total_stock.short_description = 'Total Stock'
+
+
+@admin.register(DesignImage)
+class DesignImageAdmin(admin.ModelAdmin):
+    list_display = ('design', 'alt_text', 'order', 'created_at')
+    list_filter = ('design', 'created_at')
+    search_fields = ('design__title', 'alt_text')
+    list_editable = ('order',)
+
+
+@admin.register(SizeInventory)
+class SizeInventoryAdmin(admin.ModelAdmin):
+    list_display = ('design', 'size', 'stock', 'is_active', 'availability_status')
+    list_filter = ('size', 'is_active', 'created_at')
+    search_fields = ('design__title',)
+    list_editable = ('stock', 'is_active')
+    
+    def availability_status(self, obj):
+        return obj.availability_status
+    availability_status.short_description = 'Status'
+
+
+@admin.register(Cart)
+class CartAdmin(admin.ModelAdmin):
+    list_display = ('session_id', 'customer_email', 'total_items', 'total_amount', 'created_at')
+    search_fields = ('session_id', 'customer_email')
+    readonly_fields = ('created_at', 'updated_at')
+    
+    def total_items(self, obj):
+        return obj.total_items
+    
+    def total_amount(self, obj):
+        return obj.total_amount
+
+
+@admin.register(CartItem)
+class CartItemAdmin(admin.ModelAdmin):
+    list_display = ('cart', 'design', 'size', 'quantity', 'unit_price', 'subtotal', 'is_available')
+    list_filter = ('size', 'created_at')
+    search_fields = ('design__title', 'cart__session_id')
+    
+    def subtotal(self, obj):
+        return obj.subtotal
+    
+    def is_available(self, obj):
+        return obj.is_available
+    is_available.boolean = True
 
 
 class SiteAssetForm(forms.ModelForm):

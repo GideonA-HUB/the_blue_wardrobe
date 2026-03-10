@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import (
-    Collection, Design, Material, SiteAsset, Order, OrderItem,
+    Collection, Design, DesignImage, SizeInventory, Cart, CartItem, Material, SiteAsset, Order, OrderItem,
     Customer, ContactMessage, Subscriber, Video, InfoCard
 )
 
@@ -11,13 +11,61 @@ class MaterialSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description']
 
 
+class DesignImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = DesignImage
+        fields = ['id', 'image', 'image_url', 'alt_text', 'order', 'created_at']
+    
+    def get_image_url(self, obj):
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        return None
+
+
+class SizeInventorySerializer(serializers.ModelSerializer):
+    availability_status = serializers.ReadOnlyField()
+    is_in_stock = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = SizeInventory
+        fields = ['id', 'size', 'stock', 'is_active', 'availability_status', 'is_in_stock']
+
+
 class DesignSerializer(serializers.ModelSerializer):
     collection_id = serializers.PrimaryKeyRelatedField(queryset=Collection.objects.all(), source='collection', write_only=True)
     collection = serializers.StringRelatedField(read_only=True)
+    images = DesignImageSerializer(many=True, read_only=True)
+    size_inventory = SizeInventorySerializer(many=True, read_only=True)
+    video_url = serializers.SerializerMethodField()
+    has_discount = serializers.ReadOnlyField()
+    effective_price = serializers.ReadOnlyField()
+    discount_percentage = serializers.ReadOnlyField()
+    total_stock = serializers.SerializerMethodField()
     
     class Meta:
         model = Design
-        fields = ['id', 'collection', 'collection_id', 'sku', 'title', 'description', 'price', 'sizes', 'images', 'stock']
+        fields = [
+            'id', 'collection', 'collection_id', 'sku', 'title', 'description', 
+            'price', 'discount_price', 'video', 'video_url', 'has_discount', 
+            'effective_price', 'discount_percentage', 'total_stock', 'images', 
+            'size_inventory', 'created_at', 'updated_at'
+        ]
+    
+    def get_video_url(self, obj):
+        if obj.video:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.video.url)
+            return obj.video.url
+        return None
+    
+    def get_total_stock(self, obj):
+        return sum(inventory.stock for inventory in obj.size_inventory.all())
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -83,6 +131,27 @@ class SubscriberSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscriber
         fields = ['id', 'email', 'subscribed_at']
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    design = DesignSerializer(read_only=True)
+    subtotal = serializers.ReadOnlyField()
+    unit_price = serializers.ReadOnlyField()
+    is_available = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = CartItem
+        fields = ['id', 'design', 'size', 'quantity', 'unit_price', 'subtotal', 'is_available']
+
+
+class CartSerializer(serializers.ModelSerializer):
+    items = CartItemSerializer(many=True, read_only=True)
+    total_items = serializers.ReadOnlyField()
+    total_amount = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Cart
+        fields = ['id', 'session_id', 'customer_email', 'items', 'total_items', 'total_amount', 'created_at', 'updated_at']
 
 
 class OrderItemSerializer(serializers.ModelSerializer):

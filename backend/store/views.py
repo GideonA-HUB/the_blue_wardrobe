@@ -11,13 +11,14 @@ from importlib import import_module
 import requests
 
 from .models import (
-    Collection, Design, SiteAsset, ContactMessage, Subscriber, Order,
+    Collection, Design, DesignImage, SizeInventory, Cart, CartItem, SiteAsset, ContactMessage, Subscriber, Order,
     Customer, OrderItem, PaymentLog, Video, InfoCard, Material
 )
 from .serializers import (
     CollectionSerializer, DesignSerializer, SiteAssetSerializer,
     ContactMessageSerializer, SubscriberSerializer, OrderSerializer,
-    VideoSerializer, InfoCardSerializer, MaterialSerializer, CustomerSerializer
+    VideoSerializer, InfoCardSerializer, MaterialSerializer, CustomerSerializer,
+    CartSerializer, CartItemSerializer
 )
 
 
@@ -40,8 +41,98 @@ class CollectionViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class DesignViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Design.objects.all()
+    queryset = Design.objects.prefetch_related('images', 'size_inventory').all()
     serializer_class = DesignSerializer
+
+
+class CartViewSet(viewsets.ModelViewSet):
+    serializer_class = CartSerializer
+    
+    def get_queryset(self):
+        session_id = self.request.session.session_key or self.request.META.get('HTTP_X_SESSION_ID')
+        if not session_id:
+            return Cart.objects.none()
+        return Cart.objects.prefetch_related('items__design').filter(session_id=session_id)
+    
+    def get_object(self):
+        session_id = self.request.session.session_key or self.request.META.get('HTTP_X_SESSION_ID')
+        if not session_id:
+            # Create session if it doesn't exist
+            if not self.request.session.session_key:
+                self.request.session.create()
+            session_id = self.request.session.session_key
+        
+        cart, created = Cart.objects.get_or_create(
+            session_id=session_id,
+            defaults={'customer_email': ''}
+        )
+        return cart
+    
+    def retrieve(self, request, *args, **kwargs):
+        cart = self.get_object()
+        serializer = self.get_serializer(cart)
+        return Response(serializer.data)
+    
+    def add_item(self, request):
+        """Add item to cart"""
+        cart = self.get_object()
+        design_id = request.data.get('design_id')
+        size = request.data.get('size')
+        quantity = request.data.get('quantity', 1)
+        
+        if not all([design_id, size]):
+            return Response({'detail': 'design_id and size are required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            design = Design.objects.get(id=design_id)
+            size_inventory = design.size_inventory.get(size=size, is_active=True)
+            
+            if size_inventory.stock < quantity:
+                return Response({'detail': 'Insufficient stock'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            cart_item, created = CartItem.objects.update_or_create(
+                cart=cart,
+                design=design,
+                size=size,
+                defaults={'quantity': quantity}
+            )
+            
+            if not created and cart_item.quantity != quantity:
+                cart_item.quantity = quantity
+                cart_item.save()
+            
+            serializer = CartSerializer(cart)
+            return Response(serializer.data)
+            
+        except Design.DoesNotExist:
+            return Response({'detail': 'Design not found'}, status=status.HTTP_404_NOT_FOUND)
+        except SizeInventory.DoesNotExist:
+            return Response({'detail': 'Size not available'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def remove_item(self, request):
+        """Remove item from cart"""
+        cart = self.get_object()
+        design_id = request.data.get('design_id')
+        size = request.data.get('size')
+        
+        try:
+            cart_item = CartItem.objects.get(
+                cart=cart,
+                design_id=design_id,
+                size=size
+            )
+            cart_item.delete()
+            serializer = CartSerializer(cart)
+            return Response(serializer.data)
+        except CartItem.DoesNotExist:
+            return Response({'detail': 'Item not found in cart'}, status=status.HTTP_404_NOT_FOUND)
+    
+    def clear_cart(self, request):
+        """Clear all items from cart"""
+        cart = self.get_object()
+        cart.items.all().delete()
+        serializer = CartSerializer(cart)
+        return Response(serializer.data)
 
 
 class SiteAssetViewSet(viewsets.ReadOnlyModelViewSet):
@@ -234,26 +325,41 @@ def verify_paystack(request):
             paystack_reference=reference,
         )
 
-        # Create order items and adjust inventory
+        # Create order items and adjust size-specific inventory
         for item in cart:
             design_id = item.get('id')
-            size = item.get('size') or ''
+            size = item.get('size')
             qty = int(item.get('qty') or 1)
             design = Design.objects.filter(id=design_id).select_for_update().first()
             if not design:
                 continue
-            unit_price = design.price
-            OrderItem.objects.create(
-                order=order,
-                design=design,
-                size=size,
-                quantity=qty,
-                unit_price=unit_price,
-            )
-            # basic inventory tracking
-            if design.stock is not None:
-                design.stock = max(0, design.stock - qty)
-                design.save(update_fields=['stock'])
+            
+            # Get size inventory and update stock
+            try:
+                size_inventory = SizeInventory.objects.filter(
+                    design=design, size=size, is_active=True
+                ).select_for_update().first()
+                
+                if not size_inventory or size_inventory.stock < qty:
+                    # Skip this item if no inventory available
+                    continue
+                
+                unit_price = design.effective_price
+                OrderItem.objects.create(
+                    order=order,
+                    design=design,
+                    size=size,
+                    quantity=qty,
+                    unit_price=unit_price,
+                )
+                
+                # Update size-specific inventory
+                size_inventory.stock = max(0, size_inventory.stock - qty)
+                size_inventory.save(update_fields=['stock'])
+                
+            except SizeInventory.DoesNotExist:
+                # Skip this item if size inventory doesn't exist
+                continue
 
         PaymentLog.objects.create(
             order=order,

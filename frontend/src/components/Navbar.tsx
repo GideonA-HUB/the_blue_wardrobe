@@ -1,11 +1,20 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useCart } from '../store/cart'
 import LogoSpinner from './LogoSpinner'
 import api from '../lib/api'
 
 export default function Navbar() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [faviconUrl, setFaviconUrl] = useState<string | null>(null)
+  const [cartCount, setCartCount] = useState(0)
+  const localItems = useCart((s) => s.items)
+
+  // Calculate cart count from local items
+  useEffect(() => {
+    const count = localItems.reduce((sum, item) => sum + item.qty, 0)
+    setCartCount(count)
+  }, [localItems])
 
   useEffect(() => {
     api
@@ -89,9 +98,14 @@ export default function Navbar() {
           </Link>
           <Link 
             to="/cart" 
-            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full"
+            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full flex items-center gap-2"
           >
             Cart
+            {cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            )}
           </Link>
         </div>
       </div>

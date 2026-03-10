@@ -34,14 +34,121 @@ class Design(models.Model):
     sku = models.CharField(max_length=100, unique=True)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    sizes = models.JSONField(default=list, blank=True)  # e.g., ["S","M","L"]
-    images = models.JSONField(default=list, blank=True)  # store Cloudinary public_ids or filenames
-    stock = models.IntegerField(default=0)
+    price = models.DecimalField(max_digits=10, decimal_places=2, help_text='Price in NGN')
+    discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text='Discounted price in NGN')
+    video = models.FileField(upload_to='designs/videos/', null=True, blank=True, help_text='Product video file')
     created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.sku} - {self.title}"
+
+    @property
+    def has_discount(self):
+        return self.discount_price is not None and self.discount_price < self.price
+
+    @property
+    def effective_price(self):
+        return self.discount_price if self.has_discount else self.price
+
+    @property
+    def discount_percentage(self):
+        if self.has_discount:
+            return int(((self.price - self.discount_price) / self.price) * 100)
+        return 0
+
+
+class DesignImage(models.Model):
+    design = models.ForeignKey(Design, related_name='images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='designs/images/')
+    alt_text = models.CharField(max_length=255, blank=True)
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
+
+    def __str__(self):
+        return f"Image for {self.design.title}"
+
+
+class SizeInventory(models.Model):
+    SIZE_CHOICES = [(i, str(i)) for i in range(8, 21)]  # Sizes 8 to 20
+    
+    design = models.ForeignKey(Design, related_name='size_inventory', on_delete=models.CASCADE)
+    size = models.IntegerField(choices=SIZE_CHOICES)
+    stock = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['design', 'size']
+        ordering = ['size']
+
+    def __str__(self):
+        return f"{self.design.title} - Size {self.size} ({self.stock} in stock)"
+
+    @property
+    def is_in_stock(self):
+        return self.stock > 0 and self.is_active
+
+    @property
+    def availability_status(self):
+        if not self.is_active:
+            return "unavailable"
+        elif self.stock == 0:
+            return "out_of_stock"
+        elif self.stock <= 5:
+            return "low_stock"
+        else:
+            return "available"
+
+
+class Cart(models.Model):
+    session_id = models.CharField(max_length=255, unique=True)
+    customer_email = models.EmailField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Cart {self.session_id} ({self.items.count()} items)"
+
+    @property
+    def total_items(self):
+        return sum(item.quantity for item in self.items.all())
+
+    @property
+    def total_amount(self):
+        return sum(item.subtotal for item in self.items.all())
+
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
+    design = models.ForeignKey(Design, on_delete=models.CASCADE)
+    size = models.IntegerField(choices=SizeInventory.SIZE_CHOICES)
+    quantity = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['cart', 'design', 'size']
+
+    def __str__(self):
+        return f"{self.quantity} x {self.design.title} (Size {self.size})"
+
+    @property
+    def unit_price(self):
+        return self.design.effective_price
+
+    @property
+    def subtotal(self):
+        return self.unit_price * self.quantity
+
+    @property
+    def is_available(self):
+        size_inventory = self.design.size_inventory.filter(size=self.size, is_active=True).first()
+        return size_inventory and size_inventory.stock >= self.quantity
 
 
 class SiteAsset(models.Model):
@@ -85,12 +192,12 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
     design = models.ForeignKey(Design, on_delete=models.PROTECT)
-    size = models.CharField(max_length=20, blank=True)
+    size = models.IntegerField(choices=SizeInventory.SIZE_CHOICES)
     quantity = models.PositiveIntegerField(default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
-        return f"{self.quantity} x {self.design.title}"
+        return f"{self.quantity} x {self.design.title} (Size {self.size})"
 
 
 class PaymentLog(models.Model):

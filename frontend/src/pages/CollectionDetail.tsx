@@ -13,7 +13,20 @@ type Design = {
   sku: string
   title: string
   price: number
-  images: string[]
+  discount_price?: number
+  has_discount: boolean
+  effective_price: number
+  discount_percentage: number
+  total_stock: number
+  images: DesignImage[]
+}
+
+type DesignImage = {
+  id: number
+  image: string
+  image_url: string
+  alt_text: string
+  order: number
 }
 
 type Collection = {
@@ -118,10 +131,10 @@ export default function CollectionDetail() {
                 }}
               >
                 <div className="h-80 bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden relative">
-                  {d.images?.[0] ? (
+                  {d.images?.length > 0 ? (
                     <img
-                      src={d.images[0]}
-                      alt={d.title}
+                      src={d.images[0].image_url}
+                      alt={d.images[0].alt_text || d.title}
                       className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                     />
                   ) : (
@@ -136,6 +149,16 @@ export default function CollectionDetail() {
                       </div>
                     </div>
                   )}
+                  {d.has_discount && (
+                    <div className="absolute top-4 left-4 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                      {d.discount_percentage}% OFF
+                    </div>
+                  )}
+                  {d.total_stock === 0 && (
+                    <div className="absolute top-4 right-4 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                      OUT OF STOCK
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="p-6">
@@ -145,9 +168,25 @@ export default function CollectionDetail() {
                   <h3 className="text-lg font-serif font-semibold text-blue-wardrobe-dark mb-2 group-hover:text-blue-wardrobe-light transition-colors">
                     {d.title}
                   </h3>
-                  <p className="text-lg font-bold text-blue-wardrobe-dark">
-                    NGN {d.price.toLocaleString()}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      {d.has_discount && (
+                        <div className="text-sm text-red-600 line-through">
+                          NGN {d.price.toLocaleString()}
+                        </div>
+                      )}
+                      <p className="text-lg font-bold text-blue-wardrobe-dark">
+                        NGN {d.effective_price.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-sm font-medium ${
+                        d.total_stock > 0 ? 'text-emerald-600' : 'text-red-600'
+                      }`}>
+                        {d.total_stock > 0 ? `${d.total_stock} in stock` : 'Out of stock'}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </Link>
             ))}
