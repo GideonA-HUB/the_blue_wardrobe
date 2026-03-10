@@ -36,7 +36,13 @@ class Design(models.Model):
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, help_text='Price in NGN')
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text='Discounted price in NGN')
-    video = models.FileField(upload_to='designs/videos/', null=True, blank=True, help_text='Product video file')
+    video = models.FileField(
+        upload_to='designs/videos/', 
+        null=True, 
+        blank=True, 
+        help_text='Product video file (MP4, WebM, etc.)',
+        storage='video_storage'
+    )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
