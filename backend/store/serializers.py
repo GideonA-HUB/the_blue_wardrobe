@@ -27,7 +27,7 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = ['id', 'code', 'title', 'story', 'materials', 'material_ids', 'featured_image', 'designs']
+        fields = ['id', 'code', 'title', 'story', 'materials', 'material_ids', 'featured_image', 'is_featured', 'order', 'designs', 'created_at']
 
     def create(self, validated_data):
         materials = validated_data.pop('materials', [])

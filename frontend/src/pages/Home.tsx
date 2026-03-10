@@ -12,6 +12,8 @@ type Collection = {
   title: string
   story: string
   featured_image?: string
+  is_featured: boolean
+  order: number
 }
 
 export default function Home() {
@@ -19,7 +21,7 @@ export default function Home() {
 
   useEffect(() => {
     document.title = 'THE BLUE WARDROBE — Luxury Dress Diaries'
-    api.get('/collections/').then((r) => setCollections(r.data.slice(0, 3))).catch(() => {})
+    api.get('/collections/?featured=true').then((r) => setCollections(r.data.slice(0, 3))).catch(() => {})
   }, [])
 
   return (
@@ -28,27 +30,37 @@ export default function Home() {
       
       {/* Featured Collections Section */}
       <section className="mt-16 md:mt-24 mb-20">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-serif font-semibold text-blue-wardrobe-dark mb-4">
-            Featured Collections
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Explore curated Dress Diaries collections crafted from rare fabrics sourced globally.
-          </p>
+        <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="text-center md:text-left">
+            <h2 className="mb-4 text-4xl font-serif font-semibold text-blue-wardrobe-dark md:text-5xl">
+              Featured Collections
+            </h2>
+            <p className="mx-auto max-w-2xl text-lg text-gray-600 md:mx-0">
+              Explore curated Dress Diaries collections crafted from rare fabrics sourced globally.
+            </p>
+          </div>
+          <div className="flex justify-center md:justify-end">
+            <Link
+              to="/collections"
+              className="inline-flex items-center rounded-full border border-blue-wardrobe-light/25 bg-white px-5 py-3 text-sm font-medium text-blue-wardrobe-dark transition-colors hover:bg-blue-wardrobe-light hover:text-white"
+            >
+              See more collections
+            </Link>
+          </div>
         </div>
         
         {collections.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 lg:gap-8">
             {collections.map((c, index) => (
               <Link
                 to={`/collections/${c.id}`}
                 key={c.id}
-                className="group luxury-shadow rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white transform hover:-translate-y-2"
+                className="group luxury-shadow overflow-hidden rounded-lg bg-white transition-all duration-500 hover:-translate-y-2 hover:luxury-shadow-lg"
                 style={{
                   animation: `fadeInUp 0.6s ease-out ${index * 0.15}s both`,
                 }}
               >
-                <div className="h-64 bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden relative">
+                <div className="relative h-52 overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 sm:h-56 md:h-64">
                   {c.featured_image ? (
                     <img
                       src={c.featured_image}
@@ -69,8 +81,8 @@ export default function Home() {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-serif font-semibold text-blue-wardrobe-dark mb-2 group-hover:text-blue-wardrobe-light transition-colors">
+                <div className="p-4 sm:p-5 md:p-6">
+                  <h3 className="mb-2 text-lg font-serif font-semibold text-blue-wardrobe-dark transition-colors group-hover:text-blue-wardrobe-light sm:text-xl">
                     {c.code} — {c.title}
                   </h3>
                   <p className="mt-2 text-sm text-gray-600 line-clamp-3 leading-relaxed">

@@ -32,6 +32,9 @@ type Collection = {
   title: string
   story: string
   featured_image?: string
+  is_featured: boolean
+  order: number
+  created_at: string
 }
 
 type Video = {
@@ -546,6 +549,9 @@ export default function AdminDashboard() {
                   >
                     <div className="font-semibold text-blue-wardrobe-dark">{collection.code} — {collection.title}</div>
                     <div className="text-sm text-gray-600 mt-2 line-clamp-2">{collection.story}</div>
+                    <div className="mt-3 text-xs text-gray-500">
+                      Order: {collection.order} | {collection.is_featured ? 'Featured' : 'Not featured'}
+                    </div>
                     <div className="flex gap-2 mt-4">
                       <button
                         onClick={() => setShowModal({ type: 'collection', item: collection })}
@@ -983,7 +989,7 @@ function Modal({ type, item, collections, materials, onClose, onSave }: {
   function getDefaultData(type: string) {
     switch (type) {
       case 'collection':
-        return { code: '', title: '', story: '', material_ids: [] }
+        return { code: '', title: '', story: '', material_ids: [], order: 0, is_featured: true }
       case 'design':
         return { sku: '', title: '', description: '', price: '', sizes: [], stock: 0, collection_id: '', images: [] }
       case 'video':
@@ -999,7 +1005,18 @@ function Modal({ type, item, collections, materials, onClose, onSave }: {
     e.preventDefault()
     setSaving(true)
     try {
-      await onSave(formData)
+      if (type === 'collection') {
+        await onSave({
+          code: formData.code,
+          title: formData.title,
+          story: formData.story,
+          order: Number(formData.order ?? 0),
+          is_featured: Boolean(formData.is_featured),
+          ...(Array.isArray(formData.material_ids) ? { material_ids: formData.material_ids } : {}),
+        })
+      } else {
+        await onSave(formData)
+      }
     } finally {
       setSaving(false)
     }
@@ -1060,6 +1077,28 @@ function Modal({ type, item, collections, materials, onClose, onSave }: {
                   rows={4}
                   className="w-full border-2 border-blue-wardrobe-light/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light"
                 />
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Display Order</label>
+                  <input
+                    type="number"
+                    value={formData.order ?? 0}
+                    onChange={(e) => setFormData({ ...formData, order: Number(e.target.value) })}
+                    className="w-full border-2 border-blue-wardrobe-light/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(formData.is_featured)}
+                      onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
+                      className="w-4 h-4 text-blue-wardrobe-light rounded focus:ring-blue-wardrobe-light"
+                    />
+                    <span className="text-sm text-gray-700">Show in featured collections</span>
+                  </label>
+                </div>
               </div>
             </>
           )}

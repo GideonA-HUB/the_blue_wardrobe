@@ -15,8 +15,11 @@ class MaterialAdmin(admin.ModelAdmin):
 
 @admin.register(Collection)
 class CollectionAdmin(admin.ModelAdmin):
-    list_display = ('code', 'title', 'created_at')
+    list_display = ('code', 'title', 'is_featured', 'order', 'created_at')
+    list_filter = ('is_featured', 'created_at')
     search_fields = ('code', 'title')
+    list_editable = ('is_featured', 'order')
+    ordering = ('order', 'code', '-created_at')
     filter_horizontal = ('materials',)
 
 

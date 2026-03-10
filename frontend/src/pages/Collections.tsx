@@ -8,6 +8,8 @@ type Collection = {
   title: string
   story: string
   featured_image?: string
+  is_featured: boolean
+  order: number
 }
 
 export default function Collections() {
@@ -30,17 +32,17 @@ export default function Collections() {
       </div>
       
       {collections.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 lg:gap-8">
           {collections.map((c, index) => (
             <Link
               to={`/collections/${c.id}`}
               key={c.id}
-              className="group luxury-shadow rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white transform hover:-translate-y-2"
+              className="group luxury-shadow overflow-hidden rounded-lg bg-white transition-all duration-500 hover:-translate-y-2 hover:luxury-shadow-lg"
               style={{
                 animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
               }}
             >
-              <div className="h-64 bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden relative">
+              <div className="relative h-52 overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 sm:h-56 md:h-64">
                 {c.featured_image ? (
                   <img
                     src={c.featured_image}
@@ -61,8 +63,8 @@ export default function Collections() {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
-              <div className="p-6">
-                <h3 className="text-xl font-serif font-semibold text-blue-wardrobe-dark mb-2 group-hover:text-blue-wardrobe-light transition-colors">
+              <div className="p-4 sm:p-5 md:p-6">
+                <h3 className="mb-2 text-lg font-serif font-semibold text-blue-wardrobe-dark transition-colors group-hover:text-blue-wardrobe-light sm:text-xl">
                   {c.code} — {c.title}
                 </h3>
                 <p className="text-sm text-gray-600 mt-2 line-clamp-3 leading-relaxed">

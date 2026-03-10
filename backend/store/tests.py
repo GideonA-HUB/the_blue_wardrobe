@@ -76,6 +76,19 @@ class StoreApiTests(TestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['ceo_name'], 'Gideon A.')
 
+    def test_collections_endpoint_orders_by_order_and_filters_featured(self):
+        Collection.objects.create(code='DDC002', title='Dress Diaries Collections 002', order=2, is_featured=True)
+        Collection.objects.create(code='DDC001', title='Dress Diaries Collections 001', order=1, is_featured=True)
+        Collection.objects.create(code='DDC003', title='Dress Diaries Collections 003', order=0, is_featured=False)
+
+        all_response = self.client.get('/api/collections/')
+        self.assertEqual(all_response.status_code, 200)
+        self.assertEqual([item['code'] for item in all_response.data], ['DDC003', 'DDC001', 'DDC002'])
+
+        featured_response = self.client.get('/api/collections/?featured=true')
+        self.assertEqual(featured_response.status_code, 200)
+        self.assertEqual([item['code'] for item in featured_response.data], ['DDC001', 'DDC002'])
+
     def test_blog_detail_comment_and_like_flow(self):
         post = BlogPost.objects.create(
             title='The Future of The Blue Wardrobe',

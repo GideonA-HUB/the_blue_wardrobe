@@ -18,10 +18,12 @@ class Collection(models.Model):
     story = models.TextField(blank=True)
     materials = models.ManyToManyField(Material, blank=True)
     featured_image = models.ImageField(upload_to='collections/', blank=True, null=True)
+    is_featured = models.BooleanField(default=True)
+    order = models.IntegerField(default=0, help_text='Display order (lower numbers first)')
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['order', 'code', '-created_at']
 
     def __str__(self):
         return f"{self.code} - {self.title}"

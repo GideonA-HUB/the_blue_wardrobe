@@ -29,8 +29,14 @@ def get_resend_client():
 
 
 class CollectionViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Collection.objects.prefetch_related('materials', 'designs').all()
     serializer_class = CollectionSerializer
+
+    def get_queryset(self):
+        queryset = Collection.objects.prefetch_related('materials', 'designs').all().order_by('order', 'code', '-created_at')
+        featured = (self.request.query_params.get('featured') or '').strip().lower()
+        if featured in {'1', 'true', 'yes'}:
+            queryset = queryset.filter(is_featured=True)
+        return queryset
 
 
 class DesignViewSet(viewsets.ReadOnlyModelViewSet):
@@ -60,7 +66,7 @@ class InfoCardViewSet(viewsets.ReadOnlyModelViewSet):
 
 # Admin viewsets with full CRUD
 class AdminCollectionViewSet(viewsets.ModelViewSet):
-    queryset = Collection.objects.prefetch_related('materials', 'designs').all()
+    queryset = Collection.objects.prefetch_related('materials', 'designs').all().order_by('order', 'code', '-created_at')
     serializer_class = CollectionSerializer
     permission_classes = [IsAdminUser]
 

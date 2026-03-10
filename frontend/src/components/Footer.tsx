@@ -72,20 +72,20 @@ export default function Footer() {
   ]
 
   return (
-    <footer className="bg-blue-wardrobe-dark text-white mt-20">
+    <footer className="mt-20 bg-gradient-to-br from-[#2d4f7d] via-[#28466f] to-[#223b60] text-white">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-1 md:col-span-2">
-            <h3 className="font-serif text-2xl font-semibold mb-4">THE BLUE WARDROBE</h3>
-            <p className="text-gray-300 text-sm leading-relaxed max-w-md mb-6">
+            <h3 className="mb-4 font-serif text-2xl font-semibold !text-white">THE BLUE WARDROBE</h3>
+            <p className="mb-6 max-w-md text-sm leading-relaxed text-blue-50/95">
               Curating rare fabrics from around the world, transformed into timeless luxury designs.
               Each piece in The Dress Diaries Collection tells a story of craftsmanship and global elegance.
             </p>
             
             {/* Social Media Links */}
             <div>
-              <h4 className="font-semibold mb-3 text-sm uppercase tracking-wider">Connect With Us</h4>
+              <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider !text-blue-50">Connect With Us</h4>
               <div className="flex flex-wrap gap-3">
                 {socialLinks.map((social) => (
                   <a
@@ -93,7 +93,7 @@ export default function Footer() {
                     href={social.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:-translate-y-1"
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 transition-all duration-300 hover:-translate-y-1 hover:scale-110 hover:bg-white/25"
                     aria-label={social.name}
                     title={social.name}
                   >
@@ -106,25 +106,25 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider">Explore</h4>
-            <ul className="space-y-2 text-sm text-gray-300">
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider !text-blue-50">Explore</h4>
+            <ul className="space-y-2 text-sm text-blue-50/95">
               <li>
-                <Link to="/about" className="hover:text-white transition-colors">
+                <Link to="/about" className="transition-colors hover:text-white">
                   About the Brand
                 </Link>
               </li>
               <li>
-                <Link to="/blog" className="hover:text-white transition-colors">
+                <Link to="/blog" className="transition-colors hover:text-white">
                   Journal
                 </Link>
               </li>
               <li>
-                <Link to="/collections" className="hover:text-white transition-colors">
+                <Link to="/collections" className="transition-colors hover:text-white">
                   Collections
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-white transition-colors">
+                <Link to="/contact" className="transition-colors hover:text-white">
                   Contact
                 </Link>
               </li>
@@ -133,20 +133,20 @@ export default function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider">Information</h4>
-            <ul className="space-y-2 text-sm text-gray-300">
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider !text-blue-50">Information</h4>
+            <ul className="space-y-2 text-sm text-blue-50/95">
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="#" className="transition-colors hover:text-white">
                   Shipping & Returns
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="#" className="transition-colors hover:text-white">
                   Privacy Policy
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="#" className="transition-colors hover:text-white">
                   Terms of Service
                 </a>
               </li>
@@ -154,11 +154,11 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-gray-700 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-400 text-xs">
+        <div className="mt-12 flex flex-col items-center justify-between border-t border-white/15 pt-8 md:flex-row">
+          <p className="text-xs text-blue-100/80">
             © {new Date().getFullYear()} THE BLUE WARDROBE. All rights reserved.
           </p>
-          <p className="text-gray-400 text-xs mt-2 md:mt-0">
+          <p className="mt-2 text-xs text-blue-100/80 md:mt-0">
             Crafted with elegance. Delivered globally.
           </p>
         </div>
