@@ -122,11 +122,11 @@ export default function Product() {
             )}
           </div>
           {design.video_url && (
-            <div className="mt-3 md:mt-4 luxury-shadow rounded-lg overflow-hidden">
+            <div className="mt-3 md:mt-4 luxury-shadow rounded-lg overflow-hidden bg-black">
               <video
                 src={design.video_url}
                 controls
-                className="w-full h-auto max-h-64 md:max-h-80 lg:max-h-96 object-cover"
+                className="w-full h-auto max-h-64 md:max-h-80 lg:max-h-96 object-contain"
                 poster={design.images?.[0]?.image_url}
               >
                 Your browser does not support the video tag.
