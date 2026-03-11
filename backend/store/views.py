@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import api_view, authentication_classes, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
@@ -76,6 +76,7 @@ class CartViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(cart)
         return Response(serializer.data)
     
+    @action(detail=False, methods=['post'])
     def add_item(self, request):
         """Add item to cart"""
         cart = self.get_object()
@@ -112,6 +113,7 @@ class CartViewSet(viewsets.ModelViewSet):
         except SizeInventory.DoesNotExist:
             return Response({'detail': 'Size not available'}, status=status.HTTP_400_BAD_REQUEST)
     
+    @action(detail=False, methods=['post'])
     def remove_item(self, request):
         """Remove item from cart"""
         cart = self.get_object()
@@ -130,6 +132,7 @@ class CartViewSet(viewsets.ModelViewSet):
         except CartItem.DoesNotExist:
             return Response({'detail': 'Item not found in cart'}, status=status.HTTP_404_NOT_FOUND)
     
+    @action(detail=False, methods=['post'])
     def clear_cart(self, request):
         """Clear all items from cart"""
         cart = self.get_object()
