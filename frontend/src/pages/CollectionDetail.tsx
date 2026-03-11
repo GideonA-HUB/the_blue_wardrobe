@@ -63,20 +63,41 @@ export default function CollectionDetail() {
     <div className="py-8 md:py-12">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
         <div>
-          <div className="luxury-shadow-lg rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100">
+          <div className="luxury-shadow-lg rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 cursor-pointer group"
+               onClick={() => {
+                 if (collection.featured_image) {
+                   // Create modal for full image viewing
+                   const modal = document.createElement('div');
+                   modal.className = 'fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4';
+                   modal.innerHTML = `
+                     <div class="relative max-w-6xl max-h-full">
+                       <img src="${collection.featured_image}" alt="${collection.title}" class="max-w-full max-h-full object-contain">
+                       <button class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-75 transition-all text-xl">
+                         ✕
+                       </button>
+                     </div>
+                   `;
+                   modal.onclick = (e) => {
+                     if (e.target === modal || e.target.tagName === 'BUTTON') {
+                       document.body.removeChild(modal);
+                     }
+                   };
+                   document.body.appendChild(modal);
+                 }
+               }}>
             {collection.featured_image ? (
               <img
                 src={collection.featured_image}
                 alt={collection.title}
-                className="w-full h-48 sm:h-56 md:h-64 lg:h-72 object-cover"
+                className="w-full h-64 sm:h-80 md:h-96 lg:h-[500px] object-cover transform group-hover:scale-105 transition-transform duration-500"
               />
             ) : (
-              <div className="h-48 sm:h-56 md:h-64 lg:h-72 w-full flex items-center justify-center">
+              <div className="h-64 sm:h-80 md:h-96 lg:h-[500px] w-full flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-blue-wardrobe-dark font-serif text-xl md:text-2xl font-semibold mb-2">
+                  <div className="text-blue-wardrobe-dark font-serif text-2xl md:text-3xl font-semibold mb-2">
                     {collection.code}
                   </div>
-                  <div className="text-gray-500 text-xs md:text-sm tracking-wider uppercase">
+                  <div className="text-gray-500 text-sm md:text-base tracking-wider uppercase">
                     THE DRESS DIARIES
                   </div>
                 </div>
@@ -120,7 +141,7 @@ export default function CollectionDetail() {
           Designs in this diary
         </h2>
         {collection.designs.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
             {collection.designs.map((d, index) => (
               <Link
                 to={`/designs/${d.id}`}
@@ -130,12 +151,32 @@ export default function CollectionDetail() {
                   animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
                 }}
               >
-                <div className="h-40 sm:h-48 md:h-52 lg:h-56 bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden relative">
+                <div className="h-56 sm:h-64 md:h-72 lg:h-80 bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden relative cursor-pointer group">
                   {d.images?.length > 0 ? (
                     <img
                       src={d.images[0].image_url}
                       alt={d.images[0].alt_text || d.title}
-                      className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Create modal for full image viewing
+                        const modal = document.createElement('div');
+                        modal.className = 'fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4';
+                        modal.innerHTML = `
+                          <div class="relative max-w-6xl max-h-full">
+                            <img src="${d.images[0].image_url}" alt="${d.images[0].alt_text || d.title}" class="max-w-full max-h-full object-contain">
+                            <button class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-75 transition-all text-xl">
+                              ✕
+                            </button>
+                          </div>
+                        `;
+                        modal.onclick = (e) => {
+                          if (e.target === modal || e.target.tagName === 'BUTTON') {
+                            document.body.removeChild(modal);
+                          }
+                        };
+                        document.body.appendChild(modal);
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -161,11 +202,11 @@ export default function CollectionDetail() {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
-                <div className="p-3 md:p-4">
+                <div className="p-4 md:p-6">
                   <div className="text-xs tracking-[0.15em] uppercase text-gray-500 mb-2">
                     {collection.code}
                   </div>
-                  <h3 className="text-sm md:text-base font-serif font-semibold text-blue-wardrobe-dark mb-2 group-hover:text-blue-wardrobe-light transition-colors">
+                  <h3 className="text-base md:text-lg font-serif font-semibold text-blue-wardrobe-dark mb-2 group-hover:text-blue-wardrobe-light transition-colors">
                     {d.title}
                   </h3>
                   <div className="flex items-center justify-between">
