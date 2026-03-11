@@ -9,6 +9,8 @@ from django.utils import timezone
 from django.conf import settings
 from importlib import import_module
 import requests
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import (
     Collection, Design, DesignImage, SizeInventory, Cart, CartItem, SiteAsset, ContactMessage, Subscriber, Order,
@@ -45,6 +47,7 @@ class DesignViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = DesignSerializer
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class CartViewSet(viewsets.ModelViewSet):
     serializer_class = CartSerializer
     

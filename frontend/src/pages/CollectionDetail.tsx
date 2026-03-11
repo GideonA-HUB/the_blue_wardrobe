@@ -68,15 +68,15 @@ export default function CollectionDetail() {
               <img
                 src={collection.featured_image}
                 alt={collection.title}
-                className="w-full h-full object-cover"
+                className="w-full h-64 md:h-80 lg:h-96 object-cover"
               />
             ) : (
-              <div className="h-96 w-full flex items-center justify-center">
+              <div className="h-64 md:h-80 lg:h-96 w-full flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-blue-wardrobe-dark font-serif text-3xl font-semibold mb-2">
+                  <div className="text-blue-wardrobe-dark font-serif text-2xl md:text-3xl font-semibold mb-2">
                     {collection.code}
                   </div>
-                  <div className="text-gray-500 text-sm tracking-wider uppercase">
+                  <div className="text-gray-500 text-xs md:text-sm tracking-wider uppercase">
                     THE DRESS DIARIES
                   </div>
                 </div>
@@ -120,7 +120,7 @@ export default function CollectionDetail() {
           Designs in this diary
         </h2>
         {collection.designs.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
             {collection.designs.map((d, index) => (
               <Link
                 to={`/designs/${d.id}`}
@@ -130,7 +130,7 @@ export default function CollectionDetail() {
                   animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
                 }}
               >
-                <div className="h-80 bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden relative">
+                <div className="h-48 sm:h-56 md:h-64 lg:h-72 bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden relative">
                   {d.images?.length > 0 ? (
                     <img
                       src={d.images[0].image_url}
@@ -161,11 +161,11 @@ export default function CollectionDetail() {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
-                <div className="p-6">
+                <div className="p-4 md:p-6">
                   <div className="text-xs tracking-[0.15em] uppercase text-gray-500 mb-2">
                     {collection.code}
                   </div>
-                  <h3 className="text-lg font-serif font-semibold text-blue-wardrobe-dark mb-2 group-hover:text-blue-wardrobe-light transition-colors">
+                  <h3 className="text-base md:text-lg font-serif font-semibold text-blue-wardrobe-dark mb-2 group-hover:text-blue-wardrobe-light transition-colors">
                     {d.title}
                   </h3>
                   <div className="flex items-center justify-between">

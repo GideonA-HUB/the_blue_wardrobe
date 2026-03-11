@@ -84,16 +84,16 @@ export default function Product() {
               <img
                 src={design.images[0].image_url}
                 alt={design.images[0].alt_text || design.title}
-                className="w-full h-auto object-cover transform group-hover:scale-110 transition-transform duration-700"
+                className="w-full h-auto max-h-96 md:max-h-[500px] object-cover transform group-hover:scale-105 transition-transform duration-700"
                 style={{ animation: 'fadeIn 0.8s ease-out 0.2s both' }}
               />
             ) : (
-              <div className="w-full h-96 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+              <div className="w-full h-64 md:h-80 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-blue-wardrobe-dark font-serif text-2xl font-semibold mb-2">
+                  <div className="text-blue-wardrobe-dark font-serif text-lg md:text-xl font-semibold mb-2">
                     {design.sku}
                   </div>
-                  <div className="text-gray-500 text-sm tracking-wider uppercase">
+                  <div className="text-gray-500 text-xs md:text-sm tracking-wider uppercase">
                     THE BLUE WARDROBE
                   </div>
                 </div>
@@ -101,11 +101,11 @@ export default function Product() {
             )}
           </div>
           {design.video_url && (
-            <div className="mt-4 luxury-shadow rounded-lg overflow-hidden">
+            <div className="mt-3 md:mt-4 luxury-shadow rounded-lg overflow-hidden">
               <video
                 src={design.video_url}
                 controls
-                className="w-full h-auto"
+                className="w-full h-auto max-h-48 md:max-h-64 object-cover"
                 poster={design.images?.[0]?.image_url}
               >
                 Your browser does not support the video tag.
@@ -113,14 +113,37 @@ export default function Product() {
             </div>
           )}
           {design.images && design.images.length > 1 && (
-            <div className="grid grid-cols-4 gap-2 mt-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 md:gap-2 mt-3 md:mt-4">
               {design.images.slice(1, 5).map((img, idx) => (
                 <div
                   key={img.id}
                   className="luxury-shadow rounded overflow-hidden cursor-pointer hover:opacity-75 transition-opacity animate-scale-in"
                   style={{ animation: `scaleIn 0.5s ease-out ${0.4 + idx * 0.1}s both` }}
+                  onClick={() => {
+                    // Create modal or lightbox for image viewing
+                    const modal = document.createElement('div');
+                    modal.className = 'fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4';
+                    modal.innerHTML = `
+                      <div class="relative max-w-4xl max-h-full">
+                        <img src="${img.image_url}" alt="${img.alt_text || design.title}" class="max-w-full max-h-full object-contain">
+                        <button class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75 transition-all">
+                          ✕
+                        </button>
+                      </div>
+                    `;
+                    modal.onclick = (e) => {
+                      if (e.target === modal || e.target.tagName === 'BUTTON') {
+                        document.body.removeChild(modal);
+                      }
+                    };
+                    document.body.appendChild(modal);
+                  }}
                 >
-                  <img src={img.image_url} alt={img.alt_text || `${design.title} ${idx + 2}`} className="w-full h-20 object-cover" />
+                  <img 
+                    src={img.image_url} 
+                    alt={img.alt_text || `${design.title} ${idx + 2}`} 
+                    className="w-full h-16 md:h-20 object-cover hover:scale-110 transition-transform duration-300" 
+                  />
                 </div>
               ))}
             </div>
@@ -129,17 +152,17 @@ export default function Product() {
 
         {/* Product Details */}
         <div className="animate-slide-right">
-          <div className="flex items-start justify-between mb-4">
-            <h1 className="text-3xl md:text-4xl font-serif font-semibold text-blue-wardrobe-dark tracking-tight">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-2">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-serif font-semibold text-blue-wardrobe-dark tracking-tight">
               {design.title}
             </h1>
-            <div className="text-right ml-4">
+            <div className="text-right sm:ml-4">
               {design.has_discount && (
-                <div className="text-red-600 text-sm font-medium line-through">
+                <div className="text-red-600 text-sm md:text-base font-medium line-through">
                   NGN {design.price.toLocaleString()}
                 </div>
               )}
-              <p className="text-3xl font-bold text-blue-wardrobe-dark">
+              <p className="text-2xl md:text-3xl font-bold text-blue-wardrobe-dark">
                 NGN {design.effective_price.toLocaleString()}
               </p>
               {design.has_discount && (
@@ -150,8 +173,8 @@ export default function Product() {
             </div>
           </div>
           
-          <div className="border-t border-gray-200 pt-6 mb-6">
-            <p className="text-gray-700 leading-relaxed text-base">{design.description || 'A timeless piece from The Dress Diaries Collection.'}</p>
+          <div className="border-t border-gray-200 pt-4 md:pt-6 mb-4 md:mb-6">
+            <p className="text-gray-700 leading-relaxed text-sm md:text-base">{design.description || 'A timeless piece from The Dress Diaries Collection.'}</p>
           </div>
 
           <div className="mb-6">
