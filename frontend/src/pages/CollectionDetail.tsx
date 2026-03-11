@@ -68,11 +68,11 @@ export default function CollectionDetail() {
                  if (collection.featured_image) {
                    // Create modal for full image viewing
                    const modal = document.createElement('div');
-                   modal.className = 'fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4';
+                   modal.className = 'fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 overflow-auto';
                    modal.innerHTML = `
-                     <div class="relative max-w-6xl max-h-full">
-                       <img src="${collection.featured_image}" alt="${collection.title}" class="max-w-full max-h-full object-contain">
-                       <button class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-75 transition-all text-xl">
+                     <div class="relative flex items-center justify-center min-h-full">
+                       <img src="${collection.featured_image}" alt="${collection.title}" class="max-w-full max-h-screen object-contain">
+                       <button class="fixed top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-75 transition-all text-xl">
                          ✕
                        </button>
                      </div>
@@ -161,11 +161,11 @@ export default function CollectionDetail() {
                         e.stopPropagation();
                         // Create modal for full image viewing
                         const modal = document.createElement('div');
-                        modal.className = 'fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4';
+                        modal.className = 'fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 overflow-auto';
                         modal.innerHTML = `
-                          <div class="relative max-w-6xl max-h-full">
-                            <img src="${d.images[0].image_url}" alt="${d.images[0].alt_text || d.title}" class="max-w-full max-h-full object-contain">
-                            <button class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-75 transition-all text-xl">
+                          <div class="relative flex items-center justify-center min-h-full">
+                            <img src="${d.images[0].image_url}" alt="${d.images[0].alt_text || d.title}" class="max-w-full max-h-screen object-contain">
+                            <button class="fixed top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-75 transition-all text-xl">
                               ✕
                             </button>
                           </div>
