@@ -79,7 +79,28 @@ export default function Product() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
         {/* Image Gallery */}
         <div className="animate-fade-in">
-          <div className="luxury-shadow rounded-lg overflow-hidden cursor-zoom-in group bg-white animate-scale-in">
+          <div className="luxury-shadow rounded-lg overflow-hidden cursor-pointer group bg-white animate-scale-in"
+               onClick={() => {
+                 if (design.images?.length > 0) {
+                   // Create modal for full image viewing
+                   const modal = document.createElement('div');
+                   modal.className = 'fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 overflow-auto';
+                   modal.innerHTML = `
+                     <div class="relative flex items-center justify-center min-h-full">
+                       <img src="${design.images[0].image_url}" alt="${design.images[0].alt_text || design.title}" class="max-w-full max-h-screen object-contain">
+                       <button class="fixed top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-75 transition-all text-xl">
+                         ✕
+                       </button>
+                     </div>
+                   `;
+                   modal.onclick = (e) => {
+                     if (e.target === modal || e.target.tagName === 'BUTTON') {
+                       document.body.removeChild(modal);
+                     }
+                   };
+                   document.body.appendChild(modal);
+                 }
+               }}>
             {design.images?.length > 0 ? (
               <img
                 src={design.images[0].image_url}
@@ -105,7 +126,7 @@ export default function Product() {
               <video
                 src={design.video_url}
                 controls
-                className="w-full h-auto max-h-48 md:max-h-64 object-cover"
+                className="w-full h-auto max-h-64 md:max-h-80 lg:max-h-96 object-cover"
                 poster={design.images?.[0]?.image_url}
               >
                 Your browser does not support the video tag.
@@ -122,11 +143,11 @@ export default function Product() {
                   onClick={() => {
                     // Create modal or lightbox for image viewing
                     const modal = document.createElement('div');
-                    modal.className = 'fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4';
+                    modal.className = 'fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 overflow-auto';
                     modal.innerHTML = `
-                      <div class="relative max-w-4xl max-h-full">
-                        <img src="${img.image_url}" alt="${img.alt_text || design.title}" class="max-w-full max-h-full object-contain">
-                        <button class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75 transition-all">
+                      <div class="relative flex items-center justify-center min-h-full">
+                        <img src="${img.image_url}" alt="${img.alt_text || design.title}" class="max-w-full max-h-screen object-contain">
+                        <button class="fixed top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-75 transition-all text-xl">
                           ✕
                         </button>
                       </div>
