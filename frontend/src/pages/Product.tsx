@@ -60,6 +60,12 @@ export default function Product() {
   const [addingToWardrobe, setAddingToWardrobe] = useState(false)
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])
   const { add, items } = useCart()
+  
+  // Debug: Log cart items whenever they change
+  useEffect(() => {
+    console.log('Cart items updated:', items)
+    console.log('Cart count:', items.reduce((sum, item) => sum + item.qty, 0))
+  }, [items])
 
   useEffect(() => {
     if (!id) return

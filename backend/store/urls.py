@@ -38,7 +38,6 @@ from .views import (
 router = DefaultRouter()
 router.register('collections', CollectionViewSet, basename='collections')
 router.register('designs', DesignViewSet, basename='designs')
-router.register('cart', CartViewSet, basename='cart')
 router.register('assets', SiteAssetViewSet, basename='assets')
 router.register('videos', VideoViewSet, basename='videos')
 router.register('info-cards', InfoCardViewSet, basename='info-cards')
@@ -66,9 +65,13 @@ admin_router.register('blog-comment-likes', AdminBlogCommentLikeViewSet, basenam
 urlpatterns = [
     path('', include(router.urls)),
     path('blog/comments/<int:comment_id>/toggle-like/', toggle_comment_like, name='blog-comment-toggle-like'),
+    # Cart URLs
+    path('cart/', CartViewSet.as_view({'get': 'list', 'post': 'create'}), name='cart-list'),
     path('cart/add/', CartViewSet.as_view({'post': 'add_item'}), name='cart-add'),
     path('cart/remove/', CartViewSet.as_view({'post': 'remove_item'}), name='cart-remove'),
     path('cart/clear/', CartViewSet.as_view({'post': 'clear_cart'}), name='cart-clear'),
+    path('cart/<int:pk>/', CartViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='cart-detail'),
+    # Other URLs
     path('subscribe/', subscribe, name='subscribe'),
     path('contact/', contact, name='contact'),
     path('paystack/initiate/', initiate_paystack, name='paystack-initiate'),

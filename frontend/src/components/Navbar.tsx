@@ -14,6 +14,8 @@ export default function Navbar() {
   // Calculate cart count from local items
   useEffect(() => {
     const count = localItems.reduce((sum, item) => sum + item.qty, 0)
+    console.log('Navbar: localItems:', localItems)
+    console.log('Navbar: calculated count:', count)
     setCartCount(count)
   }, [localItems])
 
