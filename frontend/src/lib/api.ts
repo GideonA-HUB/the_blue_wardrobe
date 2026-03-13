@@ -16,6 +16,7 @@ const getBaseURL = () => {
 const api = axios.create({
   baseURL: getBaseURL(),
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, // Enable cookies for session management
 })
 
 export default api

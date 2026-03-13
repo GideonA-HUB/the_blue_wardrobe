@@ -59,7 +59,7 @@ export default function Product() {
   const [loading, setLoading] = useState(true)
   const [addingToWardrobe, setAddingToWardrobe] = useState(false)
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])
-  const add = useCart((s) => s.add)
+  const { add, items } = useCart()
 
   useEffect(() => {
     if (!id) return
@@ -286,23 +286,31 @@ export default function Product() {
                 
                 setAddingToWardrobe(true)
                 try {
+                  console.log('Adding to wardrobe:', { designId: design.id, selectedSizes })
+                  
                   // Add each selected size to cart
                   for (const size of selectedSizes) {
-                    await api.post('/cart/add/', {
+                    console.log('Adding item:', { design_id: design.id, size, quantity: 1 })
+                    
+                    const response = await api.post('/cart/add/', {
                       design_id: design.id,
-                      size: size,
+                      size: parseInt(size),
                       quantity: 1
                     })
+                    
+                    console.log('API response:', response.data)
                     
                     // Update local cart state
                     add({
                       id: design.id,
                       title: design.title,
                       price: design.effective_price,
-                      size: size,
+                      size: parseInt(size),
                       qty: 1,
                       image: design.images?.[0]?.image_url,
                     })
+                    
+                    console.log('Current cart items:', items)
                   }
                   
                   // Clear selected sizes after adding
@@ -312,7 +320,9 @@ export default function Product() {
                   alert(`Added ${selectedSizes.length} item(s) to your wardrobe!`)
                 } catch (error: any) {
                   console.error('Error adding to wardrobe:', error)
-                  alert('Failed to add to wardrobe. Please try again.')
+                  console.error('Error response:', error.response?.data)
+                  console.error('Error status:', error.response?.status)
+                  alert(`Failed to add to wardrobe: ${error.response?.data?.detail || error.message || 'Please try again.'}`)
                 } finally {
                   setAddingToWardrobe(false)
                 }

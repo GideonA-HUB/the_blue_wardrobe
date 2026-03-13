@@ -4,7 +4,7 @@ export type CartItem = {
   id: number
   title: string
   price: number
-  size: string
+  size: number
   qty: number
   image?: string
 }
@@ -12,8 +12,8 @@ export type CartItem = {
 type CartState = {
   items: CartItem[]
   add: (it: CartItem) => void
-  remove: (id: number, size?: string) => void
-  updateQty: (id: number, size: string, qty: number) => void
+  remove: (id: number, size?: number) => void
+  updateQty: (id: number, size: number, qty: number) => void
   clear: () => void
 }
 
