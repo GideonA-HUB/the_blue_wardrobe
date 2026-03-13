@@ -1,21 +1,33 @@
-import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import api from '../lib/api'
 import { useCart } from '../store/cart'
 
-type Design = {
+interface SizeInventory {
   id: number
-  sku: string
+  size: string
+  stock: number
+  is_active: boolean
+  availability_status: 'available' | 'low_stock' | 'out_of_stock'
+}
+
+interface DesignImage {
+  id: number
+  image_url: string
+  alt_text?: string
+}
+
+interface Design {
+  id: number
   title: string
-  description: string
+  description?: string
+  sku: string
   price: number
-  discount_price?: number
-  video?: string
-  video_url?: string
-  has_discount: boolean
   effective_price: number
-  discount_percentage: number
+  has_discount: boolean
+  discount_percentage?: number
   total_stock: number
+  video_url?: string
   images: DesignImage[]
   size_inventory: SizeInventory[]
   created_at: string
@@ -42,10 +54,11 @@ type SizeInventory = {
 
 export default function Product() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [design, setDesign] = useState<Design | null>(null)
-  const [selectedSize, setSelectedSize] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
-  const [addingToCart, setAddingToCart] = useState(false)
+  const [addingToWardrobe, setAddingToWardrobe] = useState(false)
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([])
   const add = useCart((s) => s.add)
 
   useEffect(() => {
@@ -212,19 +225,27 @@ export default function Product() {
 
           <div className="mt-8">
             <label className="block text-xs font-semibold tracking-[0.2em] uppercase text-gray-600 mb-3">
-              Select size
+              Select sizes (choose multiple)
             </label>
             <div className="grid grid-cols-4 gap-2 max-w-xs">
               {design.size_inventory
                 .filter(inv => inv.is_active)
                 .map((inv) => {
-                  const isSelected = selectedSize === inv.size
+                  const isSelected = selectedSizes.includes(inv.size.toString())
                   const isOutOfStock = inv.stock === 0
                   
                   return (
                     <button
                       key={inv.id}
-                      onClick={() => !isOutOfStock && setSelectedSize(inv.size)}
+                      onClick={() => {
+                        if (!isOutOfStock) {
+                          if (isSelected) {
+                            setSelectedSizes(selectedSizes.filter(s => s !== inv.size.toString()))
+                          } else {
+                            setSelectedSizes([...selectedSizes, inv.size.toString()])
+                          }
+                        }
+                      }}
                       disabled={isOutOfStock}
                       className={`
                         relative py-3 px-4 rounded-lg border-2 font-medium transition-all duration-200
@@ -247,23 +268,11 @@ export default function Product() {
                   )
                 })}
             </div>
-            {selectedSize && (
+            {selectedSizes.length > 0 && (
               <div className="mt-3 text-sm text-gray-600">
-                {(() => {
-                  const selected = design.size_inventory.find(inv => inv.size === selectedSize)
-                  if (!selected) return null
-                  
-                  switch (selected.availability_status) {
-                    case 'available':
-                      return <span className="text-emerald-600 font-medium">✓ Size {selected.size} available</span>
-                    case 'low_stock':
-                      return <span className="text-yellow-600 font-medium">⚠ Only {selected.stock} left in size {selected.size}</span>
-                    case 'out_of_stock':
-                      return <span className="text-red-600 font-medium">✗ Size {selected.size} is out of stock</span>
-                    default:
-                      return <span className="text-gray-500">Size {selected.size} unavailable</span>
-                  }
-                })()}
+                <span className="text-emerald-600 font-medium">
+                  ✓ Selected sizes: {selectedSizes.join(', ')}
+                </span>
               </div>
             )}
           </div>
@@ -271,39 +280,42 @@ export default function Product() {
           <div className="mt-8 space-y-4">
             <button
               className="w-full max-w-xs px-8 py-4 bg-blue-wardrobe-dark text-white rounded-full disabled:opacity-40 disabled:cursor-not-allowed tracking-wide hover:bg-blue-wardrobe-light transition-all duration-300 font-medium luxury-shadow hover:luxury-shadow-lg transform hover:scale-105 disabled:transform-none"
-              disabled={!selectedSize || addingToCart}
+              disabled={selectedSizes.length === 0 || addingToWardrobe}
               onClick={async () => {
-                if (!selectedSize || !design) return
+                if (!design || selectedSizes.length === 0) return
                 
-                setAddingToCart(true)
+                setAddingToWardrobe(true)
                 try {
-                  // Call the new cart API
-                  await api.post('/cart/add/', {
-                    design_id: design.id,
-                    size: selectedSize,
-                    quantity: 1
-                  })
+                  // Add each selected size to cart
+                  for (const size of selectedSizes) {
+                    await api.post('/cart/add/', {
+                      design_id: design.id,
+                      size: size,
+                      quantity: 1
+                    })
+                    
+                    // Update local cart state
+                    add({
+                      id: design.id,
+                      title: design.title,
+                      price: design.effective_price,
+                      size: size,
+                      qty: 1,
+                      image: design.images?.[0]?.image_url,
+                    })
+                  }
                   
-                  // Update local cart state
-                  add({
-                    id: design.id,
-                    title: design.title,
-                    price: design.effective_price,
-                    size: selectedSize.toString(),
-                    qty: 1,
-                    image: design.images?.[0]?.image_url,
-                  })
-                  
-                  // Show success feedback
-                  alert('Added to cart successfully!')
+                  // Redirect to checkout page
+                  navigate('/checkout')
                 } catch (error: any) {
-                  alert(error.response?.data?.detail || 'Failed to add to cart')
+                  console.error('Error adding to wardrobe:', error)
+                  alert('Failed to add to wardrobe. Please try again.')
                 } finally {
-                  setAddingToCart(false)
+                  setAddingToWardrobe(false)
                 }
               }}
             >
-              {addingToCart ? 'Adding...' : 'Add to wardrobe'}
+              {addingToWardrobe ? 'Adding...' : `Add to Wardrobe${selectedSizes.length > 1 ? ` (${selectedSizes.length} items)` : ''}`}
             </button>
           </div>
         </div>

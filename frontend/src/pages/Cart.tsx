@@ -83,7 +83,7 @@ export default function Cart() {
   }
 
   const handleClearCart = async () => {
-    if (!confirm('Are you sure you want to clear your cart?')) return
+    if (!confirm('Are you sure you want to clear your wardrobe?')) return
     
     setUpdating(true)
     try {
@@ -123,11 +123,11 @@ export default function Cart() {
   return (
     <div className="py-8 md:py-12">
       <h1 className="text-4xl font-serif font-semibold text-blue-wardrobe-dark mb-8">
-        Your Cart ({totalItems} {totalItems === 1 ? 'item' : 'items'})
+        Your Wardrobe ({totalItems} {totalItems === 1 ? 'item' : 'items'})
       </h1>
       {displayItems.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-gray-600 text-lg mb-4">Your cart is empty.</p>
+          <p className="text-gray-600 text-lg mb-4">Your wardrobe is empty.</p>
           <Link 
             to="/collections" 
             className="inline-block px-6 py-3 bg-blue-wardrobe-dark text-white rounded-full hover:bg-blue-wardrobe-light transition-colors luxury-shadow"
