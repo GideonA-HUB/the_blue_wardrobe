@@ -39,6 +39,7 @@ export default function Checkout() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
 
   // Load cart from server on mount
   useEffect(() => {
@@ -189,6 +190,17 @@ export default function Checkout() {
                 placeholder="Optional"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Address *</label>
+              <textarea 
+                value={address} 
+                onChange={(e) => setAddress(e.target.value)} 
+                className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light focus:border-blue-wardrobe-light transition-all resize-none" 
+                rows={3}
+                placeholder="Enter your full delivery address"
+                required
+              />
+            </div>
           </form>
         </div>
         <div>
@@ -212,12 +224,22 @@ export default function Checkout() {
             
             <div className="border-t border-gray-200 pt-3 space-y-2">
               <div className="flex justify-between text-gray-600">
-                <span>Items ({totalItems})</span>
-                <span className="font-semibold">{totalItems} piece{totalItems !== 1 ? 's' : ''}</span>
+                <span>Subtotal</span>
+                <span className="font-semibold">NGN {subtotal.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-lg font-bold text-blue-wardrobe-dark">
-                <span>Total</span>
-                <span>NGN {subtotal.toLocaleString()}</span>
+              <div className="flex justify-between text-gray-600">
+                <span>VAT (3.5%)</span>
+                <span className="font-semibold">NGN {Math.round(subtotal * 0.035).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>Delivery Fee</span>
+                <span className="font-semibold">NGN 5,000</span>
+              </div>
+              <div className="border-t border-gray-200 pt-2">
+                <div className="flex justify-between text-lg font-bold text-blue-wardrobe-dark">
+                  <span>Total</span>
+                  <span>NGN {(subtotal + Math.round(subtotal * 0.035) + 5000).toLocaleString()}</span>
+                </div>
               </div>
             </div>
             
@@ -232,7 +254,7 @@ export default function Checkout() {
             <div className="mt-6 space-y-3">
               <button 
                 onClick={onPay} 
-                disabled={!firstName || !lastName || !email || processing || displayItems.some(item => !item.is_available)}
+                disabled={!firstName || !lastName || !email || !address || processing || displayItems.some(item => !item.is_available)}
                 className="w-full px-6 py-4 bg-blue-wardrobe-dark text-white rounded-full hover:bg-blue-wardrobe-light transition-all duration-300 font-medium luxury-shadow hover:luxury-shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {processing ? 'Processing...' : 'Pay with Paystack'}

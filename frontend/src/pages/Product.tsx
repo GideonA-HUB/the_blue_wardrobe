@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../lib/api'
 import { useCart } from '../store/cart'
+import Toast from '../components/Toast'
 
 interface SizeInventory {
   id: number
@@ -59,6 +60,7 @@ export default function Product() {
   const [loading, setLoading] = useState(true)
   const [addingToWardrobe, setAddingToWardrobe] = useState(false)
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
   const { add, items } = useCart()
   
   // Debug: Log cart items whenever they change
@@ -95,6 +97,13 @@ export default function Product() {
 
   return (
     <div className="py-8 md:py-12">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
         {/* Image Gallery */}
         <div className="animate-fade-in">
@@ -323,12 +332,18 @@ export default function Product() {
                   setSelectedSizes([])
                   
                   // Show success feedback
-                  alert(`Added ${selectedSizes.length} item(s) to your wardrobe!`)
+                  setToast({
+                    message: `✨ Added ${selectedSizes.length} item(s) to your wardrobe!`,
+                    type: 'success'
+                  })
                 } catch (error: any) {
                   console.error('Error adding to wardrobe:', error)
                   console.error('Error response:', error.response?.data)
                   console.error('Error status:', error.response?.status)
-                  alert(`Failed to add to wardrobe: ${error.response?.data?.detail || error.message || 'Please try again.'}`)
+                  setToast({
+                    message: `Failed to add to wardrobe: ${error.response?.data?.detail || error.message || 'Please try again.'}`,
+                    type: 'error'
+                  })
                 } finally {
                   setAddingToWardrobe(false)
                 }

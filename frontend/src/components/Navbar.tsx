@@ -9,7 +9,17 @@ export default function Navbar() {
   const [faviconUrl, setFaviconUrl] = useState<string | null>(null)
   const [cartCount, setCartCount] = useState(0)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
   const localItems = useCart((s) => s.items)
+
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // Calculate cart count from local items
   useEffect(() => {
@@ -65,9 +75,11 @@ export default function Navbar() {
   }, [])
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 luxury-shadow">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3 group">
+    <nav className={`bg-white border-b border-gray-200 sticky top-0 z-50 luxury-shadow transition-all duration-300 ${
+      isScrolled ? 'py-2 shadow-lg' : 'py-4'
+    }`}>
+      <div className="container mx-auto px-4 py-2 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-3 group nav-transition">
           <LogoSpinner src={logoUrl} />
           <span className="font-serif text-xl font-semibold text-blue-wardrobe-dark group-hover:text-blue-wardrobe-light transition-colors">
             THE BLUE WARDROBE
@@ -78,35 +90,35 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-8">
           <Link 
             to="/about" 
-            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full"
+            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full nav-transition"
           >
             About
           </Link>
           <Link 
             to="/blog" 
-            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full"
+            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full nav-transition"
           >
             Journal
           </Link>
           <Link 
             to="/collections" 
-            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full"
+            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full nav-transition"
           >
             Collections
           </Link>
           <Link 
             to="/contact" 
-            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full"
+            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full nav-transition"
           >
             Contact
           </Link>
           <Link 
             to="/cart" 
-            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full flex items-center gap-2"
+            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full flex items-center gap-2 nav-transition hover-lift"
           >
             Wardrobe
             {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold animate-scale-in">
                 {cartCount > 99 ? '99+' : cartCount}
               </span>
             )}
@@ -115,7 +127,7 @@ export default function Navbar() {
 
         {/* Mobile Menu Button */}
         <button 
-          className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-all duration-300 hover-scale"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,40 +141,42 @@ export default function Navbar() {
       </div>
 
       {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white">
+      <div className={`md:hidden transition-all duration-300 ${
+        isMobileMenuOpen ? 'max-h-96 opacity-100 mobile-menu-enter' : 'max-h-0 opacity-0 overflow-hidden'
+      }`}>
+        <div className="border-t border-gray-200 bg-white">
           <div className="container mx-auto px-4 py-4 space-y-4">
             <Link 
               to="/about" 
-              className="block text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors py-2"
+              className="block text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors py-2 nav-transition"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               About
             </Link>
             <Link 
               to="/blog" 
-              className="block text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors py-2"
+              className="block text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors py-2 nav-transition"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Journal
             </Link>
             <Link 
               to="/collections" 
-              className="block text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors py-2"
+              className="block text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors py-2 nav-transition"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Collections
             </Link>
             <Link 
               to="/contact" 
-              className="block text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors py-2"
+              className="block text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors py-2 nav-transition"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Contact
             </Link>
             <Link 
               to="/cart" 
-              className="flex items-center gap-2 text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors py-2"
+              className="flex items-center gap-2 text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors py-2 nav-transition"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Wardrobe
@@ -174,7 +188,7 @@ export default function Navbar() {
             </Link>
           </div>
         </div>
-      )}
+      </div>
     </nav>
   )
 }

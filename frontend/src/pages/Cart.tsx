@@ -146,12 +146,22 @@ export default function Cart() {
                 }`}
               >
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="w-24 h-24 bg-gradient-to-br from-blue-50 to-blue-100 rounded luxury-shadow flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-blue-wardrobe-dark font-serif text-xs font-semibold">
-                        {it.design.title.substring(0, 15)}...
+                  <div className="w-24 h-24 bg-gradient-to-br from-blue-50 to-blue-100 rounded luxury-shadow overflow-hidden">
+                    {it.design.images && it.design.images.length > 0 ? (
+                      <img 
+                        src={it.design.images[0].image_url} 
+                        alt={it.design.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="text-blue-wardrobe-dark font-serif text-xs font-semibold">
+                            {it.design.title.substring(0, 15)}...
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                   <div>
                     <div className="font-serif font-semibold text-lg text-blue-wardrobe-dark">{it.design.title}</div>
@@ -212,7 +222,7 @@ export default function Cart() {
                   disabled={updating}
                   className="w-full px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-full hover:border-gray-400 transition-colors disabled:opacity-50"
                 >
-                  Clear Cart
+                  Empty Wardrobe
                 </button>
               </div>
             </div>
