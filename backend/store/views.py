@@ -59,16 +59,28 @@ class CartViewSet(viewsets.ModelViewSet):
     
     def get_object(self):
         session_id = self.request.session.session_key or self.request.META.get('HTTP_X_SESSION_ID')
+        print(f"Initial session_id: {session_id}")
+        print(f"Session exists: {self.request.session.exists(self.request.session.session_key) if self.request.session.session_key else False}")
+        
         if not session_id:
             # Create session if it doesn't exist
             if not self.request.session.session_key:
                 self.request.session.create()
+                # Ensure session is saved
+                self.request.session.save()
             session_id = self.request.session.session_key
+            print(f"Created new session_id: {session_id}")
         
+        # Double-check we have a session_id
+        if not session_id:
+            raise ValueError("Unable to create or retrieve session ID")
+        
+        print(f"Final session_id: {session_id}")
         cart, created = Cart.objects.get_or_create(
             session_id=session_id,
             defaults={'customer_email': ''}
         )
+        print(f"Cart {'created' if created else 'retrieved'} with ID: {cart.id}")
         return cart
     
     def retrieve(self, request, *args, **kwargs):
