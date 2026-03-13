@@ -305,8 +305,11 @@ export default function Product() {
                     })
                   }
                   
-                  // Redirect to checkout page
-                  navigate('/checkout')
+                  // Clear selected sizes after adding
+                  setSelectedSizes([])
+                  
+                  // Show success feedback
+                  alert(`Added ${selectedSizes.length} item(s) to your wardrobe!`)
                 } catch (error: any) {
                   console.error('Error adding to wardrobe:', error)
                   alert('Failed to add to wardrobe. Please try again.')
@@ -316,6 +319,14 @@ export default function Product() {
               }}
             >
               {addingToWardrobe ? 'Adding...' : `Add to Wardrobe${selectedSizes.length > 1 ? ` (${selectedSizes.length} items)` : ''}`}
+            </button>
+            
+            {/* Checkout button for users ready to proceed */}
+            <button
+              className="w-full max-w-xs px-8 py-3 border-2 border-blue-wardrobe-dark text-blue-wardrobe-dark rounded-full hover:bg-blue-wardrobe-dark hover:text-white transition-all duration-300 font-medium"
+              onClick={() => navigate('/checkout')}
+            >
+              Proceed to Checkout
             </button>
           </div>
         </div>
