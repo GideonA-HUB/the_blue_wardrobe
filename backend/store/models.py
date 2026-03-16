@@ -89,6 +89,42 @@ class DesignImage(models.Model):
         return f"Image for {self.design.title}"
 
 
+class SizeMeasurement(models.Model):
+    SIZE_CHOICES = [(i, str(i)) for i in range(6, 21)]  # Sizes 6 to 20
+    
+    design = models.ForeignKey(Design, related_name='size_measurements', on_delete=models.CASCADE)
+    size = models.IntegerField(choices=SIZE_CHOICES)
+    bust = models.DecimalField(max_digits=5, decimal_places=1)  # e.g., 32.5 inches
+    waist = models.DecimalField(max_digits=5, decimal_places=1)  # e.g., 25.0 inches
+    hips = models.DecimalField(max_digits=5, decimal_places=1)  # e.g., 35.5 inches
+    stock = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['design', 'size']
+        ordering = ['size']
+
+    def __str__(self):
+        return f"{self.design.title} - Size {self.size} (B:{self.bust} W:{self.waist} H:{self.hips})"
+
+    @property
+    def is_in_stock(self):
+        return self.stock > 0 and self.is_active
+
+    @property
+    def availability_status(self):
+        if not self.is_active:
+            return "unavailable"
+        elif self.stock == 0:
+            return "out_of_stock"
+        elif self.stock <= 5:
+            return "low_stock"
+        else:
+            return "available"
+
+
 class SizeInventory(models.Model):
     SIZE_CHOICES = [(i, str(i)) for i in range(8, 21)]  # Sizes 8 to 20
     
@@ -143,16 +179,20 @@ class Cart(models.Model):
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
     design = models.ForeignKey(Design, on_delete=models.CASCADE)
-    size = models.IntegerField(choices=SizeInventory.SIZE_CHOICES)
+    size_measurement = models.ForeignKey(SizeMeasurement, on_delete=models.CASCADE, null=True, blank=True)
+    size = models.IntegerField(choices=SizeInventory.SIZE_CHOICES, null=True, blank=True)  # Keep for migration
     quantity = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['cart', 'design', 'size']
+        unique_together = ['cart', 'design', 'size_measurement']
 
     def __str__(self):
-        return f"{self.quantity} x {self.design.title} (Size {self.size})"
+        if self.size_measurement:
+            return f"{self.quantity} x {self.design.title} (Size {self.size_measurement.size} - B:{self.size_measurement.bust} W:{self.size_measurement.waist} H:{self.size_measurement.hips})"
+        else:
+            return f"{self.quantity} x {self.design.title} (Size {self.size})"
 
     @property
     def unit_price(self):
@@ -164,8 +204,13 @@ class CartItem(models.Model):
 
     @property
     def is_available(self):
-        size_inventory = self.design.size_inventory.filter(size=self.size, is_active=True).first()
-        return size_inventory and size_inventory.stock >= self.quantity
+        if self.size_measurement:
+            return self.size_measurement.is_in_stock and self.size_measurement.stock >= self.quantity
+        return False
+
+    @property
+    def size(self):
+        return self.size_measurement.size if self.size_measurement else self.size
 
 
 class SiteAsset(models.Model):

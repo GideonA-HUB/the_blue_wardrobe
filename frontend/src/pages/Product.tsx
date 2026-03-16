@@ -4,6 +4,17 @@ import api from '../lib/api'
 import { useCart } from '../store/cart'
 import Toast from '../components/Toast'
 
+interface SizeMeasurement {
+  id: number
+  size: number
+  bust: number
+  waist: number
+  hips: number
+  stock: number
+  is_active: boolean
+  availability_status: 'available' | 'low_stock' | 'out_of_stock'
+}
+
 interface SizeInventory {
   id: number
   size: string
@@ -31,26 +42,9 @@ interface Design {
   video_url?: string
   images: DesignImage[]
   size_inventory: SizeInventory[]
+  size_measurements: SizeMeasurement[]
   created_at: string
   updated_at: string
-}
-
-type DesignImage = {
-  id: number
-  image: string
-  image_url: string
-  alt_text: string
-  order: number
-  created_at: string
-}
-
-type SizeInventory = {
-  id: number
-  size: number
-  stock: number
-  is_active: boolean
-  availability_status: 'available' | 'low_stock' | 'out_of_stock' | 'unavailable'
-  is_in_stock: boolean
 }
 
 export default function Product() {
@@ -59,7 +53,9 @@ export default function Product() {
   const [design, setDesign] = useState<Design | null>(null)
   const [loading, setLoading] = useState(true)
   const [addingToWardrobe, setAddingToWardrobe] = useState(false)
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([])
+  const [selectedSizeMeasurements, setSelectedSizeMeasurements] = useState<number[]>([])
+  const [selectedSize, setSelectedSize] = useState<number | null>(null)
+  const [showSizeDetails, setShowSizeDetails] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
   const { add, items } = useCart()
   
@@ -240,76 +236,138 @@ export default function Product() {
 
           <div className="mt-8">
             <label className="block text-xs font-semibold tracking-[0.2em] uppercase text-gray-600 mb-3">
-              Select sizes (choose multiple)
+              Select size
             </label>
             <div className="grid grid-cols-4 gap-2 max-w-xs">
-              {design.size_inventory
-                .filter(inv => inv.is_active)
-                .map((inv) => {
-                  const isSelected = selectedSizes.includes(inv.size.toString())
-                  const isOutOfStock = inv.stock === 0
-                  
-                  return (
-                    <button
-                      key={inv.id}
-                      onClick={() => {
-                        if (!isOutOfStock) {
-                          if (isSelected) {
-                            setSelectedSizes(selectedSizes.filter(s => s !== inv.size.toString()))
-                          } else {
-                            setSelectedSizes([...selectedSizes, inv.size.toString()])
-                          }
-                        }
-                      }}
-                      disabled={isOutOfStock}
-                      className={`
-                        relative py-3 px-4 rounded-lg border-2 font-medium transition-all duration-200
-                        ${isSelected 
-                          ? 'border-blue-wardrobe-dark bg-blue-wardrobe-dark text-white' 
-                          : isOutOfStock
-                          ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed line-through'
-                          : 'border-gray-300 text-gray-700 hover:border-blue-wardrobe-light hover:bg-blue-50'
-                        }
-                      `}
-                    >
-                      {inv.size}
-                      {isOutOfStock && (
-                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                      )}
-                      {inv.availability_status === 'low_stock' && inv.stock > 0 && (
-                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full"></span>
-                      )}
-                    </button>
-                  )
-                })}
+              {[6, 8, 10, 12, 14, 16, 18, 20].map((size) => {
+                const sizeMeasurements = design.size_measurements.filter(sm => sm.size === size && sm.is_active)
+                const hasAvailableMeasurements = sizeMeasurements.some(sm => sm.stock > 0)
+                const isSelected = selectedSize === size
+                
+                return (
+                  <button
+                    key={size}
+                    onClick={() => {
+                      if (hasAvailableMeasurements) {
+                        setSelectedSize(size)
+                        setShowSizeDetails(true)
+                      }
+                    }}
+                    disabled={!hasAvailableMeasurements}
+                    className={`
+                      relative py-3 px-4 rounded-lg border-2 font-medium transition-all duration-200
+                      ${isSelected 
+                        ? 'border-blue-wardrobe-dark bg-blue-wardrobe-dark text-white' 
+                        : !hasAvailableMeasurements
+                        ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed line-through'
+                        : 'border-gray-300 text-gray-700 hover:border-blue-wardrobe-light hover:bg-blue-50'
+                      }
+                    `}
+                  >
+                    {size}
+                    {!hasAvailableMeasurements && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
-            {selectedSizes.length > 0 && (
-              <div className="mt-3 text-sm text-gray-600">
-                <span className="text-emerald-600 font-medium">
-                  ✓ Selected sizes: {selectedSizes.join(', ')}
-                </span>
-              </div>
-            )}
           </div>
+
+          {/* Size Details Modal */}
+          {showSizeDetails && selectedSize && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+                <h3 className="text-lg font-semibold mb-4">Size {selectedSize} - Available Measurements</h3>
+                <div className="space-y-3">
+                  {design.size_measurements
+                    .filter(sm => sm.size === selectedSize && sm.is_active && sm.stock > 0)
+                    .map((measurement) => (
+                      <div
+                        key={measurement.id}
+                        className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                          selectedSizeMeasurements.includes(measurement.id)
+                            ? 'border-blue-wardrobe-dark bg-blue-50'
+                            : 'border-gray-200 hover:border-blue-wardrobe-light'
+                        }`}
+                        onClick={() => {
+                          if (selectedSizeMeasurements.includes(measurement.id)) {
+                            setSelectedSizeMeasurements(selectedSizeMeasurements.filter(id => id !== measurement.id))
+                          } else {
+                            setSelectedSizeMeasurements([...selectedSizeMeasurements, measurement.id])
+                          }
+                        }}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="font-medium">Measurements:</div>
+                            <div className="text-sm text-gray-600">
+                              Bust: {measurement.bust}" | Waist: {measurement.waist}" | Hips: {measurement.hips}"
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-600">Stock: {measurement.stock}</div>
+                            {selectedSizeMeasurements.includes(measurement.id) && (
+                              <div className="text-blue-wardrobe-dark font-medium">✓ Selected</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowSizeDetails(false)
+                      setSelectedSize(null)
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowSizeDetails(false)
+                      setSelectedSize(null)
+                    }}
+                    className="flex-1 px-4 py-2 bg-blue-wardrobe-dark text-white rounded-lg hover:bg-blue-wardrobe-light"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {selectedSizeMeasurements.length > 0 && (
+            <div className="mt-3 text-sm text-gray-600">
+              <span className="text-emerald-600 font-medium">
+                ✓ Selected {selectedSizeMeasurements.length} measurement(s)
+              </span>
+            </div>
+          )}
 
           <div className="mt-8 space-y-4">
             <button
               className="w-full max-w-xs px-8 py-4 bg-blue-wardrobe-dark text-white rounded-full disabled:opacity-40 disabled:cursor-not-allowed tracking-wide hover:bg-blue-wardrobe-light transition-all duration-300 font-medium luxury-shadow hover:luxury-shadow-lg transform hover:scale-105 disabled:transform-none"
-              disabled={selectedSizes.length === 0 || addingToWardrobe}
+              disabled={selectedSizeMeasurements.length === 0 || addingToWardrobe}
               onClick={async () => {
-                if (!design || selectedSizes.length === 0) return
+                if (!design || selectedSizeMeasurements.length === 0) return
                 
                 setAddingToWardrobe(true)
                 try {
-                  console.log('Adding to wardrobe:', { designId: design.id, selectedSizes })
+                  console.log('Adding to wardrobe:', { designId: design.id, selectedSizeMeasurements })
                   
-                  // Add each selected size to cart
-                  for (const size of selectedSizes) {
-                    console.log('Adding item:', { design_id: design.id, size, quantity: 1 })
+                  // Add each selected size measurement to cart
+                  for (const sizeMeasurementId of selectedSizeMeasurements) {
+                    const measurement = design.size_measurements.find(sm => sm.id === sizeMeasurementId)
+                    if (!measurement) continue
+                    
+                    console.log('Adding measurement:', { size_measurement_id: sizeMeasurementId, quantity: 1 })
                     
                     const response = await api.post('/cart/add/', {
                       design_id: design.id,
-                      size: parseInt(size),
+                      size_measurement_id: sizeMeasurementId,
                       quantity: 1
                     })
                     
@@ -320,7 +378,7 @@ export default function Product() {
                       id: design.id,
                       title: design.title,
                       price: design.effective_price,
-                      size: parseInt(size),
+                      size: measurement.size,
                       qty: 1,
                       image: design.images?.[0]?.image_url,
                     })
@@ -328,12 +386,12 @@ export default function Product() {
                     console.log('Current cart items:', items)
                   }
                   
-                  // Clear selected sizes after adding
-                  setSelectedSizes([])
+                  // Clear selected measurements after adding
+                  setSelectedSizeMeasurements([])
                   
                   // Show success feedback
                   setToast({
-                    message: `✨ Added ${selectedSizes.length} item(s) to your wardrobe!`,
+                    message: `✨ Added ${selectedSizeMeasurements.length} item(s) to your wardrobe!`,
                     type: 'success'
                   })
                 } catch (error: any) {
@@ -349,7 +407,7 @@ export default function Product() {
                 }
               }}
             >
-              {addingToWardrobe ? 'Adding...' : `Add to Wardrobe${selectedSizes.length > 1 ? ` (${selectedSizes.length} items)` : ''}`}
+              {addingToWardrobe ? 'Adding...' : `Add to Wardrobe${selectedSizeMeasurements.length > 1 ? ` (${selectedSizeMeasurements.length} items)` : ''}`}
             </button>
             
             {/* Checkout button for users ready to proceed */}

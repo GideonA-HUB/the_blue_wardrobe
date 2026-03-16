@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import (
-    Collection, Design, DesignImage, SizeInventory, Cart, CartItem, Material, SiteAsset, Order, OrderItem,
+    Collection, Design, DesignImage, SizeMeasurement, SizeInventory, Cart, CartItem, Material, SiteAsset, Order, OrderItem,
     Customer, ContactMessage, Subscriber, Video, InfoCard
 )
 
@@ -36,11 +36,21 @@ class SizeInventorySerializer(serializers.ModelSerializer):
         fields = ['id', 'size', 'stock', 'is_active', 'availability_status', 'is_in_stock']
 
 
+class SizeMeasurementSerializer(serializers.ModelSerializer):
+    availability_status = serializers.ReadOnlyField()
+    is_in_stock = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = SizeMeasurement
+        fields = ['id', 'size', 'bust', 'waist', 'hips', 'stock', 'is_active', 'availability_status', 'is_in_stock']
+
+
 class DesignSerializer(serializers.ModelSerializer):
     collection_id = serializers.PrimaryKeyRelatedField(queryset=Collection.objects.all(), source='collection', write_only=True)
     collection = serializers.StringRelatedField(read_only=True)
     images = DesignImageSerializer(many=True, read_only=True)
     size_inventory = SizeInventorySerializer(many=True, read_only=True)
+    size_measurements = SizeMeasurementSerializer(many=True, read_only=True)
     video_url = serializers.SerializerMethodField()
     has_discount = serializers.ReadOnlyField()
     effective_price = serializers.ReadOnlyField()
@@ -53,7 +63,7 @@ class DesignSerializer(serializers.ModelSerializer):
             'id', 'collection', 'collection_id', 'sku', 'title', 'description', 
             'price', 'discount_price', 'video', 'video_url', 'has_discount', 
             'effective_price', 'discount_percentage', 'total_stock', 'images', 
-            'size_inventory', 'created_at', 'updated_at'
+            'size_inventory', 'size_measurements', 'created_at', 'updated_at'
         ]
     
     def get_video_url(self, obj):
@@ -135,13 +145,14 @@ class SubscriberSerializer(serializers.ModelSerializer):
 
 class CartItemSerializer(serializers.ModelSerializer):
     design = DesignSerializer(read_only=True)
+    size_measurement = SizeMeasurementSerializer(read_only=True)
     subtotal = serializers.ReadOnlyField()
     unit_price = serializers.ReadOnlyField()
     is_available = serializers.ReadOnlyField()
     
     class Meta:
         model = CartItem
-        fields = ['id', 'design', 'size', 'quantity', 'unit_price', 'subtotal', 'is_available']
+        fields = ['id', 'design', 'size_measurement', 'quantity', 'unit_price', 'subtotal', 'is_available']
 
 
 class CartSerializer(serializers.ModelSerializer):

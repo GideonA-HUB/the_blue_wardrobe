@@ -2,7 +2,7 @@ from django.contrib import admin
 from django import forms
 from django.core.exceptions import ValidationError
 from .models import (
-    Material, Collection, Design, DesignImage, SizeInventory, Cart, CartItem, SiteAsset, Customer, Order, OrderItem,
+    Material, Collection, Design, DesignImage, SizeMeasurement, SizeInventory, Cart, CartItem, SiteAsset, Customer, Order, OrderItem,
     ContactMessage, Subscriber, PaymentLog, Video, InfoCard,
     BusinessProfile, BlogPost, BlogPostMedia, BlogComment, BlogPostLike, BlogCommentLike,
 )
@@ -29,10 +29,25 @@ class DesignImageInline(admin.TabularInline):
     fields = ('image', 'alt_text', 'order')
 
 
+class SizeMeasurementInline(admin.TabularInline):
+    model = SizeMeasurement
+    extra = 0
+    fields = ('size', 'bust', 'waist', 'hips', 'stock', 'is_active')
+
+
 class SizeInventoryInline(admin.TabularInline):
     model = SizeInventory
     extra = 0
     fields = ('size', 'stock', 'is_active')
+
+
+@admin.register(SizeMeasurement)
+class SizeMeasurementAdmin(admin.ModelAdmin):
+    list_display = ('design', 'size', 'bust', 'waist', 'hips', 'stock', 'is_active', 'availability_status')
+    list_filter = ('size', 'is_active', 'stock')
+    search_fields = ('design__title',)
+    list_editable = ('stock', 'is_active')
+    ordering = ('design', 'size')
 
 
 @admin.register(Design)
@@ -41,10 +56,10 @@ class DesignAdmin(admin.ModelAdmin):
     search_fields = ('sku', 'title')
     list_filter = ('collection', 'created_at')
     readonly_fields = ('created_at', 'updated_at')
-    inlines = [DesignImageInline, SizeInventoryInline]
+    inlines = [DesignImageInline, SizeMeasurementInline, SizeInventoryInline]
     
     def get_total_stock(self, obj):
-        total = sum(inventory.stock for inventory in obj.size_inventory.all())
+        total = sum(measurement.stock for measurement in obj.size_measurements.all())
         return total
     get_total_stock.short_description = 'Total Stock'
 
@@ -84,8 +99,8 @@ class CartAdmin(admin.ModelAdmin):
 
 @admin.register(CartItem)
 class CartItemAdmin(admin.ModelAdmin):
-    list_display = ('cart', 'design', 'size', 'quantity', 'unit_price', 'subtotal', 'is_available')
-    list_filter = ('size', 'created_at')
+    list_display = ('cart', 'design', 'size_measurement', 'quantity', 'unit_price', 'subtotal', 'is_available')
+    list_filter = ('size_measurement__size', 'created_at')
     search_fields = ('design__title', 'cart__session_id')
     
     def subtotal(self, obj):

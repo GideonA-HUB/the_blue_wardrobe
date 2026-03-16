@@ -93,23 +93,23 @@ class CartViewSet(viewsets.ModelViewSet):
         """Add item to cart"""
         cart = self.get_object()
         design_id = request.data.get('design_id')
-        size = request.data.get('size')
+        size_measurement_id = request.data.get('size_measurement_id')
         quantity = request.data.get('quantity', 1)
         
-        if not all([design_id, size]):
-            return Response({'detail': 'design_id and size are required'}, status=status.HTTP_400_BAD_REQUEST)
+        if not all([design_id, size_measurement_id]):
+            return Response({'detail': 'design_id and size_measurement_id are required'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             design = Design.objects.get(id=design_id)
-            size_inventory = design.size_inventory.get(size=size, is_active=True)
+            size_measurement = design.size_measurements.get(id=size_measurement_id, is_active=True)
             
-            if size_inventory.stock < quantity:
+            if size_measurement.stock < quantity:
                 return Response({'detail': 'Insufficient stock'}, status=status.HTTP_400_BAD_REQUEST)
             
             cart_item, created = CartItem.objects.update_or_create(
                 cart=cart,
                 design=design,
-                size=size,
+                size_measurement=size_measurement,
                 defaults={'quantity': quantity}
             )
             
@@ -122,21 +122,21 @@ class CartViewSet(viewsets.ModelViewSet):
             
         except Design.DoesNotExist:
             return Response({'detail': 'Design not found'}, status=status.HTTP_404_NOT_FOUND)
-        except SizeInventory.DoesNotExist:
-            return Response({'detail': 'Size not available'}, status=status.HTTP_400_BAD_REQUEST)
+        except SizeMeasurement.DoesNotExist:
+            return Response({'detail': 'Size measurement not available'}, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=False, methods=['post'])
     def remove_item(self, request):
         """Remove item from cart"""
         cart = self.get_object()
         design_id = request.data.get('design_id')
-        size = request.data.get('size')
+        size_measurement_id = request.data.get('size_measurement_id')
         
         try:
             cart_item = CartItem.objects.get(
                 cart=cart,
                 design_id=design_id,
-                size=size
+                size_measurement_id=size_measurement_id
             )
             cart_item.delete()
             serializer = CartSerializer(cart)
