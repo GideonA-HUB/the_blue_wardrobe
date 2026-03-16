@@ -11,6 +11,8 @@ from importlib import import_module
 import requests
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
+from django.middleware.csrf import get_token
 
 from .models import (
     Collection, Design, DesignImage, SizeInventory, Cart, CartItem, SiteAsset, ContactMessage, Subscriber, Order,
@@ -502,3 +504,10 @@ def admin_metrics(request):
 @api_view(['GET'])
 def health(request):
     return Response({'status': 'ok'})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def csrf_token(request):
+    """Get CSRF token for the frontend"""
+    return Response({'csrfToken': get_token(request)})

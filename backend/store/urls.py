@@ -33,6 +33,7 @@ from .views import (
     verify_paystack,
     health,
     admin_metrics,
+    csrf_token,
 )
 
 router = DefaultRouter()
@@ -78,5 +79,6 @@ urlpatterns = [
     path('paystack/verify/', verify_paystack, name='paystack-verify'),
     path('health/', health, name='health'),
     path('admin/metrics/', admin_metrics, name='admin-metrics'),
+    path('csrf-token/', csrf_token, name='csrf-token'),
     path('admin/', include(admin_router.urls)),
 ]

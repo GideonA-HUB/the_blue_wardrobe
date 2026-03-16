@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import api from '../lib/api'
+import api, { fetchCSRFToken } from '../lib/api'
 import { useCart } from '../store/cart'
 import Toast from '../components/Toast'
 
@@ -68,6 +68,14 @@ export default function Product() {
   useEffect(() => {
     if (!id) return
     setLoading(true)
+    
+    // Fetch CSRF token first
+    fetchCSRFToken().then(() => {
+      console.log('CSRF token fetched')
+    }).catch(error => {
+      console.warn('Failed to fetch CSRF token:', error)
+    })
+    
     api.get(`/designs/${id}/`).then((r) => {
       setDesign(r.data)
       document.title = `${r.data.title} — THE BLUE WARDROBE`
@@ -276,20 +284,34 @@ export default function Product() {
 
           {/* Size Details Modal */}
           {showSizeDetails && selectedSize && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
-                <h3 className="text-lg font-semibold mb-4">Size {selectedSize} - Available Measurements</h3>
-                <div className="space-y-3">
+            <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 animate-fade-in">
+              <div className="bg-white rounded-2xl p-8 max-w-lg w-full max-h-[85vh] overflow-y-auto luxury-shadow-lg transform transition-all duration-300 scale-100 animate-scale-in">
+                {/* Header */}
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-wardrobe-dark text-white rounded-full text-2xl font-bold mb-4">
+                    {selectedSize}
+                  </div>
+                  <h3 className="text-2xl font-serif font-semibold text-blue-wardrobe-dark mb-2">
+                    Available Measurements
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    Select your perfect fit from the measurements below
+                  </p>
+                </div>
+
+                {/* Measurements List */}
+                <div className="space-y-4 mb-8">
                   {design.size_measurements
                     .filter(sm => sm.size === selectedSize && sm.is_active && sm.stock > 0)
-                    .map((measurement) => (
+                    .map((measurement, index) => (
                       <div
                         key={measurement.id}
-                        className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                        className={`relative border-2 rounded-xl p-5 cursor-pointer transition-all duration-300 hover:luxury-shadow-md ${
                           selectedSizeMeasurements.includes(measurement.id)
-                            ? 'border-blue-wardrobe-dark bg-blue-50'
-                            : 'border-gray-200 hover:border-blue-wardrobe-light'
+                            ? 'border-blue-wardrobe-dark bg-gradient-to-r from-blue-50 to-blue-100 transform scale-[1.02]'
+                            : 'border-gray-200 hover:border-blue-wardrobe-light hover:bg-gray-50'
                         }`}
+                        style={{ animationDelay: `${index * 100}ms` }}
                         onClick={() => {
                           if (selectedSizeMeasurements.includes(measurement.id)) {
                             setSelectedSizeMeasurements(selectedSizeMeasurements.filter(id => id !== measurement.id))
@@ -298,30 +320,62 @@ export default function Product() {
                           }
                         }}
                       >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <div className="font-medium">Measurements:</div>
-                            <div className="text-sm text-gray-600">
-                              Bust: {measurement.bust}" | Waist: {measurement.waist}" | Hips: {measurement.hips}"
+                        {/* Selection Indicator */}
+                        <div className="absolute top-4 right-4">
+                          {selectedSizeMeasurements.includes(measurement.id) && (
+                            <div className="w-6 h-6 bg-blue-wardrobe-dark text-white rounded-full flex items-center justify-center animate-scale-in">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Measurements Display */}
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="font-serif text-lg font-semibold text-blue-wardrobe-dark mb-3">
+                              Measurements
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 text-sm">
+                              <div className="text-center">
+                                <div className="text-gray-500 text-xs uppercase tracking-wide mb-1">Bust</div>
+                                <div className="font-semibold text-blue-wardrobe-dark">{measurement.bust}"</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-gray-500 text-xs uppercase tracking-wide mb-1">Waist</div>
+                                <div className="font-semibold text-blue-wardrobe-dark">{measurement.waist}"</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-gray-500 text-xs uppercase tracking-wide mb-1">Hips</div>
+                                <div className="font-semibold text-blue-wardrobe-dark">{measurement.hips}"</div>
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm text-gray-600">Stock: {measurement.stock}</div>
-                            {selectedSizeMeasurements.includes(measurement.id) && (
-                              <div className="text-blue-wardrobe-dark font-medium">✓ Selected</div>
+                          <div className="text-right ml-6">
+                            <div className="text-sm text-gray-600 mb-1">Available</div>
+                            <div className={`font-semibold ${
+                              measurement.stock <= 5 ? 'text-yellow-600' : 'text-green-600'
+                            }`}>
+                              {measurement.stock} in stock
+                            </div>
+                            {measurement.stock <= 5 && (
+                              <div className="text-xs text-yellow-600 mt-1">Limited</div>
                             )}
                           </div>
                         </div>
                       </div>
                     ))}
                 </div>
-                <div className="mt-6 flex gap-3">
+
+                {/* Action Buttons */}
+                <div className="flex gap-4">
                   <button
                     onClick={() => {
                       setShowSizeDetails(false)
                       setSelectedSize(null)
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all duration-300 font-medium"
                   >
                     Cancel
                   </button>
@@ -330,9 +384,9 @@ export default function Product() {
                       setShowSizeDetails(false)
                       setSelectedSize(null)
                     }}
-                    className="flex-1 px-4 py-2 bg-blue-wardrobe-dark text-white rounded-lg hover:bg-blue-wardrobe-light"
+                    className="flex-1 px-6 py-3 bg-blue-wardrobe-dark text-white rounded-xl hover:bg-blue-wardrobe-light transition-all duration-300 font-medium luxury-shadow hover:luxury-shadow-lg transform hover:scale-105"
                   >
-                    Done
+                    Done ({selectedSizeMeasurements.length} selected)
                   </button>
                 </div>
               </div>
