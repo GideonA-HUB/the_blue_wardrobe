@@ -303,7 +303,7 @@ export default function Product() {
           {/* Size Details Modal */}
           {showSizeDetails && selectedSize && (
             <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 animate-fade-in">
-              <div className="bg-white rounded-2xl p-8 max-w-lg w-full max-h-[85vh] overflow-y-auto luxury-shadow-lg transform transition-all duration-300 scale-100 animate-scale-in">
+              <div className="bg-white rounded-2xl p-4 sm:p-8 max-w-lg w-full max-h-[90vh] sm:max-h-[85vh] overflow-y-auto luxury-shadow-lg transform transition-all duration-300 scale-100 animate-scale-in">
                 {/* Header */}
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-wardrobe-dark text-white rounded-full text-2xl font-bold mb-4">
@@ -360,12 +360,12 @@ export default function Product() {
                         </div>
 
                         {/* Measurements Display */}
-                        <div className="flex justify-between items-start">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                           <div className="flex-1">
                             <div className="font-serif text-lg font-semibold text-blue-wardrobe-dark mb-3">
                               Measurements
                             </div>
-                            <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div className="grid grid-cols-3 gap-2 sm:gap-4 text-sm">
                               <div className="text-center">
                                 <div className="text-gray-500 text-xs uppercase tracking-wide mb-1">Bust</div>
                                 <div className="font-semibold text-blue-wardrobe-dark">{measurement.bust}"</div>
@@ -380,7 +380,7 @@ export default function Product() {
                               </div>
                             </div>
                           </div>
-                          <div className="text-right ml-6">
+                          <div className="text-center sm:text-right sm:ml-6">
                             <div className="text-sm text-gray-600 mb-1">Available</div>
                             <div className={`font-semibold ${
                               measurement.stock <= 5 ? 'text-yellow-600' : 'text-green-600'

@@ -228,17 +228,17 @@ export default function Checkout() {
                 <span className="font-semibold">NGN {subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-gray-600">
-                <span>VAT (3.5%)</span>
-                <span className="font-semibold">NGN {Math.round(subtotal * 0.035).toLocaleString()}</span>
+                <span>VAT</span>
+                <span className="font-semibold text-green-600">FREE</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Delivery Fee</span>
-                <span className="font-semibold">NGN 5,000</span>
+                <span className="font-semibold text-green-600">FREE</span>
               </div>
               <div className="border-t border-gray-200 pt-2">
                 <div className="flex justify-between text-lg font-bold text-blue-wardrobe-dark">
                   <span>Total</span>
-                  <span>NGN {(subtotal + Math.round(subtotal * 0.035) + 5000).toLocaleString()}</span>
+                  <span>NGN {subtotal.toLocaleString()}</span>
                 </div>
               </div>
             </div>

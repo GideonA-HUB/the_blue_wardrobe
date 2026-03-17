@@ -8,6 +8,18 @@ type CartItem = {
   design: {
     id: number
     title: string
+    images?: Array<{
+      id: number
+      image_url: string
+      alt_text?: string
+    }>
+  }
+  size_measurement?: {
+    id: number
+    size: number
+    bust: number
+    waist: number
+    hips: number
   }
   size: number
   quantity: number
@@ -101,7 +113,15 @@ export default function Cart() {
   // Use server cart if available, otherwise fall back to local cart
   const displayItems = serverCart?.items || localItems.map(it => ({
     id: it.id,
-    design: { id: it.id, title: it.title },
+    design: { 
+      id: it.id, 
+      title: it.title,
+      images: it.image ? [{
+        id: 1,
+        image_url: it.image,
+        alt_text: it.title
+      }] : undefined
+    },
     size: parseInt(it.size),
     quantity: it.qty,
     unit_price: it.price,
