@@ -246,40 +246,58 @@ export default function Product() {
             <label className="block text-xs font-semibold tracking-[0.2em] uppercase text-gray-600 mb-3">
               Select size
             </label>
-            <div className="grid grid-cols-4 gap-2 max-w-xs">
-              {[6, 8, 10, 12, 14, 16, 18, 20].map((size) => {
-                const sizeMeasurements = design.size_measurements.filter(sm => sm.size === size && sm.is_active)
-                const hasAvailableMeasurements = sizeMeasurements.some(sm => sm.stock > 0)
-                const isSelected = selectedSize === size
-                
-                return (
-                  <button
-                    key={size}
-                    onClick={() => {
-                      if (hasAvailableMeasurements) {
-                        setSelectedSize(size)
-                        setShowSizeDetails(true)
-                      }
-                    }}
-                    disabled={!hasAvailableMeasurements}
-                    className={`
-                      relative py-3 px-4 rounded-lg border-2 font-medium transition-all duration-200
-                      ${isSelected 
-                        ? 'border-blue-wardrobe-dark bg-blue-wardrobe-dark text-white' 
-                        : !hasAvailableMeasurements
-                        ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed line-through'
-                        : 'border-gray-300 text-gray-700 hover:border-blue-wardrobe-light hover:bg-blue-50'
-                      }
-                    `}
-                  >
-                    {size}
-                    {!hasAvailableMeasurements && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
+            
+            {/* Check if size measurements exist */}
+            {!design.size_measurements || design.size_measurements.length === 0 ? (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <div>
+                    <div className="text-yellow-800 font-medium">Size measurements not available</div>
+                    <div className="text-yellow-600 text-sm">Please contact admin to set up size measurements for this design.</div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-4 gap-2 max-w-xs">
+                  {[6, 8, 10, 12, 14, 16, 18, 20].map((size) => {
+                    const sizeMeasurements = design.size_measurements?.filter(sm => sm.size === size && sm.is_active) || []
+                    const hasAvailableMeasurements = sizeMeasurements.some(sm => sm.stock > 0)
+                    const isSelected = selectedSize === size
+                    
+                    return (
+                      <button
+                        key={size}
+                        onClick={() => {
+                          if (hasAvailableMeasurements) {
+                            setSelectedSize(size)
+                            setShowSizeDetails(true)
+                          }
+                        }}
+                        disabled={!hasAvailableMeasurements}
+                        className={`
+                          relative py-3 px-4 rounded-lg border-2 font-medium transition-all duration-200
+                          ${isSelected 
+                            ? 'border-blue-wardrobe-dark bg-blue-wardrobe-dark text-white' 
+                            : !hasAvailableMeasurements
+                            ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed line-through'
+                            : 'border-gray-300 text-gray-700 hover:border-blue-wardrobe-light hover:bg-blue-50'
+                          }
+                        `}
+                      >
+                        {size}
+                        {!hasAvailableMeasurements && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Size Details Modal */}
@@ -302,8 +320,18 @@ export default function Product() {
                 {/* Measurements List */}
                 <div className="space-y-4 mb-8">
                   {design.size_measurements
-                    .filter(sm => sm.size === selectedSize && sm.is_active && sm.stock > 0)
-                    .map((measurement, index) => (
+                    .filter(sm => sm.size === selectedSize && sm.is_active && sm.stock > 0).length === 0 ? (
+                    <div className="text-center py-8">
+                      <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
+                      <div className="text-gray-500 font-medium">No measurements available</div>
+                      <div className="text-gray-400 text-sm">This size is currently out of stock</div>
+                    </div>
+                  ) : (
+                    design.size_measurements
+                      .filter(sm => sm.size === selectedSize && sm.is_active && sm.stock > 0)
+                      .map((measurement, index) => (
                       <div
                         key={measurement.id}
                         className={`relative border-2 rounded-xl p-5 cursor-pointer transition-all duration-300 hover:luxury-shadow-md ${
@@ -365,7 +393,8 @@ export default function Product() {
                           </div>
                         </div>
                       </div>
-                    ))}
+                    ))
+                  )}
                 </div>
 
                 {/* Action Buttons */}

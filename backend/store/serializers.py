@@ -75,7 +75,7 @@ class DesignSerializer(serializers.ModelSerializer):
         return None
     
     def get_total_stock(self, obj):
-        return sum(inventory.stock for inventory in obj.size_inventory.all())
+        return sum(measurement.stock for measurement in obj.size_measurements.all())
 
 
 class CollectionSerializer(serializers.ModelSerializer):

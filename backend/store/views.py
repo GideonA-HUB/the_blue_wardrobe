@@ -45,7 +45,7 @@ class CollectionViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class DesignViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Design.objects.prefetch_related('images', 'size_inventory').all()
+    queryset = Design.objects.prefetch_related('images', 'size_inventory', 'size_measurements').all()
     serializer_class = DesignSerializer
 
 
