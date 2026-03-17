@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import api from '../lib/api'
 
 type Video = {
@@ -13,6 +13,7 @@ type Video = {
 export default function VideoSection() {
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
+  const [playingVideo, setPlayingVideo] = useState<number | null>(null)
 
   useEffect(() => {
     api
@@ -32,14 +33,25 @@ export default function VideoSection() {
       const videoId = url.includes('youtu.be/')
         ? url.split('youtu.be/')[1].split('?')[0]
         : url.split('v=')[1]?.split('&')[0]
-      return `https://www.youtube.com/embed/${videoId}`
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&loop=1&playlist=${videoId}&controls=1&showinfo=0&rel=0&modestbranding=1`
     }
     // Vimeo
     if (url.includes('vimeo.com/')) {
       const videoId = url.split('vimeo.com/')[1].split('?')[0]
-      return `https://player.vimeo.com/video/${videoId}`
+      return `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1&loop=1&byline=0&title=0&portrait=0`
     }
     return url
+  }
+
+  const getVideoThumbnailUrl = (url: string) => {
+    // YouTube thumbnail
+    if (url.includes('youtube.com/watch') || url.includes('youtu.be/')) {
+      const videoId = url.includes('youtu.be/')
+        ? url.split('youtu.be/')[1].split('?')[0]
+        : url.split('v=')[1]?.split('&')[0]
+      return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+    }
+    return null
   }
 
   return (
@@ -63,27 +75,64 @@ export default function VideoSection() {
                 animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
               }}
             >
-              <div className="relative aspect-video bg-gradient-to-br from-blue-100 to-blue-200 overflow-hidden">
-                {video.thumbnail ? (
-                  <img
-                    src={video.thumbnail}
-                    alt={video.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              <div className="relative aspect-[9/16] bg-gradient-to-br from-blue-100 to-blue-200 overflow-hidden">
+                {playingVideo === video.id ? (
+                  <iframe
+                    src={getVideoEmbedUrl(video.video_url)}
+                    title={video.title}
+                    className="w-full h-full object-cover"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <svg className="w-16 h-16 text-blue-wardrobe-light" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  </div>
+                  <>
+                    {video.thumbnail ? (
+                      <img
+                        src={video.thumbnail}
+                        alt={video.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                    ) : (
+                      <img
+                        src={getVideoThumbnailUrl(video.video_url) || ''}
+                        alt={video.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        onError={(e) => {
+                          // Fallback to placeholder if thumbnail fails
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                          target.nextElementSibling?.classList.remove('hidden')
+                        }}
+                      />
+                    )}
+                    <div className="hidden w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200">
+                      <svg className="w-16 h-16 text-blue-wardrobe-light" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                    <div 
+                      className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center cursor-pointer"
+                      onClick={() => setPlayingVideo(video.id)}
+                    >
+                      <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                        <svg className="w-8 h-8 text-blue-wardrobe-dark ml-1" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </>
                 )}
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                  <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <svg className="w-8 h-8 text-blue-wardrobe-dark ml-1" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
+                {playingVideo === video.id && (
+                  <button
+                    onClick={() => setPlayingVideo(null)}
+                    className="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors z-10"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                  </div>
-                </div>
+                  </button>
+                )}
               </div>
               <div className="p-6">
                 <div className="text-xs uppercase tracking-wider text-blue-wardrobe-light mb-2">
