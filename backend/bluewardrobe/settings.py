@@ -170,11 +170,6 @@ STORAGES = {
     },
     'video_storage': {
         'BACKEND': 'cloudinary_storage.storage.RawMediaCloudinaryStorage' if USE_CLOUDINARY else 'django.core.files.storage.FileSystemStorage',
-        'OPTIONS': {
-            'resource_type': 'video',
-            'use_filename': True,
-            'unique_filename': True,
-        } if USE_CLOUDINARY else {},
     },
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage' if HAS_WHITENOISE else 'django.contrib.staticfiles.storage.StaticFilesStorage',

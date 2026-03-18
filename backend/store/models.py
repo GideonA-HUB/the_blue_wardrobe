@@ -30,18 +30,8 @@ class Collection(models.Model):
         return f"{self.code} - {self.title}"
 
 
-def get_video_storage():
-    """Get the appropriate video storage backend"""
-    from django.core.files.storage import storages
-    try:
-        return storages['video_storage']
-    except (KeyError, ImportError):
-        # Fallback to default storage if video_storage is not configured
-        return default_storage
-
-
 class Design(models.Model):
-    collection = models.ForeignKey(Collection, related_name='designs', on_delete=models.CASCADE)
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, related_name='designs')
     sku = models.CharField(max_length=100, unique=True)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -51,8 +41,8 @@ class Design(models.Model):
         upload_to='designs/videos/', 
         null=True, 
         blank=True, 
-        help_text='Product video file (MP4, WebM, etc.)',
-        storage=get_video_storage
+        storage='video_storage',
+        help_text='Product video file (MP4, WebM, etc.)'
     )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
