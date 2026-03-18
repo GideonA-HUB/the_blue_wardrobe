@@ -68,10 +68,14 @@ class DesignSerializer(serializers.ModelSerializer):
     
     def get_video_url(self, obj):
         if obj.video:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.video.url)
-            return obj.video.url
+            try:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.video.url)
+                return obj.video.url
+            except AttributeError:
+                # Handle case where video is not a FileField object
+                return None
         return None
     
     def get_total_stock(self, obj):
