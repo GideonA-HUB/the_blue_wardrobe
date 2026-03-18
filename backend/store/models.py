@@ -295,11 +295,29 @@ class Video(models.Model):
     """
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    
+    def get_video_storage():
+        """Get the appropriate video storage backend with fallback"""
+        try:
+            from django.core.files.storage import storages
+            storage = storages['video_storage']
+            # Test if storage has required methods
+            if hasattr(storage, 'generate_filename'):
+                return storage
+            else:
+                print(f"WARNING: video_storage {type(storage)} doesn't have generate_filename, falling back to FileSystemStorage")
+                from django.core.files.storage import FileSystemStorage
+                return FileSystemStorage()
+        except Exception as e:
+            print(f"ERROR: Failed to get video_storage: {e}, falling back to FileSystemStorage")
+            from django.core.files.storage import FileSystemStorage
+            return FileSystemStorage()
+    
     video_file = models.FileField(
         upload_to='videos/', 
         blank=True, 
         null=True,
-        storage='video_storage',
+        storage=get_video_storage,
         help_text='Upload video file directly (MP4, WebM, etc.)'
     )
     video_url = models.URLField(

@@ -200,6 +200,32 @@ class VideoAdmin(admin.ModelAdmin):
     list_filter = ('video_type', 'is_featured')
     search_fields = ('title', 'description')
     list_editable = ('is_featured', 'order')
+    fieldsets = (
+        (None, {
+            'fields': ('title', 'description', 'video_type')
+        }),
+        ('Video Content', {
+            'fields': ('video_file', 'video_url'),
+            'description': 'Upload a video file directly OR provide an external video URL (not both).'
+        }),
+        ('Thumbnail', {
+            'fields': ('thumbnail',),
+            'classes': ('collapse',)
+        }),
+        ('Display Options', {
+            'fields': ('is_featured', 'order')
+        }),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        # Ensure only one video source is used
+        if obj.video_file and obj.video_url:
+            # If both are provided, prioritize the uploaded file
+            obj.video_url = ''
+        elif not obj.video_file and not obj.video_url:
+            # If neither is provided, that's fine (video might be added later)
+            pass
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(InfoCard)
