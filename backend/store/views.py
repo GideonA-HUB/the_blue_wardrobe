@@ -16,12 +16,12 @@ from django.middleware.csrf import get_token
 
 from .models import (
     Collection, Design, DesignImage, SizeInventory, Cart, CartItem, SiteAsset, ContactMessage, Subscriber, Order,
-    Customer, OrderItem, PaymentLog, Video, InfoCard, Material
+    Customer, OrderItem, PaymentLog, Video, VideoComment, VideoLike, InfoCard, Material
 )
 from .serializers import (
     CollectionSerializer, DesignSerializer, SiteAssetSerializer,
     ContactMessageSerializer, SubscriberSerializer, OrderSerializer,
-    VideoSerializer, InfoCardSerializer, MaterialSerializer, CustomerSerializer,
+    VideoSerializer, VideoCommentSerializer, InfoCardSerializer, MaterialSerializer, CustomerSerializer,
     CartSerializer, CartItemSerializer
 )
 
@@ -168,6 +168,53 @@ class SiteAssetViewSet(viewsets.ReadOnlyModelViewSet):
 class VideoViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Video.objects.all().order_by('order', '-created_at')
     serializer_class = VideoSerializer
+    
+    @action(detail=True, methods=['post'])
+    def like(self, request, pk=None):
+        video = self.get_object()
+        ip_address = request.META.get('REMOTE_ADDR')
+        session_key = request.session.session_key or ''
+        
+        if ip_address:
+            like, created = VideoLike.objects.get_or_create(
+                video=video,
+                ip_address=ip_address,
+                defaults={'session_key': session_key}
+            )
+            
+            if created:
+                video.likes += 1
+                video.save(update_fields=['likes'])
+                return Response({'liked': True, 'likes': video.likes})
+            else:
+                like.delete()
+                video.likes = max(0, video.likes - 1)
+                video.save(update_fields=['likes'])
+                return Response({'liked': False, 'likes': video.likes})
+        
+        return Response({'error': 'Unable to process like'}, status=400)
+    
+    @action(detail=True, methods=['post'])
+    def increment_views(self, request, pk=None):
+        video = self.get_object()
+        video.increment_views()
+        return Response({'views': video.views})
+    
+    @action(detail=True, methods=['get', 'post'])
+    def comments(self, request, pk=None):
+        video = self.get_object()
+        
+        if request.method == 'GET':
+            comments = video.comments.filter(is_active=True, parent=None)
+            serializer = VideoCommentSerializer(comments, many=True, context={'request': request})
+            return Response(serializer.data)
+        
+        elif request.method == 'POST':
+            serializer = VideoCommentSerializer(data=request.data, context={'request': request})
+            if serializer.is_valid():
+                serializer.save(video=video)
+                return Response(serializer.data, status=201)
+            return Response(serializer.errors, status=400)
 
 
 class InfoCardViewSet(viewsets.ReadOnlyModelViewSet):

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Collection, Design, DesignImage, SizeMeasurement, SizeInventory, Cart, CartItem, Material, SiteAsset, Order, OrderItem,
-    Customer, ContactMessage, Subscriber, Video, InfoCard
+    Customer, ContactMessage, Subscriber, Video, VideoComment, VideoLike, InfoCard
 )
 
 
@@ -189,9 +189,64 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class VideoSerializer(serializers.ModelSerializer):
+    video_file_url = serializers.SerializerMethodField()
+    thumbnail_url = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
+    
     class Meta:
         model = Video
-        fields = ['id', 'title', 'description', 'video_url', 'thumbnail', 'video_type', 'is_featured', 'order', 'created_at']
+        fields = [
+            'id', 'title', 'description', 'video_file', 'video_file_url', 
+            'video_url', 'thumbnail', 'thumbnail_url', 'video_type', 
+            'is_featured', 'order', 'views', 'likes', 'comments_count', 
+            'is_liked', 'created_at'
+        ]
+    
+    def get_video_file_url(self, obj):
+        if obj.video_file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.video_file.url)
+            return obj.video_file.url
+        return None
+    
+    def get_thumbnail_url(self, obj):
+        if obj.thumbnail:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.thumbnail.url)
+            return obj.thumbnail.url
+        return None
+    
+    def get_comments_count(self, obj):
+        return obj.comments.filter(is_active=True).count()
+    
+    def get_is_liked(self, obj):
+        request = self.context.get('request')
+        if request and hasattr(request, 'META'):
+            ip_address = request.META.get('REMOTE_ADDR')
+            if ip_address:
+                return obj.video_likes.filter(ip_address=ip_address).exists()
+        return False
+
+
+class VideoCommentSerializer(serializers.ModelSerializer):
+    replies = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = VideoComment
+        fields = ['id', 'name', 'email', 'content', 'is_reply', 'replies', 'created_at']
+        read_only_fields = ['id', 'created_at']
+    
+    def get_replies(self, obj):
+        if obj.is_reply:
+            return []
+        return VideoCommentSerializer(
+            obj.replies.filter(is_active=True), 
+            many=True, 
+            context=self.context
+        ).data
 
 
 class InfoCardSerializer(serializers.ModelSerializer):

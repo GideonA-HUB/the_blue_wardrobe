@@ -305,8 +305,23 @@ class Video(models.Model):
     """
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    video_url = models.URLField(help_text='YouTube, Vimeo, or direct video URL')
-    thumbnail = models.ImageField(upload_to='videos/', blank=True, null=True)
+    video_file = models.FileField(
+        upload_to='videos/', 
+        blank=True, 
+        null=True,
+        help_text='Upload video file directly (MP4, WebM, etc.)'
+    )
+    video_url = models.URLField(
+        blank=True, 
+        null=True,
+        help_text='OR external video URL (YouTube, Vimeo, etc.)'
+    )
+    thumbnail = models.ImageField(
+        upload_to='video_thumbnails/', 
+        blank=True, 
+        null=True,
+        help_text='Video thumbnail image'
+    )
     video_type = models.CharField(
         max_length=50,
         choices=[
@@ -320,6 +335,8 @@ class Video(models.Model):
     )
     is_featured = models.BooleanField(default=False)
     order = models.IntegerField(default=0, help_text='Display order (lower numbers first)')
+    views = models.PositiveIntegerField(default=0)
+    likes = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -327,6 +344,62 @@ class Video(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def has_video_file(self):
+        return bool(self.video_file)
+
+    @property
+    def video_source(self):
+        if self.video_file:
+            return 'uploaded'
+        elif self.video_url:
+            return 'external'
+        return 'none'
+
+    def increment_views(self):
+        self.views += 1
+        self.save(update_fields=['views'])
+
+
+class VideoComment(models.Model):
+    """Comments on videos"""
+    video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='comments')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    content = models.TextField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f'Comment by {self.name} on {self.video.title}'
+
+    @property
+    def is_reply(self):
+        return self.parent is not None
+
+    @property
+    def replies_count(self):
+        return self.replies.filter(is_active=True).count()
+
+
+class VideoLike(models.Model):
+    """Likes on videos"""
+    video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='video_likes')
+    ip_address = models.GenericIPAddressField()
+    session_key = models.CharField(max_length=40, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['video', 'ip_address']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Like on {self.video.title} from {self.ip_address}'
 
 
 class BusinessProfile(models.Model):
