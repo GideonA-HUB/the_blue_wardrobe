@@ -14,6 +14,7 @@ export default function VideoSection() {
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
   const [playingVideo, setPlayingVideo] = useState<number | null>(null)
+  const [videoError, setVideoError] = useState<number | null>(null)
 
   useEffect(() => {
     api
@@ -33,12 +34,12 @@ export default function VideoSection() {
       const videoId = url.includes('youtu.be/')
         ? url.split('youtu.be/')[1].split('?')[0]
         : url.split('v=')[1]?.split('&')[0]
-      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&loop=1&playlist=${videoId}&controls=1&showinfo=0&rel=0&modestbranding=1`
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&controls=1&showinfo=0&rel=0&modestbranding=1`
     }
     // Vimeo
     if (url.includes('vimeo.com/')) {
       const videoId = url.split('vimeo.com/')[1].split('?')[0]
-      return `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1&loop=1&byline=0&title=0&portrait=0`
+      return `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1&byline=0&title=0&portrait=0`
     }
     return url
   }
@@ -52,6 +53,23 @@ export default function VideoSection() {
       return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
     }
     return null
+  }
+
+  const handleVideoPlay = (video: Video) => {
+    setVideoError(null)
+    setPlayingVideo(video.id)
+    
+    // Fallback: if YouTube embed fails, open in new tab after 3 seconds
+    setTimeout(() => {
+      if (video.video_url.includes('youtube.com') || video.video_url.includes('youtu.be')) {
+        setVideoError(video.id)
+        setPlayingVideo(null)
+      }
+    }, 3000)
+  }
+
+  const openVideoInNewTab = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   return (
@@ -77,14 +95,43 @@ export default function VideoSection() {
             >
               <div className="relative aspect-[9/16] bg-gradient-to-br from-blue-100 to-blue-200 overflow-hidden">
                 {playingVideo === video.id ? (
-                  <iframe
-                    src={getVideoEmbedUrl(video.video_url)}
-                    title={video.title}
-                    className="w-full h-full object-cover"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-                  />
+                  <div className="relative w-full h-full">
+                    <iframe
+                      src={getVideoEmbedUrl(video.video_url)}
+                      title={video.title}
+                      className="w-full h-full object-cover"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      onError={() => {
+                        setVideoError(video.id)
+                        setPlayingVideo(null)
+                      }}
+                    />
+                    <button
+                      onClick={() => setPlayingVideo(null)}
+                      className="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors z-10"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : videoError === video.id ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200 p-6">
+                    <div className="text-center">
+                      <svg className="w-12 h-12 text-blue-wardrobe-light mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className="text-blue-wardrobe-dark font-medium mb-2">Video Player Unavailable</div>
+                      <div className="text-sm text-gray-600 mb-4">Watch on YouTube instead</div>
+                      <button
+                        onClick={() => openVideoInNewTab(video.video_url)}
+                        className="px-4 py-2 bg-blue-wardrobe-dark text-white rounded-full hover:bg-blue-wardrobe-light transition-colors text-sm"
+                      >
+                        Open in YouTube
+                      </button>
+                    </div>
+                  </div>
                 ) : (
                   <>
                     {video.thumbnail ? (
@@ -113,7 +160,7 @@ export default function VideoSection() {
                     </div>
                     <div 
                       className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center cursor-pointer"
-                      onClick={() => setPlayingVideo(video.id)}
+                      onClick={() => handleVideoPlay(video)}
                     >
                       <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
                         <svg className="w-8 h-8 text-blue-wardrobe-dark ml-1" fill="currentColor" viewBox="0 0 24 24">
@@ -122,16 +169,6 @@ export default function VideoSection() {
                       </div>
                     </div>
                   </>
-                )}
-                {playingVideo === video.id && (
-                  <button
-                    onClick={() => setPlayingVideo(null)}
-                    className="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors z-10"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
                 )}
               </div>
               <div className="p-6">
