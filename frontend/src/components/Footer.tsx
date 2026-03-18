@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
-type SocialBrand = 'instagram' | 'facebook' | 'twitter' | 'pinterest' | 'youtube'
+type SocialBrand = 'instagram' | 'facebook' | 'tiktok' | 'whatsapp' | 'youtube'
 
 function SocialIcon({ brand }: { brand: SocialBrand }) {
   const common = 'w-5 h-5'
@@ -30,22 +30,27 @@ function SocialIcon({ brand }: { brand: SocialBrand }) {
           />
         </svg>
       )
-    case 'twitter':
+    case 'tiktok':
       return (
         <svg viewBox="0 0 24 24" className={common} aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="4" fill="#1DA1F2" />
+          <rect x="3" y="3" width="18" height="18" rx="4" fill="#000000" />
           <path
-            d="M17.8 9.1c.5-.3.9-.8 1.1-1.3-.5.3-1 .4-1.6.5-.5-.5-1.2-.8-1.9-.8-1.5 0-2.7 1.3-2.7 2.8 0 .2 0 .5.1.7-2.2-.1-4.1-1.2-5.4-2.9-.2.4-.3.8-.3 1.3 0 .9.4 1.7 1.2 2.2-.4 0-.7-.1-1-.3 0 1.3.9 2.4 2.1 2.6-.2.1-.5.1-.8.1-.2 0-.4 0-.6-.1.4 1.1 1.5 1.9 2.7 1.9-1.1.9-2.5 1.4-4 1.4-.3 0-.5 0-.8-.1 1.4.9 3 1.4 4.7 1.4 5.7 0 8.8-4.9 8.8-9.1v-.3c.6-.4 1.1-.9 1.5-1.5-.6.3-1.2.5-1.8.6z"
+            d="M12 2.5c.6 0 1 .4 1 1v10.2c0 .6-.4 1-1 1s-1-.4-1-1V3.5c0-.6.4-1 1-1z"
             fill="#fff"
           />
+          <path
+            d="M16 5.5c.6 0 1 .4 1 1v5.2c0 2.8-2.2 5-5 5s-5-2.2-5-5 2.2-5 5-5c.6 0 1 .4 1 1s-.4 1-1 1c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3V6.5c0-.6.4-1 1-1z"
+            fill="#fff"
+          />
+          <circle cx="16" cy="8" r="1.5" fill="#FF0050" />
         </svg>
       )
-    case 'pinterest':
+    case 'whatsapp':
       return (
         <svg viewBox="0 0 24 24" className={common} aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="4" fill="#E60023" />
+          <rect x="3" y="3" width="18" height="18" rx="4" fill="#25D366" />
           <path
-            d="M12 6.3c-3 0-4.5 2.1-4.5 4.3 0 1.1.6 2.4 1.6 2.8.2.1.2 0 .3-.1.1-.2.4-1 .4-1.1 0-.1 0-.2-.1-.3-.3-.4-.5-1-.5-1.5 0-1.4 1.1-2.7 2.8-2.7 1.5 0 2.5 1 2.5 2.4 0 1.7-.9 2.9-2 2.9-.6 0-1.1-.5-.9-1.1.2-.7.4-1.4.4-1.9 0-.4-.2-.7-.7-.7-.6 0-1 0-1.3 1-.2.7-.4 1.5-.4 2.1 0 .9.6 1.6 1.8 1.6 1.4 0 2.6-.9 3.1-2.6.2-.6.3-1.2.3-1.8 0-2-1.5-3.8-3.9-3.8z"
+            d="M12 2C6.5 2 2 6.5 2 12c0 2 .6 3.8 1.6 5.3L2 22l4.8-1.6C8.3 21.4 10.1 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18c-1.7 0-3.3-.5-4.6-1.4l-.3-.2-3.1 1 1-3-.2-.3C4.5 14.8 4 13.2 4 11.5 4 7.4 7.4 4 11.5 4S19 7.4 19 11.5 15.6 19 11.5 19H12zm3.5-6.5c-.2 0-.5-.1-.8-.2-.3-.1-1.7-.8-2-.9-.3-.1-.5-.2-.7.2-.2.4-.8 1-.9 1.2-.2.2-.4.2-.7.1-.3-.1-1.3-.5-2.5-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.4.1-.1.2-.3.3-.4.1-.1.1-.3 0-.4-.1-.1-.4-1-.6-1.4-.2-.4-.3-.4-.5-.4h-.5c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.1 3c.1.2 1.9 3 4.7 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.4.2-.7.2-1.3.1-1.4z"
             fill="#fff"
           />
         </svg>
@@ -64,11 +69,11 @@ function SocialIcon({ brand }: { brand: SocialBrand }) {
 
 export default function Footer() {
   const socialLinks: { name: string; brand: SocialBrand; url: string }[] = [
-    { name: 'Instagram', brand: 'instagram', url: 'https://instagram.com/thebluewardrobe' },
-    { name: 'Facebook', brand: 'facebook', url: 'https://facebook.com/thebluewardrobe' },
-    { name: 'Twitter', brand: 'twitter', url: 'https://twitter.com/thebluewardrobe' },
-    { name: 'Pinterest', brand: 'pinterest', url: 'https://pinterest.com/thebluewardrobe' },
-    { name: 'YouTube', brand: 'youtube', url: 'https://youtube.com/@thebluewardrobe' },
+    { name: 'Instagram', brand: 'instagram', url: 'https://www.instagram.com/thebluewardrobe.ng?igsh=NGd6dDA3ajJ3b2x5&utm_source=qr' },
+    { name: 'Facebook', brand: 'facebook', url: 'https://www.facebook.com/share/1GSdNX3xXC/?mibextid=wwXIfr' },
+    { name: 'TikTok', brand: 'tiktok', url: 'https://www.tiktok.com/@thebluewardrobe_ng?_r=1&_t=ZS-94f2kufoyEy' },
+    { name: 'WhatsApp', brand: 'whatsapp', url: 'https://wa.me/message/IGIYXO342VMUH1' },
+    { name: 'YouTube', brand: 'youtube', url: 'https://youtube.com/@thebluewardrobe?si=JxL5fTvSt1_JotHs' },
   ]
 
   return (
@@ -78,10 +83,21 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-1 md:col-span-2">
             <h3 className="mb-4 font-serif text-2xl font-semibold !text-white">THE BLUE WARDROBE</h3>
-            <p className="mb-6 max-w-md text-sm leading-relaxed text-blue-50/95">
+            <p className="mb-4 max-w-md text-sm leading-relaxed text-blue-50/95">
               Curating rare fabrics from around the world, transformed into timeless luxury designs.
               Each piece in The Dress Diaries Collection tells a story of craftsmanship and global elegance.
             </p>
+            
+            {/* Address */}
+            <div className="mb-6">
+              <h4 className="mb-2 text-sm font-semibold uppercase tracking-wider !text-blue-50">Visit Our Studio</h4>
+              <address className="text-sm text-blue-50/95 not-italic">
+                Shop 20, 445 Plaza<br />
+                Nnebisi Road<br />
+                Asaba, Delta State<br />
+                Nigeria
+              </address>
+            </div>
             
             {/* Social Media Links */}
             <div>

@@ -29,17 +29,17 @@ export default function VideoSection() {
   if (loading || videos.length === 0) return null
 
   const getVideoEmbedUrl = (url: string) => {
-    // YouTube
+    // YouTube - use privacy-enhanced domain
     if (url.includes('youtube.com/watch') || url.includes('youtu.be/')) {
       const videoId = url.includes('youtu.be/')
         ? url.split('youtu.be/')[1].split('?')[0]
         : url.split('v=')[1]?.split('&')[0]
-      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&controls=1&showinfo=0&rel=0&modestbranding=1`
+      return `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&showinfo=0&modestbranding=1`
     }
     // Vimeo
     if (url.includes('vimeo.com/')) {
       const videoId = url.split('vimeo.com/')[1].split('?')[0]
-      return `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1&byline=0&title=0&portrait=0`
+      return `https://player.vimeo.com/video/${videoId}?byline=0&title=0&portrait=0`
     }
     return url
   }
@@ -58,14 +58,6 @@ export default function VideoSection() {
   const handleVideoPlay = (video: Video) => {
     setVideoError(null)
     setPlayingVideo(video.id)
-    
-    // Fallback: if YouTube embed fails, open in new tab after 3 seconds
-    setTimeout(() => {
-      if (video.video_url.includes('youtube.com') || video.video_url.includes('youtu.be')) {
-        setVideoError(video.id)
-        setPlayingVideo(null)
-      }
-    }, 3000)
   }
 
   const openVideoInNewTab = (url: string) => {
