@@ -16,7 +16,7 @@ from django.middleware.csrf import get_token
 
 from .models import (
     Collection, Design, DesignImage, SizeInventory, Cart, CartItem, SiteAsset, ContactMessage, Subscriber, Order,
-    Customer, OrderItem, PaymentLog, Video, VideoComment, VideoLike, InfoCard, Material
+    Customer, OrderItem, PaymentLog, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, Material
 )
 from .serializers import (
     CollectionSerializer, DesignSerializer, SiteAssetSerializer,
@@ -172,7 +172,14 @@ class VideoViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['post'])
     def like(self, request, pk=None):
         video = self.get_object()
-        ip_address = request.META.get('REMOTE_ADDR')
+        
+        # Get client IP
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip_address = x_forwarded_for.split(',')[0]
+        else:
+            ip_address = request.META.get('REMOTE_ADDR')
+        
         session_key = request.session.session_key or ''
         
         if ip_address:
@@ -183,14 +190,16 @@ class VideoViewSet(viewsets.ReadOnlyModelViewSet):
             )
             
             if created:
-                video.likes += 1
-                video.save(update_fields=['likes'])
-                return Response({'liked': True, 'likes': video.likes})
+                return Response({
+                    'liked': True, 
+                    'likes_count': video.likes_count
+                })
             else:
                 like.delete()
-                video.likes = max(0, video.likes - 1)
-                video.save(update_fields=['likes'])
-                return Response({'liked': False, 'likes': video.likes})
+                return Response({
+                    'liked': False, 
+                    'likes_count': video.likes_count
+                })
         
         return Response({'error': 'Unable to process like'}, status=400)
     
@@ -215,6 +224,44 @@ class VideoViewSet(viewsets.ReadOnlyModelViewSet):
                 serializer.save(video=video)
                 return Response(serializer.data, status=201)
             return Response(serializer.errors, status=400)
+    
+    @action(detail=True, methods=['post'], url_path='comments/(?P<comment_id>[^/.]+)/like')
+    def comment_like(self, request, pk=None, comment_id=None):
+        """Like or unlike a specific comment"""
+        try:
+            comment = VideoComment.objects.get(id=comment_id, video__id=pk, is_active=True)
+        except VideoComment.DoesNotExist:
+            return Response({'error': 'Comment not found'}, status=404)
+        
+        # Get client IP
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip_address = x_forwarded_for.split(',')[0]
+        else:
+            ip_address = request.META.get('REMOTE_ADDR')
+        
+        session_key = request.session.session_key or ''
+        
+        if ip_address:
+            like, created = VideoCommentLike.objects.get_or_create(
+                comment=comment,
+                ip_address=ip_address,
+                defaults={'session_key': session_key}
+            )
+            
+            if created:
+                return Response({
+                    'liked': True, 
+                    'likes_count': comment.likes_count
+                })
+            else:
+                like.delete()
+                return Response({
+                    'liked': False, 
+                    'likes_count': comment.likes_count
+                })
+        
+        return Response({'error': 'Unable to process like'}, status=400)
 
 
 class InfoCardViewSet(viewsets.ReadOnlyModelViewSet):

@@ -3,7 +3,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from .models import (
     Material, Collection, Design, DesignImage, SizeMeasurement, SizeInventory, Cart, CartItem, SiteAsset, Customer, Order, OrderItem,
-    ContactMessage, Subscriber, PaymentLog, Video, InfoCard,
+    ContactMessage, Subscriber, PaymentLog, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard,
     BusinessProfile, BlogPost, BlogPostMedia, BlogComment, BlogPostLike, BlogCommentLike,
 )
 
@@ -196,10 +196,11 @@ class PaymentLogAdmin(admin.ModelAdmin):
 
 @admin.register(Video)
 class VideoAdmin(admin.ModelAdmin):
-    list_display = ('title', 'video_type', 'is_featured', 'order', 'created_at')
-    list_filter = ('video_type', 'is_featured')
+    list_display = ('title', 'video_type', 'views', 'likes_count', 'comments_count', 'is_featured', 'order', 'created_at')
+    list_filter = ('video_type', 'is_featured', 'created_at')
     search_fields = ('title', 'description')
     list_editable = ('is_featured', 'order')
+    readonly_fields = ('views', 'likes_count', 'comments_count', 'created_at')
     fieldsets = (
         (None, {
             'fields': ('title', 'description', 'video_type')
@@ -215,6 +216,10 @@ class VideoAdmin(admin.ModelAdmin):
         ('Display Options', {
             'fields': ('is_featured', 'order')
         }),
+        ('Statistics', {
+            'fields': ('views', 'likes_count', 'comments_count'),
+            'classes': ('collapse',)
+        }),
     )
     
     def save_model(self, request, obj, form, change):
@@ -226,6 +231,48 @@ class VideoAdmin(admin.ModelAdmin):
             # If neither is provided, that's fine (video might be added later)
             pass
         super().save_model(request, obj, form, change)
+
+
+@admin.register(VideoComment)
+class VideoCommentAdmin(admin.ModelAdmin):
+    list_display = ('video', 'name', 'email', 'content_preview', 'parent', 'is_active', 'likes_count', 'created_at')
+    list_filter = ('is_active', 'created_at', 'video')
+    search_fields = ('name', 'email', 'content', 'video__title')
+    list_editable = ('is_active',)
+    readonly_fields = ('likes_count', 'created_at')
+    
+    def content_preview(self, obj):
+        return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
+    content_preview.short_description = 'Content'
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('video', 'parent')
+
+
+@admin.register(VideoLike)
+class VideoLikeAdmin(admin.ModelAdmin):
+    list_display = ('video', 'ip_address', 'session_key', 'created_at')
+    list_filter = ('created_at', 'video')
+    search_fields = ('video__title', 'ip_address', 'session_key')
+    readonly_fields = ('created_at',)
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('video')
+
+
+@admin.register(VideoCommentLike)
+class VideoCommentLikeAdmin(admin.ModelAdmin):
+    list_display = ('comment', 'comment_author', 'ip_address', 'session_key', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('comment__content', 'comment__name', 'ip_address', 'session_key')
+    readonly_fields = ('created_at',)
+    
+    def comment_author(self, obj):
+        return obj.comment.name
+    comment_author.short_description = 'Comment Author'
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('comment')
 
 
 @admin.register(InfoCard)

@@ -370,6 +370,14 @@ class Video(models.Model):
         self.views += 1
         self.save(update_fields=['views'])
 
+    @property
+    def likes_count(self):
+        return self.video_likes.count()
+
+    @property
+    def comments_count(self):
+        return self.comments.filter(is_active=True).count()
+
 
 class VideoComment(models.Model):
     """Comments on videos"""
@@ -395,6 +403,10 @@ class VideoComment(models.Model):
     def replies_count(self):
         return self.replies.filter(is_active=True).count()
 
+    @property
+    def likes_count(self):
+        return self.comment_likes.count()
+
 
 class VideoLike(models.Model):
     """Likes on videos"""
@@ -409,6 +421,21 @@ class VideoLike(models.Model):
 
     def __str__(self):
         return f'Like on {self.video.title} from {self.ip_address}'
+
+
+class VideoCommentLike(models.Model):
+    """Likes on video comments"""
+    comment = models.ForeignKey(VideoComment, on_delete=models.CASCADE, related_name='comment_likes')
+    ip_address = models.GenericIPAddressField()
+    session_key = models.CharField(max_length=40, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['comment', 'ip_address']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Like on comment by {self.comment.name} from {self.ip_address}'
 
 
 class BusinessProfile(models.Model):
