@@ -309,6 +309,7 @@ class Video(models.Model):
         upload_to='videos/', 
         blank=True, 
         null=True,
+        storage='video_storage',
         help_text='Upload video file directly (MP4, WebM, etc.)'
     )
     video_url = models.URLField(

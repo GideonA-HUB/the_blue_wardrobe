@@ -18,6 +18,8 @@ CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', ''),
     'API_KEY': os.getenv('CLOUDINARY_API_KEY', ''),
     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', ''),
+    'VIDEO_RESOURCE_TYPE': 'video',
+    'INVALID_IMAGE_ERROR': 'Invalid file format',
 }
 USE_CLOUDINARY = all(CLOUDINARY_STORAGE.values())
 
@@ -168,6 +170,11 @@ STORAGES = {
     },
     'video_storage': {
         'BACKEND': 'cloudinary_storage.storage.RawMediaCloudinaryStorage' if USE_CLOUDINARY else 'django.core.files.storage.FileSystemStorage',
+        'OPTIONS': {
+            'resource_type': 'video',
+            'use_filename': True,
+            'unique_filename': True,
+        } if USE_CLOUDINARY else {},
     },
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage' if HAS_WHITENOISE else 'django.contrib.staticfiles.storage.StaticFilesStorage',
