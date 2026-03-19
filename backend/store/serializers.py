@@ -262,14 +262,34 @@ class VideoCommentSerializer(serializers.ModelSerializer):
             'id', 'video', 'parent', 'name', 'email', 'content', 
             'is_active', 'likes_count', 'is_liked', 'replies', 'created_at'
         ]
-        read_only_fields = ['is_active', 'created_at']
+        read_only_fields = ['is_active', 'created_at', 'video']
     
     def validate_parent(self, value):
-        # Validate that parent comment exists and belongs to the same video
-        if value:
-            # This will be validated in the view after we have the video context
-            return value
-        return None
+        # Allow None for top-level comments
+        if value is None:
+            return None
+        
+        # For replies, validate that the parent exists
+        try:
+            parent_comment = VideoComment.objects.get(id=value, is_active=True)
+            return parent_comment
+        except VideoComment.DoesNotExist:
+            raise serializers.ValidationError("Parent comment not found")
+    
+    def validate_name(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Name is required")
+        return value.strip()
+    
+    def validate_email(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Email is required")
+        return value.strip()
+    
+    def validate_content(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Content is required")
+        return value.strip()
     
     def get_replies(self, obj):
         # Get only active replies

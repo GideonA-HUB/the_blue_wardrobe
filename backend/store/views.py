@@ -230,17 +230,33 @@ class VideoViewSet(viewsets.ReadOnlyModelViewSet):
                         is_active=True
                     )
                     data['parent'] = parent_comment.id
-                except VideoComment.DoesNotExist:
-                    return Response({'error': 'Parent comment not found'}, status=400)
+                except (ValueError, VideoComment.DoesNotExist):
+                    return Response({
+                        'error': 'Parent comment not found',
+                        'details': f'Invalid parent ID: {data.get("parent")}'
+                    }, status=400)
             else:
                 # Remove parent field if it's empty or not provided
                 data.pop('parent', None)
             
+            # Add video to data (since it's read_only in serializer)
+            data['video'] = video.id
+            
             serializer = VideoCommentSerializer(data=data, context={'request': request})
             if serializer.is_valid():
-                serializer.save(video=video)
-                return Response(serializer.data, status=201)
-            return Response(serializer.errors, status=400)
+                try:
+                    comment = serializer.save()
+                    return Response(VideoCommentSerializer(comment, context={'request': request}).data, status=201)
+                except Exception as e:
+                    return Response({
+                        'error': 'Failed to save comment',
+                        'details': str(e)
+                    }, status=500)
+            else:
+                return Response({
+                    'error': 'Validation failed',
+                    'details': serializer.errors
+                }, status=400)
     
     @action(detail=True, methods=['post'], url_path='comments/(?P<comment_id>[^/.]+)/like')
     def comment_like(self, request, pk=None, comment_id=None):

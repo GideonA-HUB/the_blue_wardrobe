@@ -98,7 +98,12 @@ export default function VideoSection() {
         // Explicitly exclude parent field for top-level comments
       }
       
+      console.log('Submitting comment:', commentData)
+      
       const response = await api.post(`/videos/${selectedVideo.id}/comments/`, commentData)
+      
+      console.log('Comment response:', response.data)
+      
       setComments([...comments, response.data])
       setNewComment({ name: '', email: '', content: '' })
       
@@ -108,8 +113,16 @@ export default function VideoSection() {
           ? { ...video, comments_count: video.comments_count + 1 }
           : video
       ))
-    } catch (error) {
-      console.log('Failed to submit comment')
+    } catch (error: any) {
+      console.error('Failed to submit comment:', error)
+      console.error('Error response:', error.response?.data)
+      
+      // Show user-friendly error message
+      if (error.response?.data?.details) {
+        alert(`Failed to submit comment: ${error.response.data.details}`)
+      } else {
+        alert('Failed to submit comment. Please try again.')
+      }
     }
   }
 
@@ -149,12 +162,18 @@ export default function VideoSection() {
     if (!selectedVideo || !replyContent.trim()) return
 
     try {
-      const response = await api.post(`/videos/${selectedVideo.id}/comments/`, {
+      const replyData = {
         name: replyName,
         email: replyEmail,
         content: replyContent,
         parent: parentCommentId
-      })
+      }
+      
+      console.log('Submitting reply:', replyData)
+      
+      const response = await api.post(`/videos/${selectedVideo.id}/comments/`, replyData)
+      
+      console.log('Reply response:', response.data)
       
       setComments(comments.map(comment => {
         if (comment.id === parentCommentId) {
@@ -178,8 +197,16 @@ export default function VideoSection() {
           ? { ...video, comments_count: video.comments_count + 1 }
           : video
       ))
-    } catch (error) {
-      console.log('Failed to submit reply')
+    } catch (error: any) {
+      console.error('Failed to submit reply:', error)
+      console.error('Error response:', error.response?.data)
+      
+      // Show user-friendly error message
+      if (error.response?.data?.details) {
+        alert(`Failed to submit reply: ${error.response.data.details}`)
+      } else {
+        alert('Failed to submit reply. Please try again.')
+      }
     }
   }
 
