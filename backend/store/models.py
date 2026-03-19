@@ -51,41 +51,29 @@ class Design(models.Model):
     def __str__(self):
         return f"{self.sku} - {self.title}"
     
-    @property
-    def video(self):
-        return self._video
-    
-    @video.setter
-    def video(self, value):
-        # Handle video field issues gracefully
-        if value:
-            # Check if video is a string (invalid for FileField)
-            if isinstance(value, str):
-                print(f"Warning: Video field for design {getattr(self, 'id', 'new')} contains string data. Setting to None.")
-                self._video = None
-            # Check if video is a FileField but has issues
-            elif hasattr(value, 'name'):
-                try:
-                    # Try to access file properties to validate
-                    _ = value.name
-                    if hasattr(value, 'size'):
-                        _ = value.size
-                    self._video = value
-                except (AttributeError, ValueError, OSError) as e:
-                    print(f"Warning: Invalid video file for design {getattr(self, 'id', 'new')}: {e}. Setting to None.")
-                    self._video = None
-            else:
-                self._video = value
-        else:
-            self._video = None
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Initialize _video to None to prevent AttributeError
+        self._video = None
     
     def save(self, *args, **kwargs):
-        # Ensure video field is properly set before saving
-        if hasattr(self, '_video'):
-            # Final validation before save
-            if self._video and isinstance(self._video, str):
-                print(f"Save Warning: Video field for design {getattr(self, 'id', 'new')} still contains string data. Setting to None.")
-                self._video = None
+        # Handle video field issues gracefully before saving
+        if hasattr(self, 'video') and self.video:
+            # Check if video is a string (invalid for FileField)
+            if isinstance(self.video, str):
+                print(f"Warning: Video field for design {getattr(self, 'id', 'new')} contains string data. Setting to None.")
+                # Use Django's internal field access to set to None
+                super(Design, self).__setattr__('video', None)
+            # Check if video is a FileField but has issues
+            elif hasattr(self.video, 'name'):
+                try:
+                    # Try to access file properties to validate
+                    _ = self.video.name
+                    if hasattr(self.video, 'size'):
+                        _ = self.video.size
+                except (AttributeError, ValueError, OSError) as e:
+                    print(f"Warning: Invalid video file for design {getattr(self, 'id', 'new')}: {e}. Setting to None.")
+                    super(Design, self).__setattr__('video', None)
         
         super().save(*args, **kwargs)
 
