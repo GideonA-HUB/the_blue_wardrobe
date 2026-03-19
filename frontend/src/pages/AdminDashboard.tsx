@@ -4,7 +4,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Toolti
 import { 
   FaChartLine, FaShoppingCart, FaUsers, FaEnvelope, FaVideo, FaImages, 
   FaBox, FaEdit, FaTrash, FaPlus, FaSignOutAlt, FaSpinner, FaCheckCircle,
-  FaTimesCircle, FaEye, FaArrowUp, FaArrowDown, FaTshirt, FaUser
+  FaTimesCircle, FaEye, FaArrowUp, FaArrowDown, FaTshirt, FaUser, FaStar
 } from 'react-icons/fa'
 import api from '../lib/api'
 import { useLoading } from '../hooks/useLoading'
@@ -107,6 +107,19 @@ type Material = {
   description: string
 }
 
+type DesignReview = {
+  id: number
+  design: number
+  name: string
+  email: string
+  rating: number
+  comment: string
+  is_approved: boolean
+  created_at: string
+  design_title?: string
+  design_sku?: string
+}
+
 const COLORS = ['#1e40af', '#3b82f6', '#60a5fa', '#93c5fd', '#dbeafe']
 
 export default function AdminDashboard() {
@@ -123,7 +136,8 @@ export default function AdminDashboard() {
   const [designs, setDesigns] = useState<Design[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [materials, setMaterials] = useState<Material[]>([])
-  const [activeTab, setActiveTab] = useState<'overview' | 'collections' | 'designs' | 'videos' | 'info-cards' | 'orders' | 'messages' | 'subscribers' | 'customers' | 'content'>('overview')
+  const [reviews, setReviews] = useState<DesignReview[]>([])
+  const [activeTab, setActiveTab] = useState<'overview' | 'collections' | 'designs' | 'reviews' | 'videos' | 'info-cards' | 'orders' | 'messages' | 'subscribers' | 'customers' | 'content'>('overview')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState<{ type: string; item?: any } | null>(null)
@@ -145,7 +159,7 @@ export default function AdminDashboard() {
     try {
       const headers = { Authorization: `Token ${token}` }
       
-      const [metricsRes, collectionsRes, videosRes, infoCardsRes, ordersRes, messagesRes, subscribersRes, designsRes, customersRes, materialsRes] = await Promise.all([
+      const [metricsRes, collectionsRes, videosRes, infoCardsRes, ordersRes, messagesRes, subscribersRes, designsRes, customersRes, materialsRes, reviewsRes] = await Promise.all([
         api.get('/admin/metrics/', { headers }),
         api.get('/admin/collections/', { headers }),
         api.get('/admin/videos/', { headers }),
@@ -156,6 +170,7 @@ export default function AdminDashboard() {
         api.get('/admin/designs/', { headers }),
         api.get('/admin/customers/', { headers }),
         api.get('/admin/materials/', { headers }).catch(() => ({ data: [] })),
+        api.get('/admin/design-reviews/', { headers }).catch(() => ({ data: [] })),
       ])
       
       setMetrics(metricsRes.data)
@@ -168,6 +183,7 @@ export default function AdminDashboard() {
       setDesigns(designsRes.data)
       setCustomers(customersRes.data)
       setMaterials(materialsRes.data)
+      setReviews(reviewsRes.data)
       setError(null)
     } catch (err: any) {
       setError('Failed to fetch data. Please check your credentials.')
@@ -365,6 +381,7 @@ export default function AdminDashboard() {
             { id: 'overview', label: 'Overview', icon: FaChartLine },
             { id: 'collections', label: 'Collections', icon: FaImages },
             { id: 'designs', label: 'Designs', icon: FaTshirt },
+            { id: 'reviews', label: 'Reviews', icon: FaStar },
             { id: 'videos', label: 'Videos', icon: FaVideo },
             { id: 'info-cards', label: 'Info Cards', icon: FaBox },
             { id: 'orders', label: 'Orders', icon: FaShoppingCart },
@@ -635,6 +652,99 @@ export default function AdminDashboard() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Reviews Tab */}
+        {activeTab === 'reviews' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-md border border-blue-wardrobe-light/10 p-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold text-blue-wardrobe-dark">Design Reviews</h2>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <FaStar className="text-yellow-400" />
+                <span>{reviews.length} Total Reviews</span>
+              </div>
+            </div>
+            {reviews.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed border-blue-wardrobe-light/30 rounded-lg">
+                <FaStar className="mx-auto text-4xl text-blue-wardrobe-light/50 mb-4" />
+                <p className="text-gray-600">No reviews yet. Customers will start reviewing your designs soon.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((review) => (
+                  <motion.div
+                    key={review.id}
+                    className="border border-blue-wardrobe-light/20 rounded-lg p-4 hover:shadow-md transition-all duration-300 bg-white"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                      {/* Review Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <span
+                                key={star}
+                                className={`text-sm ${
+                                  star <= review.rating 
+                                    ? 'text-yellow-400' 
+                                    : 'text-gray-300'
+                                }`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            review.is_approved 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {review.is_approved ? 'Approved' : 'Pending'}
+                          </span>
+                        </div>
+                        <div className="mb-2">
+                          <span className="font-semibold text-blue-wardrobe-dark">{review.name}</span>
+                          <span className="text-gray-500 text-sm ml-2">{review.email}</span>
+                        </div>
+                        <p className="text-gray-700 text-sm leading-relaxed mb-2">{review.comment}</p>
+                        <div className="text-xs text-gray-500">
+                          Design: {review.design_title || `ID: ${review.design}`} | 
+                          Date: {new Date(review.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex gap-2 lg:flex-col">
+                        <button
+                          onClick={() => handleSave('design-reviews', { is_approved: !review.is_approved }, review.id)}
+                          className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                            review.is_approved
+                              ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                              : 'bg-green-100 text-green-800 hover:bg-green-200'
+                          }`}
+                        >
+                          {review.is_approved ? 'Unapprove' : 'Approve'}
+                        </button>
+                        <button
+                          onClick={() => handleDelete('design-reviews', review.id)}
+                          className="text-red-600 hover:text-red-800 transition-colors text-xs"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             )}
           </motion.div>

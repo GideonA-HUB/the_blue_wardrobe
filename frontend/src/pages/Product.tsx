@@ -784,46 +784,67 @@ export default function Product() {
               design.reviews.map((review, index) => (
                 <div 
                   key={review.id} 
-                  className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 animate-fade-in"
+                  className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 animate-fade-in max-w-full"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-wardrobe-light to-purple-wardrobe rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
-                        {review.name.charAt(0).toUpperCase()}
+                  <div className="flex flex-col space-y-4">
+                    {/* Header with user info and rating */}
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      {/* User info */}
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-wardrobe-light to-purple-wardrobe rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 text-sm">
+                          {review.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-gray-900 text-sm sm:text-base truncate">{review.name}</div>
+                          <div className="text-xs sm:text-sm text-gray-500 truncate">{review.email}</div>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-gray-900 truncate">{review.name}</div>
-                        <div className="text-sm text-gray-500 truncate">{review.email}</div>
+                      
+                      {/* Rating and date */}
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span
+                              key={star}
+                              className={`text-sm sm:text-base ${
+                                star <= review.rating 
+                                  ? 'text-yellow-400' 
+                                  : 'text-gray-300'
+                              }`}
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                        <div className="text-xs text-gray-400 whitespace-nowrap">
+                          {new Date(review.created_at).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric', 
+                            year: 'numeric' 
+                          })}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                      <div className="flex items-center gap-1">
-                        {renderStars(review.rating)}
+                    
+                    {/* Review comment */}
+                    <div className="w-full">
+                      <p className="text-gray-700 leading-relaxed text-sm sm:text-base break-words pr-2">{review.comment}</p>
+                    </div>
+                    
+                    {/* Footer */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-gray-100">
+                      <div className="flex gap-3">
+                        <button className="text-xs sm:text-sm text-gray-500 hover:text-blue-wardrobe-dark transition-colors">
+                          👍 Helpful
+                        </button>
+                        <button className="text-xs sm:text-sm text-gray-500 hover:text-blue-wardrobe-dark transition-colors">
+                          🤔 Not helpful
+                        </button>
                       </div>
                       <div className="text-xs text-gray-400 whitespace-nowrap">
-                        {new Date(review.created_at).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric', 
-                          year: 'numeric' 
-                        })}
+                        Verified Purchase
                       </div>
-                    </div>
-                  </div>
-                  <p className="text-gray-700 leading-relaxed break-words">{review.comment}</p>
-                  
-                  {/* Helpful buttons */}
-                  <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                    <div className="flex gap-2">
-                      <button className="text-sm text-gray-500 hover:text-blue-wardrobe-dark transition-colors">
-                        👍 Helpful
-                      </button>
-                      <button className="text-sm text-gray-500 hover:text-blue-wardrobe-dark transition-colors">
-                        🤔 Not helpful
-                      </button>
-                    </div>
-                    <div className="text-xs text-gray-400 whitespace-nowrap">
-                      Verified Purchase
                     </div>
                   </div>
                 </div>
