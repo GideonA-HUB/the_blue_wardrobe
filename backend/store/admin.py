@@ -62,6 +62,24 @@ class DesignAdmin(admin.ModelAdmin):
         total = sum(measurement.stock for measurement in obj.size_measurements.all())
         return total
     get_total_stock.short_description = 'Total Stock'
+    
+    def clean(self, obj):
+        # Handle video field issues before saving
+        if obj.video:
+            # Check if video is a string (invalid for FileField)
+            if isinstance(obj.video, str):
+                print(f"Admin Warning: Video field for design {obj.id} contains string data. Setting to None.")
+                obj.video = None
+            # Check if video is a FileField but has issues
+            elif hasattr(obj.video, 'name'):
+                try:
+                    # Try to access file properties to validate
+                    _ = obj.video.name
+                    if hasattr(obj.video, 'size'):
+                        _ = obj.video.size
+                except (AttributeError, ValueError, OSError) as e:
+                    print(f"Admin Warning: Invalid video file for design {obj.id}: {e}. Setting to None.")
+                    obj.video = None
 
 
 @admin.register(DesignImage)
