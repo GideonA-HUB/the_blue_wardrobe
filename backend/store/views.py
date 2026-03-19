@@ -221,10 +221,14 @@ class VideoViewSet(viewsets.ReadOnlyModelViewSet):
         elif request.method == 'POST':
             data = request.data.copy()
             
-            # Only validate parent if it's provided and not empty
-            if 'parent' in data and data['parent']:
+            # Handle parent field - remove if empty or invalid
+            parent_id = data.get('parent')
+            if parent_id is None or parent_id == '':
+                data.pop('parent', None)
+            else:
+                # Try to convert parent to int and validate
                 try:
-                    parent_id = int(data['parent'])
+                    parent_id = int(parent_id)
                     # Verify parent exists and belongs to the same video
                     parent_comment = VideoComment.objects.get(
                         id=parent_id, 
@@ -233,19 +237,9 @@ class VideoViewSet(viewsets.ReadOnlyModelViewSet):
                     )
                     # Keep the ID for the serializer
                     data['parent'] = parent_id
-                except (ValueError, TypeError):
-                    return Response({
-                        'error': 'Invalid parent comment ID',
-                        'details': f'Parent ID must be a number, got: {data.get("parent")}'
-                    }, status=400)
-                except VideoComment.DoesNotExist:
-                    return Response({
-                        'error': 'Parent comment not found',
-                        'details': f'Parent comment {data.get("parent")} does not exist or is not active'
-                    }, status=400)
-            else:
-                # Remove parent field for top-level comments
-                data.pop('parent', None)
+                except (ValueError, TypeError, VideoComment.DoesNotExist):
+                    # If parent validation fails, treat as top-level comment
+                    data.pop('parent', None)
             
             # Add video to data (since it's read_only in serializer)
             data['video'] = video.id
