@@ -20,10 +20,13 @@ class DesignImageSerializer(serializers.ModelSerializer):
     
     def get_image_url(self, obj):
         if obj.image:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.image.url)
-            return obj.image.url
+            try:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.image.url)
+                return obj.image.url
+            except (AttributeError, ValueError, TypeError):
+                return None
         return None
 
 
@@ -73,7 +76,20 @@ class DesignSerializer(serializers.ModelSerializer):
     
     def get_video_url(self, obj):
         if obj.video:
-            return obj.video.url
+            try:
+                # Handle both FileField objects and string URLs
+                if hasattr(obj.video, 'url'):
+                    request = self.context.get('request')
+                    if request:
+                        return request.build_absolute_uri(obj.video.url)
+                    return obj.video.url
+                elif isinstance(obj.video, str):
+                    return obj.video
+                else:
+                    return str(obj.video)
+            except (AttributeError, ValueError, TypeError):
+                # If anything goes wrong, return None
+                return None
         return None
     
     def get_total_stock(self, obj):
