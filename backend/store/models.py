@@ -412,7 +412,7 @@ class VideoLike(models.Model):
     """Likes on videos"""
     video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='video_likes')
     ip_address = models.GenericIPAddressField()
-    session_key = models.CharField(max_length=40, blank=True)
+    session_key = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -427,7 +427,7 @@ class VideoCommentLike(models.Model):
     """Likes on video comments"""
     comment = models.ForeignKey(VideoComment, on_delete=models.CASCADE, related_name='comment_likes')
     ip_address = models.GenericIPAddressField()
-    session_key = models.CharField(max_length=40, blank=True)
+    session_key = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

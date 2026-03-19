@@ -12,7 +12,7 @@ type Video = {
   thumbnail_url?: string
   video_type: string
   views: number
-  likes: number
+  likes_count: number
   comments_count: number
   is_liked: boolean
   created_at: string
@@ -24,6 +24,8 @@ type Comment = {
   email: string
   content: string
   is_reply: boolean
+  likes_count: number
+  is_liked: boolean
   replies: Comment[]
   created_at: string
 }
@@ -36,6 +38,10 @@ export default function VideoSection() {
   const [showComments, setShowComments] = useState(false)
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState({ name: '', email: '', content: '' })
+  const [replyingTo, setReplyingTo] = useState<number | null>(null)
+  const [replyContent, setReplyContent] = useState('')
+  const [replyName, setReplyName] = useState('')
+  const [replyEmail, setReplyEmail] = useState('')
 
   useEffect(() => {
     api
@@ -63,7 +69,7 @@ export default function VideoSection() {
       const response = await api.post(`/videos/${videoId}/like/`)
       setVideos(videos.map(video => 
         video.id === videoId 
-          ? { ...video, likes: response.data.likes, is_liked: response.data.liked }
+          ? { ...video, likes_count: response.data.likes_count, is_liked: response.data.liked }
           : video
       ))
     } catch (error) {
@@ -97,6 +103,76 @@ export default function VideoSection() {
       ))
     } catch (error) {
       console.log('Failed to submit comment')
+    }
+  }
+
+  const handleCommentLike = async (commentId: number) => {
+    if (!selectedVideo) return
+    
+    try {
+      const response = await api.post(`/videos/${selectedVideo.id}/comments/${commentId}/like/`)
+      
+      const updateCommentLikes = (comments: Comment[]): Comment[] => {
+        return comments.map(comment => {
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              likes_count: response.data.likes_count,
+              is_liked: response.data.liked
+            }
+          }
+          if (comment.replies.length > 0) {
+            return {
+              ...comment,
+              replies: updateCommentLikes(comment.replies)
+            }
+          }
+          return comment
+        })
+      }
+      
+      setComments(updateCommentLikes(comments))
+    } catch (error) {
+      console.log('Failed to like comment')
+    }
+  }
+
+  const handleReplySubmit = async (e: React.FormEvent, parentCommentId: number) => {
+    e.preventDefault()
+    if (!selectedVideo || !replyContent.trim()) return
+
+    try {
+      const response = await api.post(`/videos/${selectedVideo.id}/comments/`, {
+        name: replyName,
+        email: replyEmail,
+        content: replyContent,
+        parent: parentCommentId
+      })
+      
+      setComments(comments.map(comment => {
+        if (comment.id === parentCommentId) {
+          return {
+            ...comment,
+            replies: [...comment.replies, response.data]
+          }
+        }
+        return comment
+      }))
+      
+      // Reset reply form
+      setReplyingTo(null)
+      setReplyContent('')
+      setReplyName('')
+      setReplyEmail('')
+      
+      // Update comments count
+      setVideos(videos.map(video => 
+        video.id === selectedVideo.id 
+          ? { ...video, comments_count: video.comments_count + 1 }
+          : video
+      ))
+    } catch (error) {
+      console.log('Failed to submit reply')
     }
   }
 
@@ -225,7 +301,7 @@ export default function VideoSection() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
-                      {video.likes}
+                      {video.likes_count}
                     </span>
                     <span className="flex items-center gap-1">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -242,7 +318,7 @@ export default function VideoSection() {
                     onClick={() => handleLike(video.id)}
                     className={`flex-1 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                       video.is_liked
-                        ? 'bg-red-500 text-white hover:bg-red-600'
+                        ? 'bg-blue-wardrobe-dark text-white hover:bg-blue-wardrobe-light'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -327,7 +403,7 @@ export default function VideoSection() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
-                      {selectedVideo.likes} likes
+                      {selectedVideo.likes_count} likes
                     </span>
                   </div>
                 </div>
@@ -395,8 +471,81 @@ export default function VideoSection() {
                                   {new Date(comment.created_at).toLocaleDateString()}
                                 </div>
                               </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleCommentLike(comment.id)}
+                                  className={`flex items-center gap-1 text-sm transition-colors ${
+                                    comment.is_liked
+                                      ? 'text-blue-wardrobe-dark'
+                                      : 'text-gray-500 hover:text-blue-wardrobe-dark'
+                                  }`}
+                                >
+                                  <svg className="w-4 h-4" fill={comment.is_liked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                  </svg>
+                                  {comment.likes_count}
+                                </button>
+                                <button
+                                  onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                                  className="text-sm text-blue-wardrobe-dark hover:text-blue-wardrobe-light"
+                                >
+                                  Reply
+                                </button>
+                              </div>
                             </div>
                             <p className="text-gray-700">{comment.content}</p>
+                            
+                            {/* Reply Form */}
+                            {replyingTo === comment.id && (
+                              <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-4 bg-gray-50 rounded-lg p-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                  <input
+                                    type="text"
+                                    placeholder="Your Name"
+                                    value={replyName}
+                                    onChange={(e) => setReplyName(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light text-sm"
+                                    required
+                                  />
+                                  <input
+                                    type="email"
+                                    placeholder="Your Email"
+                                    value={replyEmail}
+                                    onChange={(e) => setReplyEmail(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light text-sm"
+                                    required
+                                  />
+                                </div>
+                                <textarea
+                                  placeholder="Write your reply..."
+                                  value={replyContent}
+                                  onChange={(e) => setReplyContent(e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light resize-none text-sm"
+                                  rows={2}
+                                  required
+                                />
+                                <div className="flex gap-2 mt-3">
+                                  <button
+                                    type="submit"
+                                    className="px-4 py-1 bg-blue-wardrobe-dark text-white rounded-full hover:bg-blue-wardrobe-light transition-all duration-300 text-sm"
+                                  >
+                                    Reply
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setReplyingTo(null)
+                                      setReplyContent('')
+                                      setReplyName('')
+                                      setReplyEmail('')
+                                    }}
+                                    className="px-4 py-1 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-all duration-300 text-sm"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </form>
+                            )}
                             
                             {/* Replies */}
                             {comment.replies.length > 0 && (
@@ -410,6 +559,19 @@ export default function VideoSection() {
                                           {new Date(reply.created_at).toLocaleDateString()}
                                         </div>
                                       </div>
+                                      <button
+                                        onClick={() => handleCommentLike(reply.id)}
+                                        className={`flex items-center gap-1 text-sm transition-colors ${
+                                          reply.is_liked
+                                            ? 'text-blue-wardrobe-dark'
+                                            : 'text-gray-500 hover:text-blue-wardrobe-dark'
+                                        }`}
+                                      >
+                                        <svg className="w-3 h-3" fill={reply.is_liked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                        </svg>
+                                        {reply.likes_count}
+                                      </button>
                                     </div>
                                     <p className="text-gray-700 text-sm">{reply.content}</p>
                                   </div>
