@@ -262,7 +262,7 @@ class VideoCommentSerializer(serializers.ModelSerializer):
             'id', 'video', 'parent', 'name', 'email', 'content', 
             'is_active', 'likes_count', 'is_liked', 'replies', 'created_at'
         ]
-        read_only_fields = ['is_active', 'created_at', 'video']
+        read_only_fields = ['is_active', 'created_at']
     
     def validate_parent(self, value):
         # Allow None for top-level comments
