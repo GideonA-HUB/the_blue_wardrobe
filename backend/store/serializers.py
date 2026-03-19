@@ -264,6 +264,13 @@ class VideoCommentSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['is_active', 'created_at']
     
+    def validate_parent(self, value):
+        # Validate that parent comment exists and belongs to the same video
+        if value:
+            # This will be validated in the view after we have the video context
+            return value
+        return None
+    
     def get_replies(self, obj):
         # Get only active replies
         replies = obj.replies.filter(is_active=True).order_by('created_at')

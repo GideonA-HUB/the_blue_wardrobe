@@ -91,7 +91,14 @@ export default function VideoSection() {
     if (!selectedVideo || !newComment.content.trim()) return
 
     try {
-      const response = await api.post(`/videos/${selectedVideo.id}/comments/`, newComment)
+      const commentData = {
+        name: newComment.name,
+        email: newComment.email,
+        content: newComment.content
+        // Explicitly exclude parent field for top-level comments
+      }
+      
+      const response = await api.post(`/videos/${selectedVideo.id}/comments/`, commentData)
       setComments([...comments, response.data])
       setNewComment({ name: '', email: '', content: '' })
       
