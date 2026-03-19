@@ -349,6 +349,22 @@ class AdminDesignViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
 
 
+class AdminDesignReviewViewSet(viewsets.ModelViewSet):
+    """Admin ViewSet for managing design reviews"""
+    queryset = DesignReview.objects.all().order_by('-created_at')
+    serializer_class = DesignReviewSerializer
+    permission_classes = [IsAdminUser]
+    filterset_fields = ['design', 'rating', 'is_approved']
+    search_fields = ['name', 'email', 'comment', 'design__title', 'design__sku']
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        design_id = self.request.query_params.get('design_id')
+        if design_id:
+            queryset = queryset.filter(design_id=design_id)
+        return queryset
+
+
 class AdminVideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all().order_by('order', '-created_at')
     serializer_class = VideoSerializer

@@ -787,19 +787,21 @@ export default function Product() {
                   className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 animate-fade-in"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-wardrobe-light to-purple-wardrobe rounded-full flex items-center justify-center text-white font-semibold">
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-wardrobe-light to-purple-wardrobe rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
                         {review.name.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <div className="font-semibold text-gray-900">{review.name}</div>
-                        <div className="text-sm text-gray-500">{review.email}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-gray-900 truncate">{review.name}</div>
+                        <div className="text-sm text-gray-500 truncate">{review.email}</div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      {renderStars(review.rating)}
-                      <div className="text-xs text-gray-400 mt-1">
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <div className="flex items-center gap-1">
+                        {renderStars(review.rating)}
+                      </div>
+                      <div className="text-xs text-gray-400 whitespace-nowrap">
                         {new Date(review.created_at).toLocaleDateString('en-US', { 
                           month: 'short', 
                           day: 'numeric', 
@@ -808,7 +810,7 @@ export default function Product() {
                       </div>
                     </div>
                   </div>
-                  <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+                  <p className="text-gray-700 leading-relaxed break-words">{review.comment}</p>
                   
                   {/* Helpful buttons */}
                   <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
@@ -820,7 +822,7 @@ export default function Product() {
                         🤔 Not helpful
                       </button>
                     </div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-400 whitespace-nowrap">
                       Verified Purchase
                     </div>
                   </div>

@@ -20,6 +20,7 @@ from .views import (
     InfoCardViewSet,
     AdminCollectionViewSet,
     AdminDesignViewSet,
+    AdminDesignReviewViewSet,
     AdminVideoViewSet,
     AdminInfoCardViewSet,
     AdminOrderViewSet,
@@ -49,6 +50,7 @@ router.register('blog', BlogPostViewSet, basename='blog')
 admin_router = DefaultRouter()
 admin_router.register('collections', AdminCollectionViewSet, basename='admin-collections')
 admin_router.register('designs', AdminDesignViewSet, basename='admin-designs')
+admin_router.register('design-reviews', AdminDesignReviewViewSet, basename='admin-design-reviews')
 admin_router.register('videos', AdminVideoViewSet, basename='admin-videos')
 admin_router.register('info-cards', AdminInfoCardViewSet, basename='admin-info-cards')
 admin_router.register('orders', AdminOrderViewSet, basename='admin-orders')
