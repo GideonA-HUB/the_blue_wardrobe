@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from .models import (
     Material, Collection, Design, DesignImage, SizeMeasurement, SizeInventory, Cart, CartItem, SiteAsset, Customer, Order, OrderItem,
     ContactMessage, Subscriber, PaymentLog, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard,
-    BusinessProfile, BlogPost, BlogPostMedia, BlogComment, BlogPostLike, BlogCommentLike,
+    BusinessProfile, BlogPost, BlogPostMedia, BlogComment, BlogPostLike, BlogCommentLike, DesignReview,
 )
 
 
@@ -351,3 +351,29 @@ class BlogCommentLikeAdmin(admin.ModelAdmin):
     list_display = ('comment', 'visitor_name', 'visitor_email', 'visitor_id', 'created_at')
     list_filter = ('created_at',)
     search_fields = ('comment__body', 'comment__post__title', 'visitor_name', 'visitor_email', 'visitor_id')
+
+
+@admin.register(DesignReview)
+class DesignReviewAdmin(admin.ModelAdmin):
+    list_display = ('design', 'name', 'email', 'rating', 'stars_display', 'is_approved', 'created_at')
+    list_filter = ('rating', 'is_approved', 'created_at', 'design__collection')
+    search_fields = ('design__title', 'design__sku', 'name', 'email', 'comment')
+    readonly_fields = ('created_at', 'updated_at', 'stars_display')
+    list_editable = ('is_approved',)
+    ordering = ('-created_at',)
+    
+    fieldsets = (
+        ('Review Information', {
+            'fields': ('design', 'name', 'email', 'rating', 'comment')
+        }),
+        ('Status', {
+            'fields': ('is_approved',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at', 'stars_display'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('design', 'design__collection')

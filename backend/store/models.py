@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Avg
 from django.utils.text import slugify
 from django.utils import timezone
 from django.core.files.storage import default_storage
@@ -63,6 +64,27 @@ class Design(models.Model):
         if self.has_discount:
             return int(((self.price - self.discount_price) / self.price) * 100)
         return 0
+
+    @property
+    def average_rating(self):
+        """Calculate average rating from approved reviews"""
+        reviews = self.reviews.filter(is_approved=True)
+        if not reviews.exists():
+            return 0
+        return round(reviews.aggregate(models.Avg('rating'))['rating__avg'], 1)
+
+    @property
+    def total_reviews(self):
+        """Get total count of approved reviews"""
+        return self.reviews.filter(is_approved=True).count()
+
+    @property
+    def rating_distribution(self):
+        """Get distribution of ratings (1-5 stars)"""
+        distribution = {}
+        for i in range(1, 6):
+            distribution[i] = self.reviews.filter(is_approved=True, rating=i).count()
+        return distribution
 
 
 class DesignImage(models.Model):
@@ -287,6 +309,35 @@ class Subscriber(models.Model):
 
     def __str__(self):
         return self.email
+
+
+class DesignReview(models.Model):
+    """Reviews for designs with star ratings and comments"""
+    design = models.ForeignKey(Design, on_delete=models.CASCADE, related_name='reviews')
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    rating = models.IntegerField(
+        choices=[(i, i) for i in range(1, 6)],  # 1 to 5 stars
+        help_text='Rating from 1 to 5 stars'
+    )
+    comment = models.TextField()
+    is_approved = models.BooleanField(default=True, help_text='Whether the review is approved and visible')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ['design', 'email']  # One review per email per design
+
+    def __str__(self):
+        return f'Review by {self.name} for {self.design.title}'
+
+    @property
+    def stars_display(self):
+        """Return star display (e.g., '★★★★☆')"""
+        full_stars = '★' * self.rating
+        empty_stars = '☆' * (5 - self.rating)
+        return full_stars + empty_stars
 
 
 class Video(models.Model):

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Collection, Design, DesignImage, SizeMeasurement, SizeInventory, Cart, CartItem, Material, SiteAsset, Order, OrderItem,
-    Customer, ContactMessage, Subscriber, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard
+    Customer, ContactMessage, Subscriber, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, DesignReview
 )
 
 
@@ -56,6 +56,10 @@ class DesignSerializer(serializers.ModelSerializer):
     effective_price = serializers.ReadOnlyField()
     discount_percentage = serializers.ReadOnlyField()
     total_stock = serializers.SerializerMethodField()
+    average_rating = serializers.ReadOnlyField()
+    total_reviews = serializers.ReadOnlyField()
+    rating_distribution = serializers.ReadOnlyField()
+    reviews = serializers.SerializerMethodField()
     
     class Meta:
         model = Design
@@ -63,23 +67,22 @@ class DesignSerializer(serializers.ModelSerializer):
             'id', 'collection', 'collection_id', 'sku', 'title', 'description', 
             'price', 'discount_price', 'video', 'video_url', 'has_discount', 
             'effective_price', 'discount_percentage', 'total_stock', 'images', 
-            'size_inventory', 'size_measurements', 'created_at', 'updated_at'
+            'size_inventory', 'size_measurements', 'created_at', 'updated_at',
+            'average_rating', 'total_reviews', 'rating_distribution', 'reviews'
         ]
     
     def get_video_url(self, obj):
         if obj.video:
-            try:
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(obj.video.url)
-                return obj.video.url
-            except AttributeError:
-                # Handle case where video is not a FileField object
-                return None
+            return obj.video.url
         return None
     
     def get_total_stock(self, obj):
         return sum(measurement.stock for measurement in obj.size_measurements.all())
+    
+    def get_reviews(self, obj):
+        """Get approved reviews for this design"""
+        reviews = obj.reviews.filter(is_approved=True).order_by('-created_at')
+        return DesignReviewSerializer(reviews, many=True).data
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -190,6 +193,39 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ['id', 'customer', 'total_amount', 'status', 'paystack_reference', 'created_at', 'items']
+
+
+class DesignReviewSerializer(serializers.ModelSerializer):
+    """Serializer for design reviews"""
+    stars_display = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = DesignReview
+        fields = [
+            'id', 'design', 'name', 'email', 'rating', 'comment', 
+            'is_approved', 'stars_display', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['is_approved', 'created_at', 'updated_at']
+    
+    def validate_rating(self, value):
+        if not 1 <= value <= 5:
+            raise serializers.ValidationError("Rating must be between 1 and 5.")
+        return value
+    
+    def validate_name(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Name is required.")
+        return value.strip()
+    
+    def validate_email(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Email is required.")
+        return value.strip()
+    
+    def validate_comment(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Comment is required.")
+        return value.strip()
 
 
 class VideoSerializer(serializers.ModelSerializer):

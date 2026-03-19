@@ -16,13 +16,13 @@ from django.middleware.csrf import get_token
 
 from .models import (
     Collection, Design, DesignImage, SizeInventory, Cart, CartItem, SiteAsset, ContactMessage, Subscriber, Order,
-    Customer, OrderItem, PaymentLog, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, Material
+    Customer, OrderItem, PaymentLog, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, Material, DesignReview
 )
 from .serializers import (
     CollectionSerializer, DesignSerializer, SiteAssetSerializer,
     ContactMessageSerializer, SubscriberSerializer, OrderSerializer,
     VideoSerializer, VideoCommentSerializer, InfoCardSerializer, MaterialSerializer, CustomerSerializer,
-    CartSerializer, CartItemSerializer
+    CartSerializer, CartItemSerializer, DesignReviewSerializer
 )
 
 
@@ -45,8 +45,40 @@ class CollectionViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class DesignViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Design.objects.prefetch_related('images', 'size_inventory', 'size_measurements').all()
+    queryset = Design.objects.prefetch_related('images', 'size_inventory', 'size_measurements', 'reviews').all()
     serializer_class = DesignSerializer
+
+    @action(detail=True, methods=['get', 'post'])
+    def reviews(self, request, pk=None):
+        """Get reviews for a design or submit a new review"""
+        design = self.get_object()
+        
+        if request.method == 'GET':
+            # Get approved reviews
+            reviews = design.reviews.filter(is_approved=True).order_by('-created_at')
+            serializer = DesignReviewSerializer(reviews, many=True)
+            return Response(serializer.data)
+        
+        elif request.method == 'POST':
+            # Submit a new review
+            data = request.data.copy()
+            data['design'] = design.id
+            
+            serializer = DesignReviewSerializer(data=data)
+            if serializer.is_valid():
+                try:
+                    review = serializer.save()
+                    return Response(DesignReviewSerializer(review).data, status=201)
+                except Exception as e:
+                    return Response({
+                        'error': 'Failed to save review',
+                        'details': str(e)
+                    }, status=500)
+            else:
+                return Response({
+                    'error': 'Validation failed',
+                    'details': serializer.errors
+                }, status=400)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
