@@ -221,22 +221,30 @@ class VideoViewSet(viewsets.ReadOnlyModelViewSet):
         elif request.method == 'POST':
             data = request.data.copy()
             
-            # Handle parent validation for replies
+            # Only validate parent if it's provided and not empty
             if 'parent' in data and data['parent']:
                 try:
+                    parent_id = int(data['parent'])
+                    # Verify parent exists and belongs to the same video
                     parent_comment = VideoComment.objects.get(
-                        id=data['parent'], 
+                        id=parent_id, 
                         video=video, 
                         is_active=True
                     )
-                    data['parent'] = parent_comment.id
-                except (ValueError, VideoComment.DoesNotExist):
+                    # Keep the ID for the serializer
+                    data['parent'] = parent_id
+                except (ValueError, TypeError):
+                    return Response({
+                        'error': 'Invalid parent comment ID',
+                        'details': f'Parent ID must be a number, got: {data.get("parent")}'
+                    }, status=400)
+                except VideoComment.DoesNotExist:
                     return Response({
                         'error': 'Parent comment not found',
-                        'details': f'Invalid parent ID: {data.get("parent")}'
+                        'details': f'Parent comment {data.get("parent")} does not exist or is not active'
                     }, status=400)
             else:
-                # Remove parent field if it's empty or not provided
+                # Remove parent field for top-level comments
                 data.pop('parent', None)
             
             # Add video to data (since it's read_only in serializer)

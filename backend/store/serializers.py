@@ -269,10 +269,20 @@ class VideoCommentSerializer(serializers.ModelSerializer):
         if value is None:
             return None
         
-        # For replies, validate that the parent exists
+        # Handle both ID and VideoComment object cases
+        if isinstance(value, VideoComment):
+            # Already a VideoComment object, validate it's active
+            if not value.is_active:
+                raise serializers.ValidationError("Parent comment is not active")
+            return value
+        
+        # Handle case where value is an ID (string or number)
         try:
-            parent_comment = VideoComment.objects.get(id=value, is_active=True)
+            parent_id = int(value)
+            parent_comment = VideoComment.objects.get(id=parent_id, is_active=True)
             return parent_comment
+        except (ValueError, TypeError):
+            raise serializers.ValidationError("Invalid parent comment ID format")
         except VideoComment.DoesNotExist:
             raise serializers.ValidationError("Parent comment not found")
     
