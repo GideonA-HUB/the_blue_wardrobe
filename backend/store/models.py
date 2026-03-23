@@ -31,6 +31,38 @@ class Collection(models.Model):
         return f"{self.code} - {self.title}"
 
 
+class SafeVideoField(models.FileField):
+    """
+    A FileField that gracefully handles string data and prevents AttributeError
+    """
+    def pre_save(self, model_instance, add):
+        """
+        Override pre_save to handle string data gracefully
+        """
+        value = getattr(model_instance, self.attname)
+        
+        # If value is a string, set it to None to prevent errors
+        if isinstance(value, str):
+            print(f"Warning: SafeVideoField detected string data for {model_instance.__class__.__name__} {getattr(model_instance, 'id', 'new')}. Setting to None.")
+            setattr(model_instance, self.attname, None)
+            return None
+        
+        # If value exists but has issues, validate it
+        if value and hasattr(value, 'name'):
+            try:
+                # Try to access file properties to validate
+                _ = value.name
+                if hasattr(value, 'size'):
+                    _ = value.size
+            except (AttributeError, ValueError, OSError) as e:
+                print(f"Warning: SafeVideoField detected invalid file for {model_instance.__class__.__name__} {getattr(model_instance, 'id', 'new')}: {e}. Setting to None.")
+                setattr(model_instance, self.attname, None)
+                return None
+        
+        # Call parent pre_save for valid FileField objects
+        return super().pre_save(model_instance, add)
+
+
 class Design(models.Model):
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE, related_name='designs')
     sku = models.CharField(max_length=100, unique=True)
@@ -38,7 +70,7 @@ class Design(models.Model):
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, help_text='Price in NGN')
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text='Discounted price in NGN')
-    video = models.FileField(
+    video = SafeVideoField(
         upload_to='designs/videos/', 
         null=True, 
         blank=True, 
@@ -56,26 +88,28 @@ class Design(models.Model):
         # Initialize _video to None to prevent AttributeError
         self._video = None
     
-    def save(self, *args, **kwargs):
-        # Handle video field issues gracefully before saving
-        if hasattr(self, 'video') and self.video:
-            # Check if video is a string (invalid for FileField)
-            if isinstance(self.video, str):
-                print(f"Warning: Video field for design {getattr(self, 'id', 'new')} contains string data. Setting to None.")
-                # Use Django's internal field access to set to None
-                super(Design, self).__setattr__('video', None)
-            # Check if video is a FileField but has issues
-            elif hasattr(self.video, 'name'):
+    def __setattr__(self, name, value):
+        """
+        Override __setattr__ to catch invalid video field assignments immediately
+        """
+        if name == 'video' and value is not None:
+            # Check if value is a string (invalid for FileField)
+            if isinstance(value, str):
+                print(f"Warning: __setattr__ caught string video data for design {getattr(self, 'id', 'new')}: '{value}'. Setting to None.")
+                value = None
+            # Check if value is a FileField but has issues
+            elif hasattr(value, 'name'):
                 try:
                     # Try to access file properties to validate
-                    _ = self.video.name
-                    if hasattr(self.video, 'size'):
-                        _ = self.video.size
+                    _ = value.name
+                    if hasattr(value, 'size'):
+                        _ = value.size
                 except (AttributeError, ValueError, OSError) as e:
-                    print(f"Warning: Invalid video file for design {getattr(self, 'id', 'new')}: {e}. Setting to None.")
-                    super(Design, self).__setattr__('video', None)
+                    print(f"Warning: __setattr__ caught invalid video file for design {getattr(self, 'id', 'new')}: {e}. Setting to None.")
+                    value = None
         
-        super().save(*args, **kwargs)
+        # Call parent __setattr__ for all other cases
+        super().__setattr__(name, value)
 
     @property
     def has_discount(self):
