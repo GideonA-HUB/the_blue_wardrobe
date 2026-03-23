@@ -196,3 +196,4 @@ These assets are used by the frontend for the navbar logo, loading spinner, and 
 - The production Docker image now uses a simplified startup flow designed for Railway
 - The old custom entrypoint is no longer the active runtime path
 - Sentry activates automatically only when `SENTRY_DSN` is set
+More to follow
