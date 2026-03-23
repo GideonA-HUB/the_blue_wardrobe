@@ -75,20 +75,16 @@ class DesignSerializer(serializers.ModelSerializer):
         ]
     
     def get_video_url(self, obj):
+        """
+        Return the video URL for FileField
+        """
         if obj.video:
             try:
-                # Handle both FileField objects and string URLs
-                if hasattr(obj.video, 'url'):
-                    request = self.context.get('request')
-                    if request:
-                        return request.build_absolute_uri(obj.video.url)
-                    return obj.video.url
-                elif isinstance(obj.video, str):
-                    return obj.video
-                else:
-                    return str(obj.video)
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.video.url)
+                return obj.video.url
             except (AttributeError, ValueError, TypeError):
-                # If anything goes wrong, return None
                 return None
         return None
     

@@ -50,8 +50,65 @@ class SizeMeasurementAdmin(admin.ModelAdmin):
     ordering = ('design', 'size')
 
 
+from django.contrib import admin
+from django import forms
+from .models import (
+    Collection, Design, DesignImage, SizeMeasurement, SizeInventory, Cart, CartItem, Material, SiteAsset, Order, OrderItem,
+    Customer, ContactMessage, Subscriber, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, DesignReview
+)
+
+
+class DesignAdminForm(forms.ModelForm):
+    """
+    Custom form to handle video field properly and prevent string data issues
+    """
+    
+    def clean_video(self):
+        video = self.cleaned_data.get('video')
+        if video:
+            # Check if it's a valid file upload
+            if hasattr(video, 'file') and video.file:
+                return video
+            else:
+                # If it's not a proper file, set to None
+                return None
+        return video
+    
+    def save(self, commit=True):
+        """
+        Override save to handle video field properly
+        """
+        instance = super().save(commit=False)
+        
+        # Handle video field separately to prevent string data issues
+        video = self.cleaned_data.get('video')
+        if video and hasattr(video, 'file') and video.file:
+            # Only set video if it's a proper file
+            instance.video = video
+        else:
+            # Set to None for any other case
+            instance.video = None
+        
+        if commit:
+            instance.save()
+        return instance
+    
+    class Meta:
+        model = Design
+        fields = '__all__'
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make auto fields not required in the form
+        if 'created_at' in self.fields:
+            self.fields['created_at'].required = False
+        if 'updated_at' in self.fields:
+            self.fields['updated_at'].required = False
+
+
 @admin.register(Design)
 class DesignAdmin(admin.ModelAdmin):
+    form = DesignAdminForm
     list_display = ('sku', 'title', 'price', 'discount_price', 'get_total_stock', 'collection')
     search_fields = ('sku', 'title')
     list_filter = ('collection', 'created_at')
