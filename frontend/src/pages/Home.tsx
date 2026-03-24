@@ -132,7 +132,7 @@ export default function Home() {
       {/* Featured Designs Section */}
       <section 
         id="designs-section"
-        className="mt-16 md:mt-24 mb-20 md:mb-32 relative overflow-hidden"
+        className="mt-16 md:mt-24 mb-32 md:mb-32 relative overflow-hidden"
         style={{
           transform: `translateY(${scrollY * 0.1}px)`,
         }}
@@ -287,7 +287,7 @@ export default function Home() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div 
-                className="mt-12 mb-8 md:mt-16 md:mb-16 flex flex-col items-center gap-4"
+                className="mt-12 mb-12 md:mt-16 md:mb-16 flex flex-col items-center gap-4"
                 style={{
                   animation: `fadeInUp 0.8s ease-out 0.6s both`,
                 }}
