@@ -255,7 +255,7 @@ export default function Designs() {
                               </div>
                             `
                             modal.onclick = (e) => {
-                              if (e.target === modal || e.target.tagName === 'BUTTON') {
+                              if (e.target === modal || (e.target as HTMLElement)?.tagName === 'BUTTON') {
                                 document.body.removeChild(modal)
                               }
                             }
