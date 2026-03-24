@@ -77,7 +77,7 @@ export default function Footer() {
   ]
 
   return (
-    <footer className="mt-20 bg-gradient-to-br from-[#2d4f7d] via-[#28466f] to-[#223b60] text-white">
+    <footer className="mt-20 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}

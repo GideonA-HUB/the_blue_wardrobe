@@ -46,7 +46,7 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
   return (
     <section
       className={cn(
-        "relative w-full h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-white to-blue-50 flex flex-col items-center justify-center text-center px-4",
+        "relative w-full h-screen overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 flex flex-col items-center justify-center text-center px-4",
         className
       )}
     >
@@ -56,7 +56,7 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
           initial="hidden"
           animate="show"
           variants={FADE_IN_ANIMATION_VARIANTS}
-          className="mb-4 inline-block rounded-full border border-blue-200 bg-blue-50/50 px-4 py-1.5 text-sm font-medium text-blue-700 backdrop-blur-sm"
+          className="mb-4 inline-block rounded-full border border-blue-300 bg-white/20 px-4 py-1.5 text-sm font-medium text-blue-100 backdrop-blur-sm"
         >
           {tagline}
         </motion.div>
@@ -73,7 +73,7 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
               },
             },
           }}
-          className="text-5xl md:text-7xl font-bold tracking-tighter text-blue-900"
+          className="text-5xl md:text-7xl font-bold tracking-tighter text-white"
         >
           {typeof title === 'string' ? (
             title.split(" ").map((word, i) => (
@@ -96,7 +96,7 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
           animate="show"
           variants={FADE_IN_ANIMATION_VARIANTS}
           transition={{ delay: 0.5 }}
-          className="mt-6 max-w-xl text-lg text-blue-700"
+          className="mt-6 max-w-xl text-lg text-blue-100"
         >
           {description}
         </motion.p>
