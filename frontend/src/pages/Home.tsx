@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import ParallaxHero from '../components/ParallaxHero'
+import AnimatedHero from '../components/AnimatedHero'
 import NewsletterBanner from '../components/NewsletterBanner'
 import VideoSection from '../components/VideoSection'
 import InfoCardsSection from '../components/InfoCardsSection'
@@ -127,7 +127,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      <ParallaxHero />
+      <AnimatedHero />
       
       {/* Featured Designs Section */}
       <section 
