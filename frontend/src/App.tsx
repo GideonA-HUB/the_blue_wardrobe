@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
+import Designs from './pages/Designs'
 import Collections from './pages/Collections'
 import CollectionDetail from './pages/CollectionDetail'
 import Product from './pages/Product'
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPostDetail />} />
+          <Route path="/designs" element={<Designs />} />
           <Route path="/collections" element={<Collections />} />
           <Route path="/collections/:id" element={<CollectionDetail />} />
           <Route path="/designs/:id" element={<Product />} />

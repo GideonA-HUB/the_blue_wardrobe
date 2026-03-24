@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import ParallaxHero from '../components/ParallaxHero'
-import NewsletterBanner from '../components/NewsletterBanner'
-import VideoSection from '../components/VideoSection'
-import InfoCardsSection from '../components/InfoCardsSection'
 import api from '../lib/api'
 
 type Design = {
@@ -27,20 +23,38 @@ type Design = {
   total_reviews: number
 }
 
-export default function Home() {
+export default function Designs() {
   const [designs, setDesigns] = useState<Design[]>([])
   const [loading, setLoading] = useState(true)
+  const [sortBy, setSortBy] = useState<'newest' | 'price-low' | 'price-high' | 'rating'>('newest')
 
   useEffect(() => {
-    document.title = 'THE BLUE WARDROBE — Luxury Dress Diaries'
+    document.title = 'All Designs — THE BLUE WARDROBE'
     
-    // Fetch all designs for homepage
     const fetchDesigns = async () => {
       try {
         setLoading(true)
         const response = await api.get('/designs/')
-        // Show first 12 designs on homepage, newest first
-        setDesigns(response.data.slice(0, 12))
+        
+        // Sort designs based on selected criteria
+        let sortedDesigns = [...response.data]
+        
+        switch (sortBy) {
+          case 'newest':
+            // API should already return newest first
+            break
+          case 'price-low':
+            sortedDesigns.sort((a, b) => a.effective_price - b.effective_price)
+            break
+          case 'price-high':
+            sortedDesigns.sort((a, b) => b.effective_price - a.effective_price)
+            break
+          case 'rating':
+            sortedDesigns.sort((a, b) => b.average_rating - a.average_rating)
+            break
+        }
+        
+        setDesigns(sortedDesigns)
       } catch (error) {
         console.error('Failed to fetch designs:', error)
       } finally {
@@ -49,55 +63,74 @@ export default function Home() {
     }
     
     fetchDesigns()
-  }, [])
+  }, [sortBy])
 
   return (
-    <div className="min-h-screen">
-      <ParallaxHero />
-      
-      {/* Featured Designs Section */}
-      <section className="mt-16 md:mt-24 mb-20">
-        <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div className="text-center md:text-left">
-            <h2 className="mb-4 text-4xl font-serif font-semibold text-blue-wardrobe-dark md:text-5xl">
-              Featured Designs
-            </h2>
-            <p className="mx-auto max-w-2xl text-lg text-gray-600 md:mx-0">
-              Discover our latest dress diaries crafted from rare, luxurious fabrics sourced globally.
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <h1 className="text-3xl md:text-4xl font-serif font-semibold text-blue-wardrobe-dark mb-4">
+              All Designs
+            </h1>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Browse our complete collection of dress diaries, each crafted with attention to detail and luxury fabrics.
             </p>
           </div>
-          <div className="flex justify-center md:justify-end">
-            <Link
-              to="/designs"
-              className="inline-flex items-center rounded-full border border-blue-wardrobe-light/25 bg-white px-5 py-3 text-sm font-medium text-blue-wardrobe-dark transition-colors hover:bg-blue-wardrobe-light hover:text-white"
+        </div>
+      </div>
+
+      {/* Filters and Sort */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="text-sm text-gray-600">
+            {loading ? 'Loading...' : `${designs.length} designs found`}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <label htmlFor="sort" className="text-sm font-medium text-gray-700">
+              Sort by:
+            </label>
+            <select
+              id="sort"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light focus:border-transparent"
             >
-              See all designs
-            </Link>
+              <option value="newest">Newest First</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="rating">Highest Rated</option>
+            </select>
           </div>
         </div>
-        
+      </div>
+
+      {/* Designs Grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
-            {[...Array(6)].map((_, index) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+            {[...Array(8)].map((_, index) => (
               <div key={index} className="animate-pulse">
-                <div className="h-56 sm:h-64 md:h-72 lg:h-80 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg mb-4"></div>
+                <div className="h-64 sm:h-72 lg:h-80 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg mb-4"></div>
                 <div className="h-4 bg-gray-200 rounded mb-2"></div>
                 <div className="h-4 bg-gray-200 rounded w-3/4"></div>
               </div>
             ))}
           </div>
         ) : designs.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
             {designs.map((design, index) => (
               <Link
                 to={`/designs/${design.id}`}
                 key={design.id}
                 className="group luxury-shadow rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white transform hover:-translate-y-2"
                 style={{
-                  animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
+                  animation: `fadeInUp 0.6s ease-out ${index * 0.05}s both`,
                 }}
               >
-                <div className="h-56 sm:h-64 md:h-72 lg:h-80 bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden relative cursor-pointer group">
+                <div className="h-64 sm:h-72 lg:h-80 bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden relative cursor-pointer group">
                   {design.images?.length > 0 ? (
                     <img
                       src={design.images[0].image_url}
@@ -187,11 +220,7 @@ export default function Home() {
             <p className="text-gray-500 text-lg">No designs available yet. Check back soon for new Dress Diaries releases.</p>
           </div>
         )}
-      </section>
-
-      <VideoSection />
-      <InfoCardsSection />
-      <NewsletterBanner />
+      </div>
     </div>
   )
 }

@@ -107,6 +107,12 @@ export default function Navbar() {
             Collections
           </Link>
           <Link 
+            to="/designs" 
+            className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full nav-transition"
+          >
+            All Designs
+          </Link>
+          <Link 
             to="/contact" 
             className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full nav-transition"
           >
@@ -166,6 +172,13 @@ export default function Navbar() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Collections
+            </Link>
+            <Link 
+              to="/designs" 
+              className="block text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors py-2 nav-transition"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              All Designs
             </Link>
             <Link 
               to="/contact" 
