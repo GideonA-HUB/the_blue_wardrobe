@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import api from '../lib/api'
 import AnimatedHero from '../components/AnimatedHero'
+import { useOptimizedScroll } from '../hooks/useOptimizedScroll'
 import NewsletterBanner from '../components/NewsletterBanner'
 import VideoSection from '../components/VideoSection'
 import InfoCardsSection from '../components/InfoCardsSection'
-import api from '../lib/api'
 
 type Design = {
   id: number
@@ -32,22 +34,13 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const [scrollY, setScrollY] = useState(0)
+  const scrollY = useOptimizedScroll()
   
   const designsPerPage = 5
   const totalPages = Math.ceil(allDesigns.length / designsPerPage)
   const startIndex = (currentPage - 1) * designsPerPage
   const endIndex = startIndex + designsPerPage
   const currentDesigns = allDesigns.slice(startIndex, endIndex)
-
-  // Handle parallax scroll effect
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
 
   useEffect(() => {
     document.title = 'THE BLUE WARDROBE — Luxury Dress Diaries'

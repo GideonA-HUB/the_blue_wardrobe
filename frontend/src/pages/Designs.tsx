@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../lib/api'
+import { useOptimizedScroll } from '../hooks/useOptimizedScroll'
 
 type Design = {
   id: number
@@ -29,22 +30,13 @@ export default function Designs() {
   const [sortBy, setSortBy] = useState<'newest' | 'price-low' | 'price-high' | 'rating'>('newest')
   const [currentPage, setCurrentPage] = useState(1)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const [scrollY, setScrollY] = useState(0)
+  const scrollY = useOptimizedScroll()
   
   const designsPerPage = 12
   const totalPages = Math.ceil(designs.length / designsPerPage)
   const startIndex = (currentPage - 1) * designsPerPage
   const endIndex = startIndex + designsPerPage
   const currentDesigns = designs.slice(startIndex, endIndex)
-
-  // Handle parallax scroll effect
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
 
   useEffect(() => {
     document.title = 'All Designs — THE BLUE WARDROBE'
