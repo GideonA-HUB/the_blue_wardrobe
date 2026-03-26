@@ -136,14 +136,14 @@ export default function Designs() {
       <div 
         className="bg-white border-b border-gray-200 relative overflow-hidden"
         style={{
-          transform: `translateY(${scrollY * 0.1}px)`,
+          transform: `translateY(${scrollY * 0.02}px)`,
         }}
       >
         {/* Background parallax element */}
         <div 
           className="absolute inset-0 bg-gradient-to-br from-blue-50/20 to-purple-50/10 -z-10"
           style={{
-            transform: `translateY(${scrollY * 0.05}px)`,
+            transform: `translateY(${scrollY * 0.01}px)`,
           }}
         />
         
@@ -194,7 +194,7 @@ export default function Designs() {
         id="designs-grid"
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 relative"
         style={{
-          transform: `translateY(${scrollY * 0.02}px)`,
+          transform: `translateY(${scrollY * 0.01}px)`,
         }}
       >
         {loading ? (
@@ -220,7 +220,7 @@ export default function Designs() {
                   className="transform transition-all duration-700 hover:scale-105"
                   style={{
                     animation: `fadeInUp 0.8s ease-out ${index * 0.1}s both`,
-                    transform: `translateY(${scrollY * 0.02 * (index + 1)}px)`,
+                    transform: `translateY(${scrollY * 0.005 * (index + 1)}px)`,
                   }}
                 >
                   <Link

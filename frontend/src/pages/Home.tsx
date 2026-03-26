@@ -127,14 +127,14 @@ export default function Home() {
         id="designs-section"
         className="mt-16 md:mt-24 mb-48 md:mb-48 relative overflow-hidden"
         style={{
-          transform: `translateY(${scrollY * 0.1}px)`,
+          transform: `translateY(${scrollY * 0.02}px)`,
         }}
       >
         {/* Background parallax element */}
         <div 
           className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-purple-50/20 -z-10"
           style={{
-            transform: `translateY(${scrollY * 0.05}px)`,
+            transform: `translateY(${scrollY * 0.01}px)`,
           }}
         />
         
@@ -183,7 +183,7 @@ export default function Home() {
                   className="transform transition-all duration-700 hover:scale-105"
                   style={{
                     animation: `fadeInUp 0.8s ease-out ${index * 0.15}s both`,
-                    transform: `translateY(${scrollY * 0.02 * (index + 1)}px)`,
+                    transform: `translateY(${scrollY * 0.005 * (index + 1)}px)`,
                   }}
                 >
                   <Link
