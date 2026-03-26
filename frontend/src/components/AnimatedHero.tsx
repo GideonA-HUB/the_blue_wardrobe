@@ -26,7 +26,6 @@ export default function AnimatedHero() {
         </>
       }
       description="Rare fabrics. Timeless design. Global luxury. Experience our exclusive collections crafted with attention to detail and the finest materials."
-      ctaText="Explore Collections"
       images={FASHION_IMAGES}
     />
   );
