@@ -16,6 +16,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import LoadingSpinner from './components/LoadingSpinner'
+import { ThemeProvider } from './contexts/ThemeContext'
 
 export default function App() {
   const [loading, setLoading] = useState(true)
@@ -42,27 +43,29 @@ export default function App() {
   }, [location.pathname])
 
   return (
-    <div className="min-h-screen bg-white text-blue-wardrobe-dark flex flex-col">
-      {loading && <LoadingSpinner />}
-      <Navbar />
-      <main className="flex-grow container mx-auto px-4 py-8">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:slug" element={<BlogPostDetail />} />
-          <Route path="/designs" element={<Designs />} />
-          <Route path="/collections" element={<Collections />} />
-          <Route path="/collections/:id" element={<CollectionDetail />} />
-          <Route path="/designs/:id" element={<Product />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/success" element={<Success />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/owner" element={<AdminDashboard />} />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
+    <ThemeProvider>
+      <div className="min-h-screen bg-white text-blue-wardrobe-dark flex flex-col">
+        {loading && <LoadingSpinner />}
+        <Navbar />
+        <main className="flex-grow container mx-auto px-4 py-8">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPostDetail />} />
+            <Route path="/designs" element={<Designs />} />
+            <Route path="/collections" element={<Collections />} />
+            <Route path="/collections/:id" element={<CollectionDetail />} />
+            <Route path="/designs/:id" element={<Product />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/success" element={<Success />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/owner" element={<AdminDashboard />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </ThemeProvider>
   )
 }
