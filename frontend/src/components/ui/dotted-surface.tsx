@@ -71,7 +71,6 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 			console.log('✅ DottedSurface: Canvas appended to container');
 
 			// Create particles
-			const particles: THREE.Points[] = [];
 			const positions: number[] = [];
 			const colors: number[] = [];
 
@@ -200,13 +199,13 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 				}
 
 				// Update camera aspect ratio and renderer size based on container
-				const container = containerRef.current;
-				const width = container?.clientWidth || window.innerWidth;
-				const height = container?.clientHeight || window.innerHeight;
+				const currentContainer = containerRef.current;
+				const currentWidth = currentContainer?.clientWidth || window.innerWidth;
+				const currentHeight = currentContainer?.clientHeight || window.innerHeight;
 				
-				camera.aspect = width / height;
+				camera.aspect = currentWidth / currentHeight;
 				camera.updateProjectionMatrix();
-				renderer.setSize(width, height);
+				renderer.setSize(currentWidth, currentHeight);
 			};
 
 			// Debounce resize handler for performance
@@ -247,99 +246,17 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 							}
 						}
 					});
+
 					sceneRef.current.renderer.dispose();
-				}
-				
-				// Recreate with new counts
-				AMOUNTX = newCounts.AMOUNTX;
-				AMOUNTY = newCounts.AMOUNTY;
-				SEPARATION = newCounts.SEPARATION;
-				SIZE = newCounts.SIZE;
-				
-				// Reinitialize geometry and material
-				const newPositions: number[] = [];
-				const newColors: number[] = [];
-				
-				for (let ix = 0; ix < AMOUNTX; ix++) {
-					for (let iy = 0; iy < AMOUNTY; iy++) {
-						const x = ix * SEPARATION - (AMOUNTX * SEPARATION) / 2;
-						const y = 0;
-						const z = iy * SEPARATION - (AMOUNTY * SEPARATION) / 2;
-						
-						newPositions.push(x, y, z);
-						if (theme === 'dark') {
-							newColors.push(200, 200, 200);
-						} else {
-							newColors.push(30, 58, 138);
-						}
+
+					if (containerRef.current && sceneRef.current.renderer.domElement) {
+						containerRef.current.removeChild(
+							sceneRef.current.renderer.domElement,
+						);
 					}
 				}
-				
-				geometry.setAttribute('position', new THREE.Float32BufferAttribute(newPositions, 3));
-				geometry.setAttribute('color', new THREE.Float32BufferAttribute(newColors, 3));
-				material.size = SIZE;
-			}
+			};
 
-			// Update camera aspect ratio and renderer size based on container
-			const currentContainer = containerRef.current;
-			const currentWidth = currentContainer?.clientWidth || window.innerWidth;
-			const currentHeight = currentContainer?.clientHeight || window.innerHeight;
-			
-			camera.aspect = currentWidth / currentHeight;
-			camera.updateProjectionMatrix();
-			renderer.setSize(currentWidth, currentHeight);
-		};
-
-		// Debounce resize handler for performance
-		let resizeTimeout: NodeJS.Timeout;
-		const debouncedResize = () => {
-			clearTimeout(resizeTimeout);
-			resizeTimeout = setTimeout(handleResize, 250);
-		};
-
-		window.addEventListener('resize', debouncedResize);
-
-		// Start animation
-		animate();
-
-		// Store references
-		sceneRef.current = {
-			scene,
-			camera,
-			renderer,
-			particles: [points],
-			animationId,
-			count,
-		};
-
-		// Cleanup function
-		return () => {
-			window.removeEventListener('resize', debouncedResize);
-			clearTimeout(resizeTimeout);
-
-			if (sceneRef.current) {
-				cancelAnimationFrame(sceneRef.current.animationId);
-
-				// Clean up Three.js objects
-				sceneRef.current.scene.traverse((object) => {
-					if (object instanceof THREE.Points) {
-						object.geometry.dispose();
-						if (Array.isArray(object.material)) {
-							object.material.forEach((material) => material.dispose());
-						} else {
-							object.material.dispose();
-						}
-					}
-				});
-
-				sceneRef.current.renderer.dispose();
-
-				if (containerRef.current && sceneRef.current.renderer.domElement) {
-					containerRef.current.removeChild(
-						sceneRef.current.renderer.domElement,
-					);
-				}
-			}
 		} catch (error) {
 			console.error('❌ DottedSurface: Error initializing Three.js:', error);
 		}
