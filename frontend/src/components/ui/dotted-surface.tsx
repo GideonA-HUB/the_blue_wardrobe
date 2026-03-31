@@ -30,9 +30,14 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 		const scene = new THREE.Scene();
 		scene.fog = new THREE.Fog(0xffffff, 2000, 10000);
 
+		// Get container dimensions first
+		const container = containerRef.current;
+		const width = container?.clientWidth || window.innerWidth;
+		const height = container?.clientHeight || window.innerHeight;
+
 		const camera = new THREE.PerspectiveCamera(
 			60,
-			window.innerWidth / window.innerHeight,
+			width / height,
 			1,
 			10000,
 		);
@@ -43,7 +48,8 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 			antialias: true,
 		});
 		renderer.setPixelRatio(window.devicePixelRatio);
-		renderer.setSize(window.innerWidth, window.innerHeight);
+		
+		renderer.setSize(width, height);
 		renderer.setClearColor(scene.fog.color, 0);
 
 		containerRef.current.appendChild(renderer.domElement);
@@ -124,9 +130,13 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 
 		// Handle window resize
 		const handleResize = () => {
-			camera.aspect = window.innerWidth / window.innerHeight;
+			const container = containerRef.current;
+			const width = container?.clientWidth || window.innerWidth;
+			const height = container?.clientHeight || window.innerHeight;
+			
+			camera.aspect = width / height;
 			camera.updateProjectionMatrix();
-			renderer.setSize(window.innerWidth, window.innerHeight);
+			renderer.setSize(width, height);
 		};
 
 		window.addEventListener('resize', handleResize);
@@ -179,7 +189,7 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 	return (
 		<div
 			ref={containerRef}
-			className={cn('pointer-events-none fixed inset-0 -z-10', className)}
+			className={cn('pointer-events-none absolute inset-0 -z-10', className)}
 			{...props}
 		/>
 	);

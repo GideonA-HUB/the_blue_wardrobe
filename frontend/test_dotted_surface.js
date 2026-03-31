@@ -53,10 +53,10 @@ typeChecks.forEach(check => {
 
 // Test 4: Check positioning classes
 console.log('\n🎨 Test 4: CSS positioning');
-if (content.includes('fixed inset-0')) {
-  console.log('✅ Uses fixed inset-0 positioning');
+if (content.includes('absolute inset-0')) {
+  console.log('✅ Uses absolute inset-0 positioning');
 } else {
-  console.log('❌ Missing fixed inset-0 positioning');
+  console.log('❌ Missing absolute inset-0 positioning');
 }
 
 // Test 5: Check theme colors
