@@ -281,13 +281,13 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 			}
 
 			// Update camera aspect ratio and renderer size based on container
-			const container = containerRef.current;
-			const width = container?.clientWidth || window.innerWidth;
-			const height = container?.clientHeight || window.innerHeight;
+			const currentContainer = containerRef.current;
+			const currentWidth = currentContainer?.clientWidth || window.innerWidth;
+			const currentHeight = currentContainer?.clientHeight || window.innerHeight;
 			
-			camera.aspect = width / height;
+			camera.aspect = currentWidth / currentHeight;
 			camera.updateProjectionMatrix();
-			renderer.setSize(width, height);
+			renderer.setSize(currentWidth, currentHeight);
 		};
 
 		// Debounce resize handler for performance
