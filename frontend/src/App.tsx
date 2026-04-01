@@ -44,7 +44,7 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-white text-blue-wardrobe-dark flex flex-col">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-blue-wardrobe-dark dark:text-white flex flex-col">
         {loading && <LoadingSpinner />}
         <Navbar />
         <main className="flex-grow container mx-auto px-4 py-8">

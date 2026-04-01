@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import api from '../lib/api'
-import { DottedSurface } from './ui/dotted-surface'
+import { DottedSurface } from './ui'
 
 export default function NewsletterBanner() {
   const [email, setEmail] = useState('')
@@ -20,9 +20,9 @@ export default function NewsletterBanner() {
   }
 
   return (
-    <section className="relative mt-20 mb-16 py-16 sm:py-20 md:py-24 overflow-hidden bg-gray-50">
+    <section className="relative mt-20 mb-16 py-16 sm:py-20 md:py-24 overflow-hidden bg-gray-100 dark:bg-gray-800">
       {/* Dotted Surface Background */}
-      <DottedSurface className="opacity-100 z-0" />
+      <DottedSurface className="opacity-100" />
       
       {/* Content */}
       <div className="relative z-10 max-w-3xl mx-auto text-center px-4 sm:px-6">
