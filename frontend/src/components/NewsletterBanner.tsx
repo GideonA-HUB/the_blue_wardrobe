@@ -20,16 +20,16 @@ export default function NewsletterBanner() {
   }
 
   return (
-    <section className="relative mt-20 mb-16 py-16 sm:py-20 md:py-24 overflow-hidden bg-gray-100 dark:bg-gray-800">
+    <section className="relative mt-20 mb-16 py-16 sm:py-20 md:py-24 overflow-hidden bg-gray-900">
       {/* Dotted Surface Background */}
       <DottedSurface className="opacity-100" />
       
       {/* Content */}
       <div className="relative z-10 max-w-3xl mx-auto text-center px-4 sm:px-6">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-semibold text-blue-wardrobe-dark mb-4 sm:mb-6">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-semibold text-white mb-4 sm:mb-6">
           The Dress Diaries List
         </h2>
-        <p className="mt-2 text-sm sm:text-base text-gray-600 max-w-xl mx-auto leading-relaxed mb-8 sm:mb-10">
+        <p className="mt-2 text-sm sm:text-base text-gray-300 max-w-xl mx-auto leading-relaxed mb-8 sm:mb-10">
           Be the first to know when new DDC capsules drop, with private previews and global shipping windows.
         </p>
         
