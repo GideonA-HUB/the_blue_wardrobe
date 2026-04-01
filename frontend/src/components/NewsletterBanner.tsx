@@ -20,9 +20,9 @@ export default function NewsletterBanner() {
   }
 
   return (
-    <section className="relative mt-20 mb-16 py-16 sm:py-20 md:py-24 overflow-hidden bg-gradient-to-br from-blue-50/30 to-white/40">
+    <section className="relative mt-20 mb-16 py-16 sm:py-20 md:py-24 overflow-hidden bg-gray-50">
       {/* Dotted Surface Background */}
-      <DottedSurface className="opacity-100" />
+      <DottedSurface className="opacity-100 z-0" />
       
       {/* Content */}
       <div className="relative z-10 max-w-3xl mx-auto text-center px-4 sm:px-6">

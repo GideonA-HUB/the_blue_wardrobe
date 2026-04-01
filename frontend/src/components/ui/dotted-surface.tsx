@@ -70,7 +70,7 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 
 				positions.push(x, y, z);
 				if (theme === 'dark') {
-					colors.push(200, 200, 200);
+					colors.push(100, 100, 100); // Darker gray for dark theme
 				} else {
 					colors.push(0, 0, 0); // Black dots for light theme
 				}
@@ -85,10 +85,10 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 
 		// Create material
 		const material = new THREE.PointsMaterial({
-			size: 8,
+			size: 12,
 			vertexColors: true,
 			transparent: true,
-			opacity: 0.8,
+			opacity: 1.0,
 			sizeAttenuation: true,
 		});
 

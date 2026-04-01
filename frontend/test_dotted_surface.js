@@ -122,10 +122,10 @@ try {
 // Test 9: Check Three.js material properties
 console.log('\n⚡ Test 9: Three.js material configuration');
 const materialChecks = [
-  'size: 8',
+  'size: 12',
   'vertexColors: true',
   'transparent: true',
-  'opacity: 0.8'
+  'opacity: 1.0'
 ];
 
 materialChecks.forEach(check => {
