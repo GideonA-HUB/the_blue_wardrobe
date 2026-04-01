@@ -70,9 +70,9 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 
 				positions.push(x, y, z);
 				if (theme === 'dark') {
-					colors.push(100, 100, 100); // Darker gray for dark theme
+					colors.push(150, 150, 150); // Brighter gray for dark theme
 				} else {
-					colors.push(0, 0, 0); // Black dots for light theme
+					colors.push(100, 100, 100); // Darker gray for light theme
 				}
 			}
 		}
@@ -85,7 +85,7 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 
 		// Create material
 		const material = new THREE.PointsMaterial({
-			size: 12,
+			size: 16,
 			vertexColors: true,
 			transparent: true,
 			opacity: 1.0,
@@ -189,7 +189,7 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 	return (
 		<div
 			ref={containerRef}
-			className={cn('pointer-events-none absolute inset-0 -z-10', className)}
+			className={cn('pointer-events-none absolute inset-0', className)}
 			{...props}
 		/>
 	);
