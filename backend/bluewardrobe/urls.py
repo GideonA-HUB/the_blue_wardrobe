@@ -127,9 +127,8 @@ except Exception as exc:
     ]
 
 # Serve media files (uploaded assets like logo_primary and favicon)
-# In production on Railway, Cloudinary will serve media from its own domain.
-if settings.DEBUG or not settings.USE_CLOUDINARY:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Always serve media files in production
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Serve React app for all non-API routes (must be last)
 # This allows React Router to handle client-side routing

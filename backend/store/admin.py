@@ -85,34 +85,16 @@ class DesignAdminForm(forms.ModelForm):
     def clean_video(self):
         video = self.cleaned_data.get('video')
         if video:
-            # Check if it's a valid file upload (new file)
-            if hasattr(video, 'file') and video.file:
-                # Check file size (100MB limit)
+            # Only validate file size for new uploads
+            if hasattr(video, 'file') and video.file and hasattr(video, 'size'):
                 if video.size > 104857600:  # 100MB
                     raise ValidationError(
                         f'Video file is too large. Maximum size is 100MB. '
                         f'Your file is {video.size / 1048576:.1f}MB.'
                     )
                 return video
-            # If it's an existing file (FieldFile instance), check if it exists
-            elif hasattr(video, 'path'):
-                try:
-                    # Only check file existence if we're not in production with missing media
-                    if video.path and os.path.exists(video.path):
-                        return video
-                    else:
-                        # File doesn't exist, return None to prevent errors
-                        print(f"Admin Warning: Video file not found at {video.path}, setting to None")
-                        return None
-                except Exception as e:
-                    print(f"Admin Warning: Error checking video file {video}: {e}")
-                    return None
-            # If it's a string path, return as-is (shouldn't happen with proper FileField)
-            elif isinstance(video, str):
-                return video
-            # If it's not a proper file but not a string, set to None
-            else:
-                return None
+            # For existing files, return as-is without validation
+            return video
         return video
     
     def save(self, commit=True):
