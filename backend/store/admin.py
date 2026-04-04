@@ -27,6 +27,24 @@ class DesignImageInline(admin.TabularInline):
     model = DesignImage
     extra = 1
     fields = ('image', 'alt_text', 'order')
+    
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        
+        class DesignImageFormSet(formset):
+            def clean(self):
+                super().clean()
+                for form in self.forms:
+                    if form.cleaned_data and not form.cleaned_data.get('DELETE'):
+                        image = form.cleaned_data.get('image')
+                        if image and hasattr(image, 'size'):
+                            if image.size > 52428800:  # 50MB for images
+                                raise ValidationError(
+                                    f'Image file is too large. Maximum size is 50MB. '
+                                    f'Your file is {image.size / 1048576:.1f}MB.'
+                                )
+        
+        return DesignImageFormSet
 
 
 class SizeMeasurementInline(admin.TabularInline):
@@ -68,6 +86,12 @@ class DesignAdminForm(forms.ModelForm):
         if video:
             # Check if it's a valid file upload
             if hasattr(video, 'file') and video.file:
+                # Check file size (100MB limit)
+                if video.size > 104857600:  # 100MB
+                    raise ValidationError(
+                        f'Video file is too large. Maximum size is 100MB. '
+                        f'Your file is {video.size / 1048576:.1f}MB.'
+                    )
                 return video
             else:
                 # If it's not a proper file, set to None

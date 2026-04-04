@@ -20,6 +20,14 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', ''),
     'VIDEO_RESOURCE_TYPE': 'video',
     'INVALID_IMAGE_ERROR': 'Invalid file format',
+    'CHUNK_SIZE': 2000000,  # 2MB chunks for large files
+    'EXISTS': True,  # Check if file exists before upload
+    'RESOURCE_TYPE': 'auto',  # Auto-detect resource type
+    'USE_FILENAME': True,  # Use original filename
+    'UNIQUE_FILENAME': False,  # Allow overwrite for same filename
+    'OVERWRITE': True,  # Overwrite existing files
+    'FETCH_TIMEOUT': 300,  # 5 minutes timeout for large uploads
+    'UPLOAD_TIMEOUT': 300,  # 5 minutes upload timeout
 }
 USE_CLOUDINARY = all(CLOUDINARY_STORAGE.values())
 
@@ -163,16 +171,22 @@ STATICFILES_DIRS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# File upload settings
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
+UPLOAD_FILE_MAX_SIZE = 104857600  # 100MB (for Cloudinary)
+
 # Cloudinary storage (optional)
 if USE_CLOUDINARY:
     import cloudinary_storage.storage
+    from .storage import LargeMediaCloudinaryStorage, LargeVideoCloudinaryStorage
     
     STORAGES = {
         'default': {
-            'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
+            'BACKEND': 'bluewardrobe.storage.LargeMediaCloudinaryStorage',
         },
         'video_storage': {
-            'BACKEND': 'cloudinary_storage.storage.VideoMediaCloudinaryStorage',
+            'BACKEND': 'bluewardrobe.storage.LargeVideoCloudinaryStorage',
         },
         'staticfiles': {
             'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage' if HAS_WHITENOISE else 'django.contrib.staticfiles.storage.StaticFilesStorage',
