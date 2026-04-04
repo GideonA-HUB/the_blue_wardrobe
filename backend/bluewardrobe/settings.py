@@ -172,7 +172,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # WhiteNoise configuration for serving media files in production
-if HAS_WHITENOISE and not settings.USE_CLOUDINARY:
+if HAS_WHITENOISE and not USE_CLOUDINARY:
     # Serve media files through WhiteNoise in production when not using Cloudinary
     WHITENOISE_ROOT = BASE_DIR / 'media'
     WHITENOISE_USE_FINDERS = False
