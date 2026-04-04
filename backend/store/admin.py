@@ -84,7 +84,7 @@ class DesignAdminForm(forms.ModelForm):
     def clean_video(self):
         video = self.cleaned_data.get('video')
         if video:
-            # Check if it's a valid file upload
+            # Check if it's a valid file upload (new file)
             if hasattr(video, 'file') and video.file:
                 # Check file size (100MB limit)
                 if video.size > 104857600:  # 100MB
@@ -93,8 +93,11 @@ class DesignAdminForm(forms.ModelForm):
                         f'Your file is {video.size / 1048576:.1f}MB.'
                     )
                 return video
+            # If it's an existing file (string path), don't try to access it
+            elif isinstance(video, str):
+                return video
+            # If it's not a proper file but not a string, set to None
             else:
-                # If it's not a proper file, set to None
                 return None
         return video
     

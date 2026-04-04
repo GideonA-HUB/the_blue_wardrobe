@@ -171,6 +171,13 @@ STATICFILES_DIRS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# WhiteNoise configuration for serving media files in production
+if HAS_WHITENOISE and not settings.USE_CLOUDINARY:
+    # Serve media files through WhiteNoise in production when not using Cloudinary
+    WHITENOISE_ROOT = BASE_DIR / 'media'
+    WHITENOISE_USE_FINDERS = False
+    WHITENOISE_SKIP_COMPRESS_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'mov', 'avi']
+
 # File upload settings
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB

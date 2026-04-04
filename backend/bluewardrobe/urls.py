@@ -126,9 +126,9 @@ except Exception as exc:
         re_path(r'^api(?:/.*)?$', service_unavailable('API is temporarily unavailable.')),
     ]
 
-# Serve media files (uploaded assets like logo_primary and favicon) in development.
+# Serve media files (uploaded assets like logo_primary and favicon)
 # In production on Railway, Cloudinary will serve media from its own domain.
-if settings.DEBUG:
+if settings.DEBUG or not settings.USE_CLOUDINARY:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Serve React app for all non-API routes (must be last)
