@@ -70,6 +70,9 @@ while True:
 PY
 
 # Run migrations and collectstatic
+echo "Creating media directory..."
+mkdir -p /app/media
+
 echo "Running migrations..."
 python manage.py migrate --noinput
 

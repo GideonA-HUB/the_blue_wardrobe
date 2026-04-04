@@ -1,3 +1,4 @@
+import os
 from django.contrib import admin
 from django import forms
 from django.core.exceptions import ValidationError
@@ -93,7 +94,20 @@ class DesignAdminForm(forms.ModelForm):
                         f'Your file is {video.size / 1048576:.1f}MB.'
                     )
                 return video
-            # If it's an existing file (string path), don't try to access it
+            # If it's an existing file (FieldFile instance), check if it exists
+            elif hasattr(video, 'path'):
+                try:
+                    # Only check file existence if we're not in production with missing media
+                    if video.path and os.path.exists(video.path):
+                        return video
+                    else:
+                        # File doesn't exist, return None to prevent errors
+                        print(f"Admin Warning: Video file not found at {video.path}, setting to None")
+                        return None
+                except Exception as e:
+                    print(f"Admin Warning: Error checking video file {video}: {e}")
+                    return None
+            # If it's a string path, return as-is (shouldn't happen with proper FileField)
             elif isinstance(video, str):
                 return video
             # If it's not a proper file but not a string, set to None
