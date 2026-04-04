@@ -76,6 +76,9 @@ mkdir -p /app/media
 echo "Running migrations..."
 python manage.py migrate --noinput
 
+echo "Fixing production media paths..."
+python fix_sql_paths.py
+
 echo "Collecting static files..."
 # Avoid --clear here to prevent removing previously-built frontend assets unexpectedly.
 python manage.py collectstatic --noinput
