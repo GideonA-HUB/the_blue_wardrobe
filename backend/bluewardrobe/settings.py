@@ -201,9 +201,7 @@ if USE_CLOUDINARY:
     import cloudinary_storage.storage
     from .storage import LargeMediaCloudinaryStorage, LargeVideoCloudinaryStorage
     
-    # Configure Cloudinary storage for all media files
-    DEFAULT_FILE_STORAGE = 'bluewardrobe.storage.LargeMediaCloudinaryStorage'
-    
+    # Use STORAGES setting (Django 4.2+) - mutually exclusive with DEFAULT_FILE_STORAGE
     STORAGES = {
         'default': {
             'BACKEND': 'bluewardrobe.storage.LargeMediaCloudinaryStorage',
@@ -221,12 +219,11 @@ if USE_CLOUDINARY:
     MEDIA_ROOT = None
     
     # Debug: Log storage configuration
-    print(f"DEBUG: Using Cloudinary storage - DEFAULT_FILE_STORAGE: {DEFAULT_FILE_STORAGE}")
+    print(f"DEBUG: Using Cloudinary storage - default backend: {STORAGES['default']['BACKEND']}")
     print(f"DEBUG: Using Cloudinary storage - video_storage backend: {STORAGES['video_storage']['BACKEND']}")
     print(f"DEBUG: Cloudinary is active - MEDIA_ROOT set to None")
 else:
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-    
+    # Use STORAGES setting for local filesystem
     STORAGES = {
         'default': {
             'BACKEND': 'django.core.files.storage.FileSystemStorage',
@@ -240,7 +237,7 @@ else:
     }
     
     # Debug: Log storage configuration
-    print(f"DEBUG: Using FileSystem storage - DEFAULT_FILE_STORAGE: {DEFAULT_FILE_STORAGE}")
+    print(f"DEBUG: Using FileSystem storage - default backend: {STORAGES['default']['BACKEND']}")
     print(f"DEBUG: Using FileSystem storage - video_storage backend: {STORAGES['video_storage']['BACKEND']}")
 
 REST_FRAMEWORK = {
