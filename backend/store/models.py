@@ -68,31 +68,29 @@ class SafeVideoField(models.FileField):
 def get_video_storage():
         """Get the appropriate video storage backend with fallback"""
         try:
-            from django.core.files.storage import storages
             from django.conf import settings
             
-            print(f"DEBUG: Available storages: {list(storages.keys())}")
+            print(f"DEBUG: Getting video storage, USE_CLOUDINARY: {getattr(settings, 'USE_CLOUDINARY', False)}")
             
-            # Try to get video_storage first
-            if 'video_storage' in storages:
-                storage = storages['video_storage']
-                print(f"DEBUG: Using video_storage: {type(storage)}")
-                return storage
-            # Fallback to default storage
-            elif 'default' in storages:
-                storage = storages['default']
-                print(f"DEBUG: Using default storage: {type(storage)}")
-                return storage
-            else:
-                print(f"WARNING: No configured storage found, checking USE_CLOUDINARY setting")
-                if getattr(settings, 'USE_CLOUDINARY', False):
+            # Check if Cloudinary is enabled
+            if getattr(settings, 'USE_CLOUDINARY', False):
+                try:
+                    from django.core.files.storage import storages
+                    # Try to get video_storage from STORAGES setting
+                    video_storage = storages['video_storage']
+                    print(f"DEBUG: Using video_storage from STORAGES: {type(video_storage)}")
+                    return video_storage
+                except Exception as storage_error:
+                    print(f"DEBUG: Failed to get video_storage from STORAGES: {storage_error}")
+                    # Fallback to creating LargeVideoCloudinaryStorage directly
                     from bluewardrobe.storage import LargeVideoCloudinaryStorage
-                    print(f"DEBUG: Creating LargeVideoCloudinaryStorage")
+                    print(f"DEBUG: Creating LargeVideoCloudinaryStorage directly")
                     return LargeVideoCloudinaryStorage()
-                else:
-                    print(f"DEBUG: Creating FileSystemStorage as last resort")
-                    from django.core.files.storage import FileSystemStorage
-                    return FileSystemStorage()
+            else:
+                # Use FileSystemStorage when Cloudinary is not enabled
+                print(f"DEBUG: Cloudinary not enabled, using FileSystemStorage")
+                from django.core.files.storage import FileSystemStorage
+                return FileSystemStorage()
                     
         except Exception as e:
             print(f"ERROR: Failed to get video_storage: {e}, falling back to FileSystemStorage")
@@ -111,6 +109,7 @@ class Design(models.Model):
         upload_to='designs/videos/', 
         null=True, 
         blank=True, 
+        storage=get_video_storage,
         help_text='Product video file (MP4, WebM, etc.)'
     )
     created_at = models.DateTimeField(default=timezone.now)
