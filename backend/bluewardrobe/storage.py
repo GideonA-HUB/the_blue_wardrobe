@@ -28,6 +28,13 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
             resource_type = 'auto'
         
         try:
+            # Extract folder from the upload_to path to avoid duplication
+            folder = None
+            if '/' in name:
+                # Get the folder part from the name (before the filename)
+                folder = name.rsplit('/', 1)[0]
+                print(f"DEBUG: Extracted folder from name: {folder}")
+            
             if content.size > 10485760:  # If file is larger than 10MB
                 # Use chunked upload for large files
                 options = {
@@ -37,8 +44,14 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
                     'use_filename': True,
                     'unique_filename': False,
                     'overwrite': True,
-                    'folder': 'designs/videos' if resource_type == 'video' else 'designs/images'
                 }
+                
+                # Only add folder if it exists and isn't already in the name
+                if folder and not name.startswith(folder + '/'):
+                    options['folder'] = folder
+                    print(f"DEBUG: Adding folder to options: {folder}")
+                else:
+                    print(f"DEBUG: Not adding folder - already in name or no folder")
                 
                 print(f"DEBUG: Using chunked upload for large file, options: {options}")
                 
@@ -64,8 +77,14 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
                     'use_filename': True,
                     'unique_filename': False,
                     'overwrite': True,
-                    'folder': 'designs/videos' if resource_type == 'video' else 'designs/images'
                 }
+                
+                # Only add folder if it exists and isn't already in the name
+                if folder and not name.startswith(folder + '/'):
+                    options['folder'] = folder
+                    print(f"DEBUG: Adding folder to options: {folder}")
+                else:
+                    print(f"DEBUG: Not adding folder - already in name or no folder")
                 
                 # Reset file pointer to beginning
                 content.seek(0)
@@ -114,6 +133,13 @@ class LargeVideoCloudinaryStorage(LargeMediaCloudinaryStorage):
         """
         print(f"DEBUG: LargeVideoCloudinaryStorage._save called for {name}")
         
+        # Extract folder from the upload_to path to avoid duplication
+        folder = None
+        if '/' in name:
+            # Get the folder part from the name (before the filename)
+            folder = name.rsplit('/', 1)[0]
+            print(f"DEBUG: Extracted folder from name: {folder}")
+        
         options = {
             'resource_type': 'video',
             'chunk_size': 2000000,  # 2MB chunks
@@ -121,8 +147,14 @@ class LargeVideoCloudinaryStorage(LargeMediaCloudinaryStorage):
             'use_filename': True,
             'unique_filename': False,
             'overwrite': True,
-            'folder': 'designs/videos'
         }
+        
+        # Only add folder if it exists and isn't already in the name
+        if folder and not name.startswith(folder + '/'):
+            options['folder'] = folder
+            print(f"DEBUG: Adding folder to options: {folder}")
+        else:
+            print(f"DEBUG: Not adding folder - already in name or no folder")
         
         print(f"DEBUG: Video upload options: {options}")
         
