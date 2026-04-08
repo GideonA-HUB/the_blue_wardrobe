@@ -80,11 +80,25 @@ class DesignSerializer(serializers.ModelSerializer):
         """
         if obj.video:
             try:
+                # Get the video URL from Cloudinary or local storage
+                video_url = obj.video.url
+                print(f"DEBUG: Raw video URL from storage: {video_url}")
+                
+                # If it's already a full Cloudinary URL, return it as-is
+                if video_url.startswith('http'):
+                    print(f"DEBUG: Returning Cloudinary URL directly: {video_url}")
+                    return video_url
+                
+                # If it's a relative path, build absolute URI
                 request = self.context.get('request')
                 if request:
-                    return request.build_absolute_uri(obj.video.url)
-                return obj.video.url
-            except (AttributeError, ValueError, TypeError):
+                    full_url = request.build_absolute_uri(video_url)
+                    print(f"DEBUG: Built absolute URI: {full_url}")
+                    return full_url
+                
+                return video_url
+            except (AttributeError, ValueError, TypeError) as e:
+                print(f"DEBUG: Error getting video URL: {e}")
                 return None
         return None
     

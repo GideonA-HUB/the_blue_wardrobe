@@ -33,7 +33,9 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy backend and built frontend artifacts from builder
 COPY backend/ /app/
+# Keep both locations so Django can resolve either candidate path.
 COPY --from=frontend-builder /app/frontend/dist /app/frontend_dist
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 # Ensure runtime scripts exist and are executable
 RUN chmod +x /app/start.sh

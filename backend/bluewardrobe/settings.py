@@ -179,8 +179,17 @@ STATICFILES_DIRS = [
     FRONTEND_BUILD_DIR,
 ] if FRONTEND_BUILD_DIR.exists() else []
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Media URL configuration - use Cloudinary when available
+if USE_CLOUDINARY:
+    # When using Cloudinary, MEDIA_URL is handled by Cloudinary storage backend
+    MEDIA_URL = '/media/'  # Keep this for Django admin compatibility
+    MEDIA_ROOT = None  # Not used with Cloudinary
+    print(f"DEBUG: Using Cloudinary storage, MEDIA_URL set for compatibility: {MEDIA_URL}")
+else:
+    # Fallback to local filesystem
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
+    print(f"DEBUG: Using local media URL: {MEDIA_URL}")
 
 # File upload settings
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB

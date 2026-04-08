@@ -127,8 +127,12 @@ except Exception as exc:
     ]
 
 # Serve media files (uploaded assets like logo_primary and favicon)
-# Always serve media files in production
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Only serve from local filesystem if not using Cloudinary
+if not getattr(settings, 'USE_CLOUDINARY', False) and settings.MEDIA_ROOT:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    print(f"DEBUG: Serving media files from local filesystem at {settings.MEDIA_ROOT}")
+else:
+    print(f"DEBUG: Cloudinary is active, not serving media files from local filesystem")
 
 # Serve React app for all non-API routes (must be last)
 # This allows React Router to handle client-side routing
