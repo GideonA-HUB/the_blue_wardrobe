@@ -1,9 +1,6 @@
 #!/usr/bin/env sh
 set -eu
 
-python manage.py check
 python manage.py migrate --noinput
-python manage.py ensure_superuser
-python manage.py runtime_smoke
 
-exec gunicorn bluewardrobe.wsgi:application -c gunicorn.conf.py
+exec gunicorn bluewardrobe.wsgi:application --bind 0.0.0.0:${PORT:-8080}

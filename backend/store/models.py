@@ -111,7 +111,6 @@ class Design(models.Model):
         upload_to='designs/videos/', 
         null=True, 
         blank=True, 
-        storage=get_video_storage,
         help_text='Product video file (MP4, WebM, etc.)'
     )
     created_at = models.DateTimeField(default=timezone.now)
