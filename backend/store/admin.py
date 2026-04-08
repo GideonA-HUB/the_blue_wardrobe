@@ -84,18 +84,43 @@ class DesignAdminForm(forms.ModelForm):
     
     def clean_video(self):
         video = self.cleaned_data.get('video')
-        if video:
-            # Only validate file size for new uploads
-            if hasattr(video, 'file') and video.file and hasattr(video, 'size'):
-                if video.size > 104857600:  # 100MB
+        if not video:
+            return video
+            
+        # Handle different types of video field values
+        try:
+            # Case 1: New file upload (has file attribute)
+            if hasattr(video, 'file') and hasattr(video, 'size'):
+                if video.size > 104857600:  # 100MB limit
                     raise ValidationError(
                         f'Video file is too large. Maximum size is 100MB. '
                         f'Your file is {video.size / 1048576:.1f}MB.'
                     )
                 return video
-            # For existing files, return as-is without validation
-            return video
-        return video
+                
+            # Case 2: Existing FieldFile (Django file field)
+            elif hasattr(video, 'name') and hasattr(video, 'url'):
+                # Don't try to access the file - just return it
+                # This prevents FileNotFoundError for missing files
+                return video
+                
+            # Case 3: String path (shouldn't happen but handle it)
+            elif isinstance(video, str):
+                # Remove 'media/' prefix if present to prevent duplicates
+                if video.startswith('media/'):
+                    video = video[6:]  # Remove 'media/' prefix
+                elif video.startswith('/media/'):
+                    video = video[7:]  # Remove '/media/' prefix
+                return video
+                
+            # Case 4: Anything else - return None to be safe
+            else:
+                return None
+                
+        except Exception as e:
+            # If anything goes wrong, log it and return None
+            print(f"Admin video validation error: {e}")
+            return None
     
     def save(self, commit=True):
         """

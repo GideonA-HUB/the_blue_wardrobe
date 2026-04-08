@@ -77,7 +77,7 @@ echo "Running migrations..."
 python manage.py migrate --noinput
 
 echo "Fixing production media paths..."
-python fix_sql_paths.py
+python comprehensive_fix.py
 
 echo "Collecting static files..."
 # Avoid --clear here to prevent removing previously-built frontend assets unexpectedly.
