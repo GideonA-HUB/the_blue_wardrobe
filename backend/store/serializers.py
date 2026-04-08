@@ -78,14 +78,24 @@ class DesignSerializer(serializers.ModelSerializer):
         """
         Return the video URL for FileField
         """
+        print(f"DEBUG: get_video_url called for design {obj.id}: {obj.title}")
+        print(f"DEBUG: Video field value: {obj.video}")
+        print(f"DEBUG: Video field type: {type(obj.video)}")
+        
         if obj.video:
             try:
                 # Get the video URL from Cloudinary or local storage
                 video_url = obj.video.url
                 print(f"DEBUG: Raw video URL from storage: {video_url}")
+                print(f"DEBUG: Video URL type: {type(video_url)}")
+                
+                # Check if URL is empty or None
+                if not video_url:
+                    print(f"DEBUG: Video URL is empty or None")
+                    return None
                 
                 # If it's already a full Cloudinary URL, return it as-is
-                if video_url.startswith('http'):
+                if isinstance(video_url, str) and video_url.startswith('http'):
                     print(f"DEBUG: Returning Cloudinary URL directly: {video_url}")
                     return video_url
                 
@@ -97,9 +107,14 @@ class DesignSerializer(serializers.ModelSerializer):
                     return full_url
                 
                 return video_url
-            except (AttributeError, ValueError, TypeError) as e:
+            except Exception as e:
                 print(f"DEBUG: Error getting video URL: {e}")
+                print(f"DEBUG: Exception type: {type(e)}")
+                import traceback
+                print(f"DEBUG: Traceback: {traceback.format_exc()}")
                 return None
+        else:
+            print(f"DEBUG: No video file found for design {obj.id}")
         return None
     
     def get_total_stock(self, obj):

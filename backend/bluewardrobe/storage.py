@@ -110,15 +110,46 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
         print(f"DEBUG: LargeMediaCloudinaryStorage.url called for {name}")
         
         if not name:
+            print(f"DEBUG: Name is empty, returning empty string")
             return ''
         
         try:
             # Get the URL from Cloudinary
             url = super().url(name)
             print(f"DEBUG: Generated Cloudinary URL: {url}")
+            print(f"DEBUG: URL type: {type(url)}")
+            
+            # Ensure URL is not empty
+            if not url:
+                print(f"DEBUG: Cloudinary returned empty URL, trying to generate manually")
+                # Try to generate URL manually
+                import cloudinary
+                from django.conf import settings
+                
+                # Determine resource type
+                if name.lower().endswith(('.mp4', '.webm', '.mov', '.avi', '.mkv')):
+                    resource_type = 'video'
+                else:
+                    resource_type = 'auto'
+                
+                # Generate URL manually
+                try:
+                    manual_url = cloudinary.utils.cloudinary_url(
+                        name,
+                        resource_type=resource_type,
+                        format='mp4' if resource_type == 'video' else None
+                    )[0]
+                    print(f"DEBUG: Generated manual Cloudinary URL: {manual_url}")
+                    return manual_url
+                except Exception as manual_error:
+                    print(f"DEBUG: Manual URL generation failed: {manual_error}")
+                    return ''
+            
             return url
         except Exception as e:
             print(f"DEBUG: Error generating URL for {name}: {e}")
+            import traceback
+            print(f"DEBUG: Traceback: {traceback.format_exc()}")
             return ''
 
 
