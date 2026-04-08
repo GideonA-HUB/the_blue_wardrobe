@@ -69,14 +69,31 @@ def get_video_storage():
         """Get the appropriate video storage backend with fallback"""
         try:
             from django.core.files.storage import storages
-            storage = storages['video_storage']
-            # Test if storage has required methods
-            if hasattr(storage, 'generate_filename'):
+            from django.conf import settings
+            
+            print(f"DEBUG: Available storages: {list(storages.keys())}")
+            
+            # Try to get video_storage first
+            if 'video_storage' in storages:
+                storage = storages['video_storage']
+                print(f"DEBUG: Using video_storage: {type(storage)}")
+                return storage
+            # Fallback to default storage
+            elif 'default' in storages:
+                storage = storages['default']
+                print(f"DEBUG: Using default storage: {type(storage)}")
                 return storage
             else:
-                print(f"WARNING: video_storage {type(storage)} doesn't have generate_filename, falling back to FileSystemStorage")
-                from django.core.files.storage import FileSystemStorage
-                return FileSystemStorage()
+                print(f"WARNING: No configured storage found, checking USE_CLOUDINARY setting")
+                if getattr(settings, 'USE_CLOUDINARY', False):
+                    from bluewardrobe.storage import LargeVideoCloudinaryStorage
+                    print(f"DEBUG: Creating LargeVideoCloudinaryStorage")
+                    return LargeVideoCloudinaryStorage()
+                else:
+                    print(f"DEBUG: Creating FileSystemStorage as last resort")
+                    from django.core.files.storage import FileSystemStorage
+                    return FileSystemStorage()
+                    
         except Exception as e:
             print(f"ERROR: Failed to get video_storage: {e}, falling back to FileSystemStorage")
             from django.core.files.storage import FileSystemStorage

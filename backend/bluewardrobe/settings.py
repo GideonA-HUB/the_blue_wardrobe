@@ -29,7 +29,18 @@ CLOUDINARY_STORAGE = {
     'FETCH_TIMEOUT': 300,  # 5 minutes timeout for large uploads
     'UPLOAD_TIMEOUT': 300,  # 5 minutes upload timeout
 }
-USE_CLOUDINARY = all(CLOUDINARY_STORAGE.values())
+# Check if essential Cloudinary credentials are available
+USE_CLOUDINARY = all([
+    CLOUDINARY_STORAGE['CLOUD_NAME'],
+    CLOUDINARY_STORAGE['API_KEY'], 
+    CLOUDINARY_STORAGE['API_SECRET']
+])
+
+# Debug: Log Cloudinary configuration status
+print(f"DEBUG: Cloudinary config - CLOUD_NAME: {'SET' if CLOUDINARY_STORAGE['CLOUD_NAME'] else 'MISSING'}")
+print(f"DEBUG: Cloudinary config - API_KEY: {'SET' if CLOUDINARY_STORAGE['API_KEY'] else 'MISSING'}")
+print(f"DEBUG: Cloudinary config - API_SECRET: {'SET' if CLOUDINARY_STORAGE['API_SECRET'] else 'MISSING'}")
+print(f"DEBUG: USE_CLOUDINARY = {USE_CLOUDINARY}")
 
 SENTRY_DSN = os.getenv('SENTRY_DSN', '')
 if sentry_sdk and DjangoIntegration and SENTRY_DSN:

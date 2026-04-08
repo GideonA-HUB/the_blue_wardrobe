@@ -89,8 +89,11 @@ class DesignAdminForm(forms.ModelForm):
             
         # Handle different types of video field values
         try:
+            print(f"DEBUG: Admin clean_video called with video type: {type(video)}")
+            
             # Case 1: New file upload (has file attribute)
             if hasattr(video, 'file') and hasattr(video, 'size'):
+                print(f"DEBUG: New file upload detected, size: {video.size}")
                 if video.size > 104857600:  # 100MB limit
                     raise ValidationError(
                         f'Video file is too large. Maximum size is 100MB. '
@@ -100,12 +103,14 @@ class DesignAdminForm(forms.ModelForm):
                 
             # Case 2: Existing FieldFile (Django file field)
             elif hasattr(video, 'name') and hasattr(video, 'url'):
+                print(f"DEBUG: Existing FieldFile detected, name: {video.name}")
                 # Don't try to access the file - just return it
                 # This prevents FileNotFoundError for missing files
                 return video
                 
             # Case 3: String path (shouldn't happen but handle it)
             elif isinstance(video, str):
+                print(f"DEBUG: String path detected: {video}")
                 # Remove 'media/' prefix if present to prevent duplicates
                 if video.startswith('media/'):
                     video = video[6:]  # Remove 'media/' prefix
@@ -115,6 +120,7 @@ class DesignAdminForm(forms.ModelForm):
                 
             # Case 4: Anything else - return None to be safe
             else:
+                print(f"DEBUG: Unknown video type, returning None")
                 return None
                 
         except Exception as e:
