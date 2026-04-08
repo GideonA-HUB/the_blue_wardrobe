@@ -38,12 +38,29 @@ class DesignImageInline(admin.TabularInline):
                 for form in self.forms:
                     if form.cleaned_data and not form.cleaned_data.get('DELETE'):
                         image = form.cleaned_data.get('image')
-                        if image and hasattr(image, 'size'):
-                            if image.size > 52428800:  # 50MB for images
-                                raise ValidationError(
-                                    f'Image file is too large. Maximum size is 50MB. '
-                                    f'Your file is {image.size / 1048576:.1f}MB.'
-                                )
+                        if image:
+                            # Handle different types of image objects
+                            try:
+                                # Check if it's a new upload with size attribute
+                                if hasattr(image, 'size') and image.size is not None:
+                                    if image.size > 52428800:  # 50MB for images
+                                        raise ValidationError(
+                                            f'Image file is too large. Maximum size is 50MB. '
+                                            f'Your file is {image.size / 1048576:.1f}MB.'
+                                        )
+                                # For Cloudinary images or existing images, skip size check
+                                # Cloudinary doesn't provide size in the same way
+                                elif hasattr(image, 'name') and image.name:
+                                    # This is likely a Cloudinary image or existing image
+                                    print(f"DEBUG: Skipping size check for Cloudinary/existing image: {image.name}")
+                                    pass
+                                else:
+                                    print(f"DEBUG: Unknown image type, skipping size check: {type(image)}")
+                                    pass
+                            except Exception as e:
+                                print(f"DEBUG: Error in image size validation: {e}")
+                                # Don't fail the entire form if size check fails
+                                pass
         
         return DesignImageFormSet
 

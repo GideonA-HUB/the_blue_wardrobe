@@ -27,36 +27,61 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
         else:
             resource_type = 'auto'
         
-        if content.size > 10485760:  # If file is larger than 10MB
-            # Use chunked upload for large files
-            options = {
-                'resource_type': resource_type,
-                'chunk_size': 2000000,  # 2MB chunks
-                'timeout': 300,  # 5 minutes timeout
-                'use_filename': True,
-                'unique_filename': False,
-                'overwrite': True,
-                'folder': 'designs/videos' if resource_type == 'video' else 'designs/images'
-            }
-            
-            print(f"DEBUG: Using chunked upload for large file, options: {options}")
-            
-            # Reset file pointer to beginning
-            content.seek(0)
-            
-            # Upload with chunked upload
-            result = cloudinary.uploader.upload_large(
-                content,
-                public_id=name,
-                **options
-            )
-            
-            print(f"DEBUG: Chunked upload result: {result}")
-            # Return the public ID
-            return result['public_id']
-        else:
-            # Use normal upload for smaller files
-            print(f"DEBUG: Using normal upload for small file: {name}")
+        try:
+            if content.size > 10485760:  # If file is larger than 10MB
+                # Use chunked upload for large files
+                options = {
+                    'resource_type': resource_type,
+                    'chunk_size': 2000000,  # 2MB chunks
+                    'timeout': 300,  # 5 minutes timeout
+                    'use_filename': True,
+                    'unique_filename': False,
+                    'overwrite': True,
+                    'folder': 'designs/videos' if resource_type == 'video' else 'designs/images'
+                }
+                
+                print(f"DEBUG: Using chunked upload for large file, options: {options}")
+                
+                # Reset file pointer to beginning
+                content.seek(0)
+                
+                # Upload with chunked upload
+                result = cloudinary.uploader.upload_large(
+                    content,
+                    public_id=name,
+                    **options
+                )
+                
+                print(f"DEBUG: Chunked upload result: {result}")
+                # Return the public ID
+                return result['public_id']
+            else:
+                # Use normal upload for smaller files
+                print(f"DEBUG: Using normal upload for small file: {name}")
+                
+                options = {
+                    'resource_type': resource_type,
+                    'use_filename': True,
+                    'unique_filename': False,
+                    'overwrite': True,
+                    'folder': 'designs/videos' if resource_type == 'video' else 'designs/images'
+                }
+                
+                # Reset file pointer to beginning
+                content.seek(0)
+                
+                result = cloudinary.uploader.upload(
+                    content,
+                    public_id=name,
+                    **options
+                )
+                
+                print(f"DEBUG: Normal upload result: {result}")
+                return result['public_id']
+                
+        except Exception as e:
+            print(f"DEBUG: Error in Cloudinary upload: {e}")
+            # Fallback to parent method
             return super()._save(name, content)
     
     def url(self, name):
