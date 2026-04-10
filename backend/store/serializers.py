@@ -19,15 +19,23 @@ class DesignImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'image', 'image_url', 'alt_text', 'order', 'created_at']
     
     def get_image_url(self, obj):
-        if obj.image:
-            try:
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(obj.image.url)
-                return obj.image.url
-            except (AttributeError, ValueError, TypeError):
+        if not obj.image:
+            return None
+        try:
+            url = obj.image.url
+            if not url:
                 return None
-        return None
+            # Cloudinary returns absolute https URLs; do not wrap with API host.
+            if isinstance(url, str) and url.startswith(('http://', 'https://')):
+                return url
+            if isinstance(url, str) and url.startswith('//'):
+                return f'https:{url}'
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(url)
+            return url
+        except (AttributeError, ValueError, TypeError):
+            return None
 
 
 class SizeInventorySerializer(serializers.ModelSerializer):

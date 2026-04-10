@@ -1,13 +1,19 @@
 """
 Custom Cloudinary storage backend with resilient file handling.
+
+django-cloudinary-storage builds delivery URLs by prepending PREFIX (default:
+MEDIA_URL, i.e. "media/") to the stored public_id. Uploads must use the same
+prefixed path or the CDN URL will 404 even though the admin save succeeded.
 """
 import io
 import logging
+import os
 
 import cloudinary
 import cloudinary.uploader
 from cloudinary_storage.storage import MediaCloudinaryStorage
 from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import UploadedFile
 from PIL import Image, ImageOps
 
 logger = logging.getLogger(__name__)
@@ -72,6 +78,8 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
     """
 
     def _save(self, name, content):
+        # Must match url() / _prepend_prefix so stored public_id aligns with delivery URLs.
+        name = self._prepend_prefix(self._normalise_name(name))
         logger.debug("LargeMediaCloudinaryStorage._save name=%s", name)
 
         lower = name.lower()
@@ -82,20 +90,7 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
         else:
             resource_type = "auto"
 
-        folder = None
-        if "/" in name:
-            folder = name.rsplit("/", 1)[0]
-
         size = getattr(content, "size", None)
-
-        options_base = {
-            "resource_type": resource_type,
-            "use_filename": True,
-            "unique_filename": False,
-            "overwrite": True,
-        }
-        if folder and not name.startswith(folder + "/"):
-            options_base["folder"] = folder
 
         try:
             upload_content = content
@@ -108,13 +103,26 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
                     data = _compress_image_for_cloudinary(data)
                 upload_content = _to_content_file(data, name)
                 size = len(data)
+                # Same upload semantics as MediaCloudinaryStorage (folder + tags + resource_type).
+                uf = UploadedFile(upload_content, name)
+                response = MediaCloudinaryStorage._upload(self, name, uf)
+                return response["public_id"]
 
-            if resource_type != "image" and size is not None and size > LARGE_FILE_THRESHOLD:
+            folder = os.path.dirname(name)
+            if size is not None and size > LARGE_FILE_THRESHOLD:
                 options = {
-                    **options_base,
+                    "resource_type": resource_type,
                     "chunk_size": CLOUDINARY_CHUNK_SIZE,
                     "timeout": 300,
+                    "use_filename": True,
+                    "unique_filename": False,
+                    "overwrite": True,
+                    "tags": self.TAG,
                 }
+                if folder:
+                    options["folder"] = folder
+                if hasattr(upload_content, "seek"):
+                    upload_content.seek(0)
                 result = cloudinary.uploader.upload_large(
                     upload_content,
                     public_id=name,
@@ -122,7 +130,17 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
                 )
                 return result["public_id"]
 
-            options = dict(options_base)
+            options = {
+                "resource_type": resource_type,
+                "use_filename": True,
+                "unique_filename": False,
+                "overwrite": True,
+                "tags": self.TAG,
+            }
+            if folder:
+                options["folder"] = folder
+            if hasattr(upload_content, "seek"):
+                upload_content.seek(0)
             result = cloudinary.uploader.upload(
                 upload_content,
                 public_id=name,
@@ -137,11 +155,11 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
                 if resource_type == "image":
                     data = _read_all_bytes(content)
                     fallback_file = _to_content_file(data, name)
-                    return super()._save(name, fallback_file)
+                    return MediaCloudinaryStorage._save(self, name, fallback_file)
 
                 if hasattr(content, "seek"):
                     content.seek(0)
-                return super()._save(name, content)
+                return MediaCloudinaryStorage._save(self, name, content)
             except (OSError, ValueError) as seek_err:
                 logger.error("Cannot rewind file for fallback upload: %s", seek_err)
                 raise
@@ -178,11 +196,10 @@ class LargeVideoCloudinaryStorage(LargeMediaCloudinaryStorage):
     """
 
     def _save(self, name, content):
+        name = self._prepend_prefix(self._normalise_name(name))
         logger.debug("LargeVideoCloudinaryStorage._save name=%s", name)
 
-        folder = None
-        if "/" in name:
-            folder = name.rsplit("/", 1)[0]
+        folder = os.path.dirname(name)
 
         options = {
             "resource_type": "video",
@@ -191,8 +208,9 @@ class LargeVideoCloudinaryStorage(LargeMediaCloudinaryStorage):
             "use_filename": True,
             "unique_filename": False,
             "overwrite": True,
+            "tags": self.TAG,
         }
-        if folder and not name.startswith(folder + "/"):
+        if folder:
             options["folder"] = folder
 
         try:
@@ -222,8 +240,9 @@ class LargeVideoCloudinaryStorage(LargeMediaCloudinaryStorage):
                 "use_filename": True,
                 "unique_filename": False,
                 "overwrite": True,
+                "tags": self.TAG,
             }
-            if folder and not name.startswith(folder + "/"):
+            if folder:
                 fallback_opts["folder"] = folder
             result = cloudinary.uploader.upload(content, public_id=name, **fallback_opts)
             return result["public_id"]
