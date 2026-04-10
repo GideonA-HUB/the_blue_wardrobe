@@ -320,10 +320,22 @@ class Order(models.Model):
         ('delivered', 'Delivered'),
         ('cancelled', 'Cancelled'),
     ]
+    PAYMENT_PROVIDER_CHOICES = [
+        ('paystack', 'Paystack'),
+        ('flutterwave', 'Flutterwave'),
+    ]
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    payment_provider = models.CharField(
+        max_length=20,
+        choices=PAYMENT_PROVIDER_CHOICES,
+        blank=True,
+        default='',
+        help_text='Gateway used for this order (set automatically on payment)',
+    )
     paystack_reference = models.CharField(max_length=200, blank=True)
+    flutterwave_tx_ref = models.CharField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -343,9 +355,10 @@ class OrderItem(models.Model):
 
 class PaymentLog(models.Model):
     """
-    Lightweight payment log so the owner can audit Paystack transactions.
+    Lightweight payment log so the owner can audit payment gateway transactions.
     """
     order = models.ForeignKey(Order, related_name='payments', on_delete=models.CASCADE, null=True, blank=True)
+    gateway = models.CharField(max_length=20, blank=True, help_text='paystack or flutterwave')
     reference = models.CharField(max_length=200, db_index=True)
     status = models.CharField(max_length=50)
     amount = models.DecimalField(max_digits=12, decimal_places=2)

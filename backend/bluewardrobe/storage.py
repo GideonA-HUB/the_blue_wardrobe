@@ -1,229 +1,191 @@
 """
-Custom Cloudinary storage backend to handle large file uploads
+Custom Cloudinary storage backend to handle large file uploads.
+
+Cloudinary chunked uploads (upload_large) require every part except the final
+EOF chunk to be larger than 5MB. Using smaller chunks causes:
+  BadRequest: All parts except EOF-chunk must be larger than 5mb
+
+After a failed upload_large call, the underlying file object may be exhausted
+or closed; always rewind before any fallback upload.
 """
+import logging
+
 import cloudinary
 import cloudinary.uploader
-from cloudinary_storage.storage import MediaCloudinaryStorage, RawMediaCloudinaryStorage
-from django.core.files import File
-from django.conf import settings
+from cloudinary_storage.storage import MediaCloudinaryStorage
+
+logger = logging.getLogger(__name__)
+
+# Cloudinary requires non-terminal chunks >= 5 MiB; use 6 MiB for headroom.
+CLOUDINARY_CHUNK_SIZE = 6 * 1024 * 1024
+# Use chunked API only when a regular upload would be unwieldy (same as before).
+LARGE_FILE_THRESHOLD = 10 * 1024 * 1024
 
 
 class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
     """
-    Custom Cloudinary storage that supports larger file uploads
+    Custom Cloudinary storage that supports larger file uploads.
     """
-    
+
     def _save(self, name, content):
-        """
-        Override save method to handle large files with chunked uploads
-        """
-        print(f"DEBUG: LargeMediaCloudinaryStorage._save called for {name}")
-        
-        # Determine resource type based on file extension
-        if name.lower().endswith(('.mp4', '.webm', '.mov', '.avi', '.mkv')):
-            resource_type = 'video'
-        elif name.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
-            resource_type = 'image'
+        logger.debug("LargeMediaCloudinaryStorage._save name=%s", name)
+
+        lower = name.lower()
+        if lower.endswith((".mp4", ".webm", ".mov", ".avi", ".mkv")):
+            resource_type = "video"
+        elif lower.endswith((".jpg", ".jpeg", ".png", ".gif", ".webp")):
+            resource_type = "image"
         else:
-            resource_type = 'auto'
-        
+            resource_type = "auto"
+
+        folder = None
+        if "/" in name:
+            folder = name.rsplit("/", 1)[0]
+
+        size = getattr(content, "size", None)
         try:
-            # Extract folder from the upload_to path to avoid duplication
-            folder = None
-            if '/' in name:
-                # Get the folder part from the name (before the filename)
-                folder = name.rsplit('/', 1)[0]
-                print(f"DEBUG: Extracted folder from name: {folder}")
-            
-            if content.size > 10485760:  # If file is larger than 10MB
-                # Use chunked upload for large files
-                options = {
-                    'resource_type': resource_type,
-                    'chunk_size': 2000000,  # 2MB chunks
-                    'timeout': 300,  # 5 minutes timeout
-                    'use_filename': True,
-                    'unique_filename': False,
-                    'overwrite': True,
-                }
-                
-                # Only add folder if it exists and isn't already in the name
-                if folder and not name.startswith(folder + '/'):
-                    options['folder'] = folder
-                    print(f"DEBUG: Adding folder to options: {folder}")
-                else:
-                    print(f"DEBUG: Not adding folder - already in name or no folder")
-                
-                print(f"DEBUG: Using chunked upload for large file, options: {options}")
-                
-                # Reset file pointer to beginning
+            if hasattr(content, "seek"):
                 content.seek(0)
-                
-                # Upload with chunked upload
+        except (OSError, ValueError):
+            pass
+
+        options_base = {
+            "resource_type": resource_type,
+            "use_filename": True,
+            "unique_filename": False,
+            "overwrite": True,
+        }
+        if folder and not name.startswith(folder + "/"):
+            options_base["folder"] = folder
+
+        try:
+            if size is not None and size > LARGE_FILE_THRESHOLD:
+                options = {
+                    **options_base,
+                    "chunk_size": CLOUDINARY_CHUNK_SIZE,
+                    "timeout": 300,
+                }
                 result = cloudinary.uploader.upload_large(
                     content,
                     public_id=name,
-                    **options
+                    **options,
                 )
-                
-                print(f"DEBUG: Chunked upload result: {result}")
-                # Return the public ID
-                return result['public_id']
-            else:
-                # Use normal upload for smaller files
-                print(f"DEBUG: Using normal upload for small file: {name}")
-                
-                options = {
-                    'resource_type': resource_type,
-                    'use_filename': True,
-                    'unique_filename': False,
-                    'overwrite': True,
-                }
-                
-                # Only add folder if it exists and isn't already in the name
-                if folder and not name.startswith(folder + '/'):
-                    options['folder'] = folder
-                    print(f"DEBUG: Adding folder to options: {folder}")
-                else:
-                    print(f"DEBUG: Not adding folder - already in name or no folder")
-                
-                # Reset file pointer to beginning
-                content.seek(0)
-                
-                result = cloudinary.uploader.upload(
-                    content,
-                    public_id=name,
-                    **options
-                )
-                
-                print(f"DEBUG: Normal upload result: {result}")
-                return result['public_id']
-                
+                return result["public_id"]
+
+            options = dict(options_base)
+            result = cloudinary.uploader.upload(
+                content,
+                public_id=name,
+                **options,
+            )
+            return result["public_id"]
+
         except Exception as e:
-            print(f"DEBUG: Error in Cloudinary upload: {e}")
-            # Fallback to parent method
+            logger.exception("Cloudinary upload failed for %s: %s", name, e)
+            try:
+                if hasattr(content, "seek"):
+                    content.seek(0)
+            except (OSError, ValueError) as seek_err:
+                logger.error("Cannot rewind file for fallback upload: %s", seek_err)
+                raise
+
+            # Parent uses standard upload; requires a readable file at position 0.
             return super()._save(name, content)
-    
+
     def url(self, name):
-        """
-        Override URL generation to ensure proper Cloudinary URLs
-        """
-        print(f"DEBUG: LargeMediaCloudinaryStorage.url called for {name}")
-        
         if not name:
-            print(f"DEBUG: Name is empty, returning empty string")
-            return ''
-        
+            return ""
+
         try:
-            # Get the URL from Cloudinary
             url = super().url(name)
-            print(f"DEBUG: Generated Cloudinary URL: {url}")
-            print(f"DEBUG: URL type: {type(url)}")
-            
-            # Ensure URL is not empty
-            if not url:
-                print(f"DEBUG: Cloudinary returned empty URL, trying to generate manually")
-                # Try to generate URL manually
-                import cloudinary
-                from django.conf import settings
-                
-                # Determine resource type
-                if name.lower().endswith(('.mp4', '.webm', '.mov', '.avi', '.mkv')):
-                    resource_type = 'video'
-                else:
-                    resource_type = 'auto'
-                
-                # Generate URL manually
-                try:
-                    manual_url = cloudinary.utils.cloudinary_url(
-                        name,
-                        resource_type=resource_type,
-                        format='mp4' if resource_type == 'video' else None
-                    )[0]
-                    print(f"DEBUG: Generated manual Cloudinary URL: {manual_url}")
-                    return manual_url
-                except Exception as manual_error:
-                    print(f"DEBUG: Manual URL generation failed: {manual_error}")
-                    return ''
-            
-            return url
+            if url:
+                return url
+
+            lower = name.lower()
+            resource_type = (
+                "video"
+                if lower.endswith((".mp4", ".webm", ".mov", ".avi", ".mkv"))
+                else "auto"
+            )
+            manual_url = cloudinary.utils.cloudinary_url(
+                name,
+                resource_type=resource_type,
+                format="mp4" if resource_type == "video" else None,
+            )[0]
+            return manual_url or ""
         except Exception as e:
-            print(f"DEBUG: Error generating URL for {name}: {e}")
-            import traceback
-            print(f"DEBUG: Traceback: {traceback.format_exc()}")
-            return ''
+            logger.warning("Error generating URL for %s: %s", name, e)
+            return ""
 
 
 class LargeVideoCloudinaryStorage(LargeMediaCloudinaryStorage):
     """
-    Custom Cloudinary storage for video files with large file support
+    Cloudinary storage for video files (large uploads with valid chunk size).
     """
-    
+
     def _save(self, name, content):
-        """
-        Override save method for video files
-        """
-        print(f"DEBUG: LargeVideoCloudinaryStorage._save called for {name}")
-        
-        # Extract folder from the upload_to path to avoid duplication
+        logger.debug("LargeVideoCloudinaryStorage._save name=%s", name)
+
         folder = None
-        if '/' in name:
-            # Get the folder part from the name (before the filename)
-            folder = name.rsplit('/', 1)[0]
-            print(f"DEBUG: Extracted folder from name: {folder}")
-        
+        if "/" in name:
+            folder = name.rsplit("/", 1)[0]
+
         options = {
-            'resource_type': 'video',
-            'chunk_size': 2000000,  # 2MB chunks
-            'timeout': 600,  # 10 minutes timeout for videos
-            'use_filename': True,
-            'unique_filename': False,
-            'overwrite': True,
+            "resource_type": "video",
+            "chunk_size": CLOUDINARY_CHUNK_SIZE,
+            "timeout": 600,
+            "use_filename": True,
+            "unique_filename": False,
+            "overwrite": True,
         }
-        
-        # Only add folder if it exists and isn't already in the name
-        if folder and not name.startswith(folder + '/'):
-            options['folder'] = folder
-            print(f"DEBUG: Adding folder to options: {folder}")
-        else:
-            print(f"DEBUG: Not adding folder - already in name or no folder")
-        
-        print(f"DEBUG: Video upload options: {options}")
-        
-        # Reset file pointer to beginning
-        content.seek(0)
-        
-        # Upload video with chunked upload
-        result = cloudinary.uploader.upload_large(
-            content,
-            public_id=name,
-            **options
-        )
-        
-        print(f"DEBUG: Video upload result: {result}")
-        return result['public_id']
-    
-    def url(self, name):
-        """
-        Override URL generation for videos
-        """
-        print(f"DEBUG: LargeVideoCloudinaryStorage.url called for {name}")
-        
-        if not name:
-            return ''
-        
+        if folder and not name.startswith(folder + "/"):
+            options["folder"] = folder
+
         try:
-            # Generate video URL with streaming options
-            url = cloudinary.utils.cloudinary_url(
-                name,
-                resource_type='video',
-                format='mp4',
-                quality='auto',
-                fetch_format='auto'
-            )[0]
-            
-            print(f"DEBUG: Generated video URL: {url}")
-            return url
+            if hasattr(content, "seek"):
+                content.seek(0)
+        except (OSError, ValueError):
+            pass
+
+        try:
+            result = cloudinary.uploader.upload_large(
+                content,
+                public_id=name,
+                **options,
+            )
+            return result["public_id"]
         except Exception as e:
-            print(f"DEBUG: Error generating video URL for {name}: {e}")
-            # Fallback to parent method
+            logger.exception("Cloudinary video upload_large failed for %s: %s", name, e)
+            try:
+                if hasattr(content, "seek"):
+                    content.seek(0)
+            except (OSError, ValueError) as seek_err:
+                logger.error("Cannot rewind video file after failed chunked upload: %s", seek_err)
+                raise
+
+            fallback_opts = {
+                "resource_type": "video",
+                "use_filename": True,
+                "unique_filename": False,
+                "overwrite": True,
+            }
+            if folder and not name.startswith(folder + "/"):
+                fallback_opts["folder"] = folder
+            result = cloudinary.uploader.upload(content, public_id=name, **fallback_opts)
+            return result["public_id"]
+
+    def url(self, name):
+        if not name:
+            return ""
+
+        try:
+            return cloudinary.utils.cloudinary_url(
+                name,
+                resource_type="video",
+                format="mp4",
+                quality="auto",
+                fetch_format="auto",
+            )[0]
+        except Exception as e:
+            logger.warning("Error generating video URL for %s: %s", name, e)
             return super().url(name)

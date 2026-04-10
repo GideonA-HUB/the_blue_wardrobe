@@ -6,18 +6,34 @@ import { useCart } from '../store/cart'
 export default function Success() {
   const [params] = useSearchParams()
   const reference = params.get('reference')
+  const txRef = params.get('tx_ref')
+  const payStatus = (params.get('status') || '').toLowerCase()
   const clearCart = useCart((s) => s.clear)
-  const [loading, setLoading] = useState<boolean>(!!reference)
+  const needsVerify =
+    !!reference || (!!txRef && (payStatus === 'successful' || payStatus === 'success'))
+  const [loading, setLoading] = useState<boolean>(needsVerify)
 
   useEffect(() => {
     if (reference) {
-      api.post('/paystack/verify/', { reference })
+      api
+        .post('/paystack/verify/', { reference })
         .then(() => {
           clearCart()
         })
         .finally(() => setLoading(false))
+      return
     }
-  }, [reference, clearCart])
+    if (txRef && (payStatus === 'successful' || payStatus === 'success')) {
+      api
+        .post('/flutterwave/verify/', { tx_ref: txRef })
+        .then(() => {
+          clearCart()
+        })
+        .finally(() => setLoading(false))
+      return
+    }
+    setLoading(false)
+  }, [reference, txRef, payStatus, clearCart])
 
   return (
     <div className="py-16 md:py-24">

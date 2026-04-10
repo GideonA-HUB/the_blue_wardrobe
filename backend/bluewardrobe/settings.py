@@ -277,9 +277,17 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
 
-# Resend, Paystack and owner contact
+# Resend, Paystack, Flutterwave and owner contact
 RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
+RESEND_FROM_EMAIL = os.getenv(
+    'RESEND_FROM_EMAIL',
+    'THE BLUE WARDROBE <no-reply@bluewardrobe.luxury>',
+)
+SITE_NAME = os.getenv('SITE_NAME', 'THE BLUE WARDROBE')
 PAYSTACK_SECRET = os.getenv('PAYSTACK_SECRET', '')
+FLUTTERWAVE_SECRET_KEY = os.getenv('FLUTTERWAVE_SECRET_KEY', '')
+# Public site URL for payment redirects (no trailing slash); e.g. https://www.thebluewardrobe.com
+PUBLIC_SITE_URL = os.getenv('PUBLIC_SITE_URL', 'http://localhost:5173')
 OWNER_EMAIL = os.getenv('OWNER_EMAIL', '')
 OWNER_NOTIFICATION_WEBHOOK = os.getenv('OWNER_NOTIFICATION_WEBHOOK', '')
 

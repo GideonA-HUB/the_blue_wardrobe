@@ -233,7 +233,17 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'customer', 'total_amount', 'status', 'paystack_reference', 'created_at', 'items']
+        fields = [
+            'id',
+            'customer',
+            'total_amount',
+            'status',
+            'payment_provider',
+            'paystack_reference',
+            'flutterwave_tx_ref',
+            'created_at',
+            'items',
+        ]
 
 
 class DesignReviewSerializer(serializers.ModelSerializer):

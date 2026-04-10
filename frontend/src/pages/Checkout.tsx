@@ -40,6 +40,7 @@ export default function Checkout() {
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
+  const [paymentGateway, setPaymentGateway] = useState<'paystack' | 'flutterwave'>('flutterwave')
 
   // Load cart from server on mount
   useEffect(() => {
@@ -95,19 +96,27 @@ export default function Checkout() {
       const payload = {
         email,
         amount: subtotal,
-        metadata: { 
-          cart: cartItems, 
-          customer: { 
-            firstName, 
+        metadata: {
+          cart: cartItems,
+          customer: {
+            firstName,
             lastName,
-            phone
-          } 
-        }
+            phone,
+          },
+          phone,
+          deliveryAddress: address,
+        },
       }
-      
-      const resp = await api.post('/paystack/initiate/', payload)
-      const authUrl = resp.data?.data?.authorization_url || resp.data?.authorization_url
-      
+
+      const path =
+        paymentGateway === 'flutterwave' ? '/flutterwave/initiate/' : '/paystack/initiate/'
+      const resp = await api.post(path, payload)
+
+      const authUrl =
+        paymentGateway === 'flutterwave'
+          ? resp.data?.data?.link
+          : resp.data?.data?.authorization_url || resp.data?.authorization_url
+
       if (authUrl) {
         // Clear local cart after successful payment initiation
         clear()
@@ -251,13 +260,45 @@ export default function Checkout() {
               </div>
             )}
             
+            <div className="mb-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">Payment method</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentGateway('flutterwave')}
+                  className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${
+                    paymentGateway === 'flutterwave'
+                      ? 'border-blue-wardrobe-dark bg-blue-wardrobe-dark/5 text-blue-wardrobe-dark'
+                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  Flutterwave
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentGateway('paystack')}
+                  className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${
+                    paymentGateway === 'paystack'
+                      ? 'border-blue-wardrobe-dark bg-blue-wardrobe-dark/5 text-blue-wardrobe-dark'
+                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  Paystack
+                </button>
+              </div>
+            </div>
+
             <div className="mt-6 space-y-3">
               <button 
                 onClick={onPay} 
                 disabled={!firstName || !lastName || !email || !address || processing || displayItems.some(item => !item.is_available)}
                 className="w-full px-6 py-4 bg-blue-wardrobe-dark text-white rounded-full hover:bg-blue-wardrobe-light transition-all duration-300 font-medium luxury-shadow hover:luxury-shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
-                {processing ? 'Processing...' : 'Pay with Paystack'}
+                {processing
+                  ? 'Processing...'
+                  : paymentGateway === 'flutterwave'
+                    ? 'Pay with Flutterwave'
+                    : 'Pay with Paystack'}
               </button>
               <button 
                 type="button"
@@ -270,10 +311,14 @@ export default function Checkout() {
             
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-600 text-center mb-2">
-                <strong>Secure Payment Powered by Paystack</strong>
+                <strong>
+                  {paymentGateway === 'flutterwave'
+                    ? 'Secure payment via Flutterwave'
+                    : 'Secure payment via Paystack'}
+                </strong>
               </p>
               <p className="text-xs text-gray-500 text-center">
-                You will be redirected to Paystack's secure payment page to complete your purchase.
+                You will be redirected to complete your purchase on the provider&apos;s secure page.
               </p>
               <p className="text-xs text-gray-500 text-center mt-1">
                 All transactions are encrypted and secure.

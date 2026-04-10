@@ -4,10 +4,10 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
-from django.db import transaction
-from django.utils import timezone
 from django.conf import settings
 from importlib import import_module
+import json
+import uuid
 import requests
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -18,6 +18,8 @@ from .models import (
     Collection, Design, DesignImage, SizeInventory, Cart, CartItem, SiteAsset, ContactMessage, Subscriber, Order,
     Customer, OrderItem, PaymentLog, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, Material, DesignReview
 )
+from .payment_utils import finalize_order_from_cart, parse_flutterwave_meta, send_order_emails
+from .email_utils import newsletter_welcome_html
 from .serializers import (
     CollectionSerializer, DesignSerializer, SiteAssetSerializer,
     ContactMessageSerializer, SubscriberSerializer, OrderSerializer,
@@ -436,6 +438,19 @@ def subscribe(request):
     serializer = SubscriberSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
+        email = serializer.validated_data.get('email')
+        try:
+            resend_client = get_resend_client()
+            if settings.RESEND_API_KEY and resend_client and email:
+                resend_client.api_key = settings.RESEND_API_KEY
+                resend_client.Emails.send({
+                    'from': settings.RESEND_FROM_EMAIL,
+                    'to': [email],
+                    'subject': f"You're on the list — {settings.SITE_NAME}",
+                    'html': newsletter_welcome_html(site_name=settings.SITE_NAME),
+                })
+        except Exception:
+            pass
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -455,6 +470,8 @@ def initiate_paystack(request):
     Expecting payload: {email, amount, metadata: {cart, customer_info}}
     Returns Paystack authorization_url to redirect the user.
     """
+    if not settings.PAYSTACK_SECRET:
+        return Response({'detail': 'Paystack is not configured'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     data = request.data
     email = data.get('email')
     amount = int(float(data.get('amount', 0)) * 100)  # in kobo
@@ -476,7 +493,71 @@ def initiate_paystack(request):
 
 
 @api_view(['POST'])
+def initiate_flutterwave(request):
+    """
+    Same payload shape as Paystack: { email, amount, metadata: { cart, customer, phone? } }.
+    Returns Flutterwave checkout link in data.link.
+    """
+    if not settings.FLUTTERWAVE_SECRET_KEY:
+        return Response({'detail': 'Flutterwave is not configured'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    data = request.data
+    email = (data.get('email') or '').strip()
+    amount_raw = float(data.get('amount', 0) or 0)
+    metadata = data.get('metadata') or {}
+    customer_meta = metadata.get('customer') or {}
+    name = f"{customer_meta.get('firstName', '').strip()} {customer_meta.get('lastName', '').strip()}".strip() or email
+    phone = metadata.get('phone') or customer_meta.get('phone') or ''
+
+    tx_ref = f"TBW-{uuid.uuid4().hex}"
+    redirect_url = f"{settings.PUBLIC_SITE_URL.rstrip('/')}/success"
+    tbw_meta = json.dumps({
+        'cart': metadata.get('cart') or [],
+        'customer': customer_meta,
+        'phone': phone,
+        'email': email,
+    })
+
+    payload = {
+        'tx_ref': tx_ref,
+        'amount': f'{amount_raw:.2f}',
+        'currency': 'NGN',
+        'redirect_url': redirect_url,
+        'payment_options': 'card,account,ussd,mobilemoney',
+        'customer': {
+            'email': email,
+            'name': name,
+            'phone_number': phone,
+        },
+        'customizations': {
+            'title': settings.SITE_NAME,
+            'description': 'Order payment',
+        },
+        # Object form per Flutterwave v3 Standard API (echoed on verify)
+        'meta': {'tbw_metadata': tbw_meta},
+    }
+    headers = {
+        'Authorization': f'Bearer {settings.FLUTTERWAVE_SECRET_KEY}',
+        'Content-Type': 'application/json',
+    }
+    resp = requests.post(
+        'https://api.flutterwave.com/v3/payments',
+        json=payload,
+        headers=headers,
+        timeout=60,
+    )
+    body = resp.json() if resp.content else {}
+    if resp.status_code != 200 or body.get('status') != 'success':
+        return Response(
+            {'detail': body.get('message') or 'Failed to contact Flutterwave'},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+    return Response(body)
+
+
+@api_view(['POST'])
 def verify_paystack(request):
+    if not settings.PAYSTACK_SECRET:
+        return Response({'detail': 'Paystack is not configured'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     reference = request.data.get('reference')
     if not reference:
         return Response({'detail': 'reference required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -496,8 +577,8 @@ def verify_paystack(request):
     cart = metadata.get('cart') or []
 
     if status_str != 'success':
-        # Log failed payment attempt
         PaymentLog.objects.create(
+            gateway='paystack',
             reference=reference,
             status=status_str or 'failed',
             amount=amount,
@@ -505,105 +586,82 @@ def verify_paystack(request):
         )
         return Response({'detail': 'payment not successful', 'status': status_str}, status=status.HTTP_400_BAD_REQUEST)
 
-    with transaction.atomic():
-        customer, _ = Customer.objects.get_or_create(
-            email=customer_email,
-            defaults={
-                'first_name': customer_meta.get('firstName', ''),
-                'last_name': customer_meta.get('lastName', ''),
-                'phone': metadata.get('phone', ''),
-            },
-        )
+    order, created_new = finalize_order_from_cart(
+        gateway='paystack',
+        reference=reference,
+        amount=amount,
+        status_str=status_str,
+        raw_payload=payload,
+        customer_email=customer_email,
+        cart=cart,
+        customer_meta=customer_meta,
+        metadata=metadata,
+        paystack_reference=reference,
+        flutterwave_tx_ref='',
+    )
+    if created_new:
+        send_order_emails(order, customer_email)
 
-        order = Order.objects.create(
-            customer=customer,
-            total_amount=amount,
-            status='confirmed',
-            paystack_reference=reference,
-        )
+    serializer = OrderSerializer(order)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        # Create order items and adjust size-specific inventory
-        for item in cart:
-            design_id = item.get('id')
-            size = item.get('size')
-            qty = int(item.get('qty') or 1)
-            design = Design.objects.filter(id=design_id).select_for_update().first()
-            if not design:
-                continue
-            
-            # Get size inventory and update stock
-            try:
-                size_inventory = SizeInventory.objects.filter(
-                    design=design, size=size, is_active=True
-                ).select_for_update().first()
-                
-                if not size_inventory or size_inventory.stock < qty:
-                    # Skip this item if no inventory available
-                    continue
-                
-                unit_price = design.effective_price
-                OrderItem.objects.create(
-                    order=order,
-                    design=design,
-                    size=size,
-                    quantity=qty,
-                    unit_price=unit_price,
-                )
-                
-                # Update size-specific inventory
-                size_inventory.stock = max(0, size_inventory.stock - qty)
-                size_inventory.save(update_fields=['stock'])
-                
-            except SizeInventory.DoesNotExist:
-                # Skip this item if size inventory doesn't exist
-                continue
 
+@api_view(['POST'])
+def verify_flutterwave(request):
+    if not settings.FLUTTERWAVE_SECRET_KEY:
+        return Response({'detail': 'Flutterwave is not configured'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    tx_ref = (request.data.get('tx_ref') or '').strip()
+    if not tx_ref:
+        return Response({'detail': 'tx_ref required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    headers = {'Authorization': f'Bearer {settings.FLUTTERWAVE_SECRET_KEY}'}
+    resp = requests.get(
+        'https://api.flutterwave.com/v3/transactions/verify_by_reference',
+        params={'tx_ref': tx_ref},
+        headers=headers,
+        timeout=60,
+    )
+    payload = resp.json() if resp.content else {}
+    if resp.status_code != 200 or payload.get('status') != 'success':
+        return Response({'detail': 'verification failed'}, status=status.HTTP_502_BAD_GATEWAY)
+
+    data = payload.get('data') or {}
+    status_str = (data.get('status') or '').lower()
+    if status_str != 'successful':
         PaymentLog.objects.create(
-            order=order,
-            reference=reference,
-            status=status_str,
-            amount=amount,
+            gateway='flutterwave',
+            reference=tx_ref,
+            status=status_str or 'failed',
+            amount=float(data.get('amount') or 0),
             raw_response=payload,
-            paid_at=timezone.now(),
         )
+        return Response({'detail': 'payment not successful', 'status': status_str}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Fire-and-forget notifications via Resend / webhook
-    try:
-        resend_client = get_resend_client()
+    meta = parse_flutterwave_meta(data)
+    cart = meta.get('cart') or []
+    customer_meta = meta.get('customer') or {}
+    metadata = {
+        'phone': meta.get('phone', ''),
+        'email': meta.get('email', ''),
+    }
+    customer_email = (data.get('customer') or {}).get('email') or meta.get('email')
+    amount = float(data.get('amount') or 0)
 
-        if settings.RESEND_API_KEY and resend_client and customer_email:
-            resend_client.api_key = settings.RESEND_API_KEY
-            resend_client.Emails.send({
-                "from": f"THE BLUE WARDROBE <no-reply@bluewardrobe.luxury>",
-                "to": [customer_email],
-                "subject": "Your order with THE BLUE WARDROBE",
-                "html": f"<p>Thank you for your purchase.</p><p>Order #{order.id} — NGN {order.total_amount}</p>",
-            })
-
-        owner_email = getattr(settings, 'OWNER_EMAIL', '')
-        if settings.RESEND_API_KEY and resend_client and owner_email:
-            resend_client.api_key = settings.RESEND_API_KEY
-            resend_client.Emails.send({
-                "from": f"THE BLUE WARDROBE <no-reply@bluewardrobe.luxury>",
-                "to": [owner_email],
-                "subject": "New order placed",
-                "html": f"<p>New order #{order.id}</p><p>Total: NGN {order.total_amount}</p>",
-            })
-
-        if getattr(settings, 'OWNER_NOTIFICATION_WEBHOOK', ''):
-            try:
-                requests.post(settings.OWNER_NOTIFICATION_WEBHOOK, json={
-                    "type": "order_created",
-                    "order_id": order.id,
-                    "total": float(order.total_amount),
-                    "reference": reference,
-                }, timeout=3)
-            except Exception:
-                # Do not fail purchase flow on webhook errors
-                pass
-    except Exception:
-        # Email/notification failures should not break the API response
-        pass
+    order, created_new = finalize_order_from_cart(
+        gateway='flutterwave',
+        reference=tx_ref,
+        amount=amount,
+        status_str='successful',
+        raw_payload=payload,
+        customer_email=customer_email,
+        cart=cart,
+        customer_meta=customer_meta,
+        metadata=metadata,
+        paystack_reference='',
+        flutterwave_tx_ref=tx_ref,
+    )
+    if created_new:
+        send_order_emails(order, customer_email)
 
     serializer = OrderSerializer(order)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
