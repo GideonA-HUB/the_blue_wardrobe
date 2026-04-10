@@ -1,25 +1,69 @@
 """
-Custom Cloudinary storage backend to handle large file uploads.
-
-Cloudinary chunked uploads (upload_large) require every part except the final
-EOF chunk to be larger than 5MB. Using smaller chunks causes:
-  BadRequest: All parts except EOF-chunk must be larger than 5mb
-
-After a failed upload_large call, the underlying file object may be exhausted
-or closed; always rewind before any fallback upload.
+Custom Cloudinary storage backend with resilient file handling.
 """
+import io
 import logging
 
 import cloudinary
 import cloudinary.uploader
 from cloudinary_storage.storage import MediaCloudinaryStorage
+from django.core.files.base import ContentFile
+from PIL import Image, ImageOps
 
 logger = logging.getLogger(__name__)
 
-# Cloudinary requires non-terminal chunks >= 5 MiB; use 6 MiB for headroom.
 CLOUDINARY_CHUNK_SIZE = 6 * 1024 * 1024
-# Use chunked API only when a regular upload would be unwieldy (same as before).
 LARGE_FILE_THRESHOLD = 10 * 1024 * 1024
+MAX_CLOUDINARY_IMAGE_BYTES = 10 * 1024 * 1024
+TARGET_COMPRESSED_IMAGE_BYTES = int(9.5 * 1024 * 1024)
+
+
+def _read_all_bytes(content):
+    if hasattr(content, "seek"):
+        content.seek(0)
+    data = content.read()
+    return data if isinstance(data, (bytes, bytearray)) else bytes(data)
+
+
+def _to_content_file(data, name):
+    file_obj = ContentFile(data)
+    file_obj.name = name
+    return file_obj
+
+
+def _compress_image_for_cloudinary(data):
+    """
+    Compress oversized images so they can pass Cloudinary 10MB account limits.
+    """
+    try:
+        image = Image.open(io.BytesIO(data))
+        image = ImageOps.exif_transpose(image)
+    except Exception:
+        return data
+
+    if image.mode not in ("RGB", "L"):
+        image = image.convert("RGB")
+
+    quality_steps = [85, 75, 65, 55, 45, 35]
+    working = image
+    for quality in quality_steps:
+        buf = io.BytesIO()
+        working.save(buf, format="JPEG", optimize=True, progressive=True, quality=quality)
+        compressed = buf.getvalue()
+        if len(compressed) <= TARGET_COMPRESSED_IMAGE_BYTES:
+            return compressed
+
+    # If still too large, reduce dimensions progressively.
+    for _ in range(3):
+        w, h = working.size
+        working = working.resize((max(1, int(w * 0.85)), max(1, int(h * 0.85))), Image.LANCZOS)
+        buf = io.BytesIO()
+        working.save(buf, format="JPEG", optimize=True, progressive=True, quality=45)
+        compressed = buf.getvalue()
+        if len(compressed) <= TARGET_COMPRESSED_IMAGE_BYTES:
+            return compressed
+
+    return compressed if "compressed" in locals() else data
 
 
 class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
@@ -43,11 +87,6 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
             folder = name.rsplit("/", 1)[0]
 
         size = getattr(content, "size", None)
-        try:
-            if hasattr(content, "seek"):
-                content.seek(0)
-        except (OSError, ValueError):
-            pass
 
         options_base = {
             "resource_type": resource_type,
@@ -59,14 +98,25 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
             options_base["folder"] = folder
 
         try:
-            if size is not None and size > LARGE_FILE_THRESHOLD:
+            upload_content = content
+
+            # Images: Cloudinary account enforces 10MB hard limit for this account.
+            # Read into memory so retries do not depend on a possibly closed stream.
+            if resource_type == "image":
+                data = _read_all_bytes(content)
+                if len(data) > MAX_CLOUDINARY_IMAGE_BYTES:
+                    data = _compress_image_for_cloudinary(data)
+                upload_content = _to_content_file(data, name)
+                size = len(data)
+
+            if resource_type != "image" and size is not None and size > LARGE_FILE_THRESHOLD:
                 options = {
                     **options_base,
                     "chunk_size": CLOUDINARY_CHUNK_SIZE,
                     "timeout": 300,
                 }
                 result = cloudinary.uploader.upload_large(
-                    content,
+                    upload_content,
                     public_id=name,
                     **options,
                 )
@@ -74,7 +124,7 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
 
             options = dict(options_base)
             result = cloudinary.uploader.upload(
-                content,
+                upload_content,
                 public_id=name,
                 **options,
             )
@@ -82,15 +132,19 @@ class LargeMediaCloudinaryStorage(MediaCloudinaryStorage):
 
         except Exception as e:
             logger.exception("Cloudinary upload failed for %s: %s", name, e)
+            # Fallback should use a fresh buffer when possible.
             try:
+                if resource_type == "image":
+                    data = _read_all_bytes(content)
+                    fallback_file = _to_content_file(data, name)
+                    return super()._save(name, fallback_file)
+
                 if hasattr(content, "seek"):
                     content.seek(0)
+                return super()._save(name, content)
             except (OSError, ValueError) as seek_err:
                 logger.error("Cannot rewind file for fallback upload: %s", seek_err)
                 raise
-
-            # Parent uses standard upload; requires a readable file at position 0.
-            return super()._save(name, content)
 
     def url(self, name):
         if not name:

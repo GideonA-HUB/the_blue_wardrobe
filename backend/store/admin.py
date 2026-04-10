@@ -1,6 +1,7 @@
 import os
 from django.contrib import admin
 from django import forms
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from .models import (
     Material, Collection, Design, DesignImage, SizeMeasurement, SizeInventory, Cart, CartItem, SiteAsset, Customer, Order, OrderItem,
@@ -35,32 +36,23 @@ class DesignImageInline(admin.TabularInline):
         class DesignImageFormSet(formset):
             def clean(self):
                 super().clean()
+                max_size = 10 * 1024 * 1024 if getattr(settings, "USE_CLOUDINARY", False) else 50 * 1024 * 1024
+                max_size_label = "10MB" if getattr(settings, "USE_CLOUDINARY", False) else "50MB"
                 for form in self.forms:
                     if form.cleaned_data and not form.cleaned_data.get('DELETE'):
                         image = form.cleaned_data.get('image')
                         if image:
-                            # Handle different types of image objects
                             try:
-                                # Check if it's a new upload with size attribute
                                 if hasattr(image, 'size') and image.size is not None:
-                                    if image.size > 52428800:  # 50MB for images
+                                    if image.size > max_size:
                                         raise ValidationError(
-                                            f'Image file is too large. Maximum size is 50MB. '
+                                            f'Image file is too large for this setup. Maximum allowed is {max_size_label}. '
                                             f'Your file is {image.size / 1048576:.1f}MB.'
                                         )
-                                # For Cloudinary images or existing images, skip size check
-                                # Cloudinary doesn't provide size in the same way
-                                elif hasattr(image, 'name') and image.name:
-                                    # This is likely a Cloudinary image or existing image
-                                    print(f"DEBUG: Skipping size check for Cloudinary/existing image: {image.name}")
-                                    pass
-                                else:
-                                    print(f"DEBUG: Unknown image type, skipping size check: {type(image)}")
-                                    pass
+                            except ValidationError:
+                                raise
                             except Exception as e:
-                                print(f"DEBUG: Error in image size validation: {e}")
-                                # Don't fail the entire form if size check fails
-                                pass
+                                raise ValidationError(f'Could not validate image upload: {e}')
         
         return DesignImageFormSet
 
