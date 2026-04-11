@@ -476,6 +476,13 @@ def initiate_paystack(request):
     email = data.get('email')
     amount = int(float(data.get('amount', 0)) * 100)  # in kobo
     metadata = data.get('metadata', {})
+    customer_meta = metadata.get('customer') or {}
+    phone = (metadata.get('phone') or customer_meta.get('phone') or '').strip()
+    delivery = (metadata.get('deliveryAddress') or '').strip()
+    if not phone or len(phone) < 5:
+        return Response({'detail': 'Phone number is required'}, status=status.HTTP_400_BAD_REQUEST)
+    if not delivery:
+        return Response({'detail': 'Delivery address is required'}, status=status.HTTP_400_BAD_REQUEST)
 
     headers = {
         'Authorization': f'Bearer {settings.PAYSTACK_SECRET}',
@@ -506,7 +513,12 @@ def initiate_flutterwave(request):
     metadata = data.get('metadata') or {}
     customer_meta = metadata.get('customer') or {}
     name = f"{customer_meta.get('firstName', '').strip()} {customer_meta.get('lastName', '').strip()}".strip() or email
-    phone = metadata.get('phone') or customer_meta.get('phone') or ''
+    phone = (metadata.get('phone') or customer_meta.get('phone') or '').strip()
+    delivery = (metadata.get('deliveryAddress') or '').strip()
+    if not phone or len(phone) < 5:
+        return Response({'detail': 'Phone number is required'}, status=status.HTTP_400_BAD_REQUEST)
+    if not delivery:
+        return Response({'detail': 'Delivery address is required'}, status=status.HTTP_400_BAD_REQUEST)
 
     tx_ref = f"TBW-{uuid.uuid4().hex}"
     redirect_url = f"{settings.PUBLIC_SITE_URL.rstrip('/')}/success"

@@ -29,7 +29,6 @@ type CartData = {
 
 export default function Checkout() {
   const localItems = useCart((s) => s.items)
-  const clear = useCart((s) => s.clear)
   const navigate = useNavigate()
   
   const [serverCart, setServerCart] = useState<CartData | null>(null)
@@ -74,7 +73,7 @@ export default function Checkout() {
   const totalItems = serverCart?.total_items || localItems.reduce((s, it) => s + it.qty, 0)
 
   const onPay = async () => {
-    if (!email || !firstName || !lastName) {
+    if (!email || !firstName || !lastName || !phone.trim() || !address.trim()) {
       alert('Please fill in all required fields')
       return
     }
@@ -118,8 +117,7 @@ export default function Checkout() {
           : resp.data?.data?.authorization_url || resp.data?.authorization_url
 
       if (authUrl) {
-        // Clear local cart after successful payment initiation
-        clear()
+        // Do not clear cart here — user may cancel on the gateway; cart clears after verified payment on /success
         window.location.href = authUrl
       } else {
         alert('Failed to initiate payment. Please try again.')
@@ -190,13 +188,14 @@ export default function Checkout() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone number</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Phone number *</label>
               <input 
                 type="tel"
                 value={phone} 
                 onChange={(e) => setPhone(e.target.value)} 
                 className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light focus:border-blue-wardrobe-light transition-all" 
-                placeholder="Optional"
+                placeholder="Your phone number"
+                required
               />
             </div>
             <div>
@@ -291,7 +290,7 @@ export default function Checkout() {
             <div className="mt-6 space-y-3">
               <button 
                 onClick={onPay} 
-                disabled={!firstName || !lastName || !email || !address || processing || displayItems.some(item => !item.is_available)}
+                disabled={!firstName || !lastName || !email || !phone.trim() || !address.trim() || processing || displayItems.some(item => !item.is_available)}
                 className="w-full px-6 py-4 bg-blue-wardrobe-dark text-white rounded-full hover:bg-blue-wardrobe-light transition-all duration-300 font-medium luxury-shadow hover:luxury-shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {processing
