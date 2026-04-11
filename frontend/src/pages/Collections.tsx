@@ -42,12 +42,12 @@ export default function Collections() {
                 animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
               }}
             >
-              <div className="relative h-52 overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 sm:h-56 md:h-64">
+              <div className="relative aspect-[3/4] w-full overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100">
                 {c.featured_image ? (
                   <img
                     src={c.featured_image}
                     alt={c.title}
-                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                    className="h-full w-full object-cover object-top origin-top transform transition-transform duration-700 group-hover:scale-[1.03]"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">

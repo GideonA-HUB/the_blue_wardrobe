@@ -164,7 +164,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
             {[...Array(5)].map((_, index) => (
               <div key={index} className="animate-pulse">
-                <div className="h-56 sm:h-64 md:h-72 lg:h-80 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg mb-4"></div>
+                <div className="aspect-[3/4] w-full bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg mb-4"></div>
                 <div className="h-4 bg-gray-200 rounded mb-2"></div>
                 <div className="h-4 bg-gray-200 rounded w-3/4"></div>
               </div>
@@ -190,12 +190,12 @@ export default function Home() {
                     to={`/designs/${design.id}`}
                     className="group luxury-shadow rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white block"
                   >
-                    <div className="h-56 sm:h-64 md:h-72 lg:h-80 bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden relative cursor-pointer group">
+                    <div className="relative aspect-[3/4] w-full bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden cursor-pointer group">
                       {design.images?.length > 0 ? (
                         <img
                           src={design.images[0].image_url}
                           alt={design.images[0].alt_text || design.title}
-                          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                          className="h-full w-full object-cover object-top origin-top transform transition-transform duration-700 group-hover:scale-[1.03]"
                           onClick={(e) => {
                             e.stopPropagation()
                             // Create modal for full image viewing

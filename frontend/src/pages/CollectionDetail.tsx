@@ -89,10 +89,10 @@ export default function CollectionDetail() {
               <img
                 src={collection.featured_image}
                 alt={collection.title}
-                className="w-full h-64 sm:h-80 md:h-96 lg:h-[500px] object-cover transform group-hover:scale-105 transition-transform duration-500"
+                className="aspect-[3/4] w-full object-cover object-top origin-top transition-transform duration-500 group-hover:scale-[1.01]"
               />
             ) : (
-              <div className="h-64 sm:h-80 md:h-96 lg:h-[500px] w-full flex items-center justify-center">
+              <div className="flex aspect-[3/4] w-full max-w-xl items-center justify-center">
                 <div className="text-center">
                   <div className="text-blue-wardrobe-dark font-serif text-2xl md:text-3xl font-semibold mb-2">
                     {collection.code}
@@ -151,12 +151,12 @@ export default function CollectionDetail() {
                   animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
                 }}
               >
-                <div className="h-56 sm:h-64 md:h-72 lg:h-80 bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden relative cursor-pointer group">
+                <div className="relative aspect-[3/4] w-full bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden cursor-pointer group">
                   {d.images?.length > 0 ? (
                     <img
                       src={d.images[0].image_url}
                       alt={d.images[0].alt_text || d.title}
-                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                      className="h-full w-full object-cover object-top origin-top transform transition-transform duration-500 group-hover:scale-[1.03]"
                       onClick={(e) => {
                         e.stopPropagation();
                         // Create modal for full image viewing

@@ -166,12 +166,12 @@ export default function Cart() {
                 }`}
               >
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="w-24 h-24 bg-gradient-to-br from-blue-50 to-blue-100 rounded luxury-shadow overflow-hidden">
+                  <div className="h-24 w-24 shrink-0 bg-gradient-to-br from-blue-50 to-blue-100 rounded luxury-shadow overflow-hidden">
                     {it.design.images && it.design.images.length > 0 ? (
                       <img 
                         src={it.design.images[0].image_url} 
                         alt={it.design.title}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-cover object-top"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">

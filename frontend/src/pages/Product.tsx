@@ -228,11 +228,11 @@ export default function Product() {
               <img
                 src={design.images[0].image_url}
                 alt={design.images[0].alt_text || design.title}
-                className="w-full h-auto max-h-96 md:max-h-[500px] object-cover transform group-hover:scale-105 transition-transform duration-700"
+                className="w-full max-h-[min(85vh,720px)] object-contain object-top bg-neutral-50 transform group-hover:scale-[1.01] transition-transform duration-700"
                 style={{ animation: 'fadeIn 0.8s ease-out 0.2s both' }}
               />
             ) : (
-              <div className="w-full h-64 md:h-80 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+              <div className="flex aspect-[3/4] w-full items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 md:min-h-[20rem]">
                 <div className="text-center">
                   <div className="text-blue-wardrobe-dark font-serif text-lg md:text-xl font-semibold mb-2">
                     {design.sku}
@@ -286,7 +286,7 @@ export default function Product() {
                   <img 
                     src={img.image_url} 
                     alt={img.alt_text || `${design.title} ${idx + 2}`} 
-                    className="w-full h-16 md:h-20 object-cover hover:scale-110 transition-transform duration-300" 
+                    className="h-16 w-full object-cover object-top md:h-20 hover:scale-105 transition-transform duration-300" 
                   />
                 </div>
               ))}
