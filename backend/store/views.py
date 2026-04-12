@@ -16,7 +16,8 @@ from django.middleware.csrf import get_token
 
 from .models import (
     Collection, Design, DesignImage, SizeInventory, Cart, CartItem, SiteAsset, ContactMessage, Subscriber, Order,
-    Customer, OrderItem, PaymentLog, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, Material, DesignReview
+    Customer, OrderItem, PaymentLog, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, Material, DesignReview,
+    HomeHeroCopy, HeroMarqueeSlide, AtelierStorySlide,
 )
 from .payment_utils import finalize_order_from_cart, parse_flutterwave_meta, send_order_emails
 from .email_utils import newsletter_welcome_html
@@ -24,7 +25,8 @@ from .serializers import (
     CollectionSerializer, DesignSerializer, SiteAssetSerializer,
     ContactMessageSerializer, SubscriberSerializer, OrderSerializer,
     VideoSerializer, VideoCommentSerializer, InfoCardSerializer, MaterialSerializer, CustomerSerializer,
-    CartSerializer, CartItemSerializer, DesignReviewSerializer
+    CartSerializer, CartItemSerializer, DesignReviewSerializer,
+    HeroMarqueeSlideSerializer, AtelierStorySlideSerializer,
 )
 
 
@@ -197,6 +199,41 @@ class SiteAssetViewSet(viewsets.ReadOnlyModelViewSet):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def homepage_content(request):
+    """
+    Public bundle for home hero copy, marquee images, and Atelier interactive selector slides.
+    """
+    hero_copy, _ = HomeHeroCopy.objects.get_or_create(
+        pk=1,
+        defaults={
+            'tagline': 'Discover Timeless Elegance',
+            'title_line_1': 'THE BLUE',
+            'title_line_2': 'WARDROBE',
+            'description': (
+                'Rare fabrics. Timeless design. Global luxury. Experience our exclusive collections '
+                'crafted with attention to detail and the finest materials.'
+            ),
+        },
+    )
+    ctx = {'request': request}
+    hero_slides = HeroMarqueeSlide.objects.filter(is_active=True).order_by('sort_order', 'id')
+    atelier_slides = AtelierStorySlide.objects.filter(is_active=True).order_by('sort_order', 'id')
+    return Response(
+        {
+            'hero': {
+                'tagline': hero_copy.tagline,
+                'title_line_1': hero_copy.title_line_1,
+                'title_line_2': hero_copy.title_line_2,
+                'description': hero_copy.description,
+                'slides': HeroMarqueeSlideSerializer(hero_slides, many=True, context=ctx).data,
+            },
+            'atelier_slides': AtelierStorySlideSerializer(atelier_slides, many=True, context=ctx).data,
+        }
+    )
 
 
 class VideoViewSet(viewsets.ReadOnlyModelViewSet):

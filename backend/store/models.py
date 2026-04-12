@@ -301,6 +301,85 @@ class SiteAsset(models.Model):
         return self.name
 
 
+class HomeHeroCopy(models.Model):
+    """
+    Singleton-style home hero copy (use pk=1). Editable headline and tagline for the marquee hero.
+    """
+
+    tagline = models.CharField(max_length=200, default='Discover Timeless Elegance')
+    title_line_1 = models.CharField(max_length=120, default='THE BLUE')
+    title_line_2 = models.CharField(max_length=120, default='WARDROBE')
+    description = models.TextField(
+        default='Rare fabrics. Timeless design. Global luxury. Experience our exclusive collections crafted with attention to detail and the finest materials.'
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Home hero text'
+        verbose_name_plural = 'Home hero text'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        return
+
+    def __str__(self):
+        return 'Home hero text'
+
+
+class HeroMarqueeSlide(models.Model):
+    """Images for the animated marquee strip on the home hero (scrolls horizontally)."""
+
+    image = models.ImageField(upload_to='hero/marquee/')
+    alt_text = models.CharField(max_length=255, blank=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+        verbose_name = 'Hero marquee image'
+        verbose_name_plural = 'Hero marquee images'
+
+    def __str__(self):
+        return f'Hero slide {self.id}'
+
+
+class AtelierStorySlide(models.Model):
+    """Accordion / interactive selector under “The Atelier” intro — craftsmanship stories."""
+
+    ICON_SPARKLES = 'sparkles'
+    ICON_SCISSORS = 'scissors'
+    ICON_SHIRT = 'shirt'
+    ICON_GEM = 'gem'
+    ICON_AWARD = 'award'
+    ICON_CHOICES = [
+        (ICON_SPARKLES, 'Sparkles — craft & detail'),
+        (ICON_SCISSORS, 'Scissors — tailoring'),
+        (ICON_SHIRT, 'Garment / fabric'),
+        (ICON_GEM, 'Gem — luxury'),
+        (ICON_AWARD, 'Award — excellence'),
+    ]
+
+    title = models.CharField(max_length=200)
+    description = models.CharField(max_length=400)
+    image = models.ImageField(upload_to='atelier/selector/')
+    icon_key = models.CharField(max_length=20, choices=ICON_CHOICES, default=ICON_SPARKLES)
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+        verbose_name = 'Atelier story slide'
+        verbose_name_plural = 'Atelier story slides'
+
+    def __str__(self):
+        return self.title
+
+
 class Customer(models.Model):
     email = models.EmailField()
     first_name = models.CharField(max_length=100, blank=True)

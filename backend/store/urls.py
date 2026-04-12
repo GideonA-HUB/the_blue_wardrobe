@@ -37,6 +37,7 @@ from .views import (
     health,
     admin_metrics,
     csrf_token,
+    homepage_content,
 )
 
 router = DefaultRouter()
@@ -68,6 +69,7 @@ admin_router.register('blog-post-likes', AdminBlogPostLikeViewSet, basename='adm
 admin_router.register('blog-comment-likes', AdminBlogCommentLikeViewSet, basename='admin-blog-comment-likes')
 
 urlpatterns = [
+    path('homepage/', homepage_content, name='homepage-content'),
     path('', include(router.urls)),
     path('blog/comments/<int:comment_id>/toggle-like/', toggle_comment_like, name='blog-comment-toggle-like'),
     # Cart URLs

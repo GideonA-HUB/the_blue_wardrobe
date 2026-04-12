@@ -1,5 +1,6 @@
 import os
 from django.contrib import admin
+from django.utils.html import format_html
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -7,6 +8,7 @@ from .models import (
     Material, Collection, Design, DesignImage, SizeMeasurement, SizeInventory, Cart, CartItem, SiteAsset, Customer, Order, OrderItem,
     ContactMessage, Subscriber, PaymentLog, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard,
     BusinessProfile, BlogPost, BlogPostMedia, BlogComment, BlogPostLike, BlogCommentLike, DesignReview,
+    HomeHeroCopy, HeroMarqueeSlide, AtelierStorySlide,
 )
 
 
@@ -515,3 +517,41 @@ class DesignReviewAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('design', 'design__collection')
+
+
+@admin.register(HomeHeroCopy)
+class HomeHeroCopyAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'tagline', 'updated_at')
+    fields = ('tagline', 'title_line_1', 'title_line_2', 'description')
+
+    def has_add_permission(self, request):
+        return not HomeHeroCopy.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(HeroMarqueeSlide)
+class HeroMarqueeSlideAdmin(admin.ModelAdmin):
+    list_display = ('id', 'thumbnail', 'alt_text', 'sort_order', 'is_active', 'created_at')
+    list_filter = ('is_active',)
+    list_editable = ('sort_order', 'is_active')
+    ordering = ('sort_order', 'id')
+    search_fields = ('alt_text',)
+
+    def thumbnail(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" alt="" style="height:40px;width:auto;object-fit:cover;" />',
+                obj.image.url,
+            )
+        return '—'
+
+
+@admin.register(AtelierStorySlide)
+class AtelierStorySlideAdmin(admin.ModelAdmin):
+    list_display = ('title', 'icon_key', 'sort_order', 'is_active', 'created_at')
+    list_filter = ('is_active', 'icon_key')
+    list_editable = ('sort_order', 'is_active')
+    ordering = ('sort_order', 'id')
+    search_fields = ('title', 'description')

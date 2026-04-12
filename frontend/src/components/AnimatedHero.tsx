@@ -3,8 +3,8 @@
 import React from "react";
 import { AnimatedMarqueeHero } from "./ui/AnimatedMarqueeHero";
 
-// Fashion design images for the marquee
-const FASHION_IMAGES = [
+/** Fallback strip when no CMS images are configured */
+const FALLBACK_MARQUEE_IMAGES = [
   "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgQGI7TpMaNnjIkFSJ7kl0cjdIzh5yBx2co1GzD0SAw0uOnUb0drnvZ-E9gnA4sG9ZbXdDPyduQSRKfgsaoovZYKz6l5C4XU4mVFQXBG1MnYVDSaR359PFjBhAAXFiOVuocixPRuWwQYPHOZh4hKgSPxqTcx4_E_TFryuAMCxEB0n9OuZVs_0K38VxH/s1920/shopping-g02e09667b_1920.jpg",
   "https://i.pinimg.com/736x/ae/0e/bd/ae0ebde1f3dbef79fe86ca5f8e4c4325.jpg",
   "https://tse1.mm.bing.net/th/id/OIP.0xA3JO2uS99ivDWLAf2zmAHaHa?rs=1&pid=ImgDetMain&o=7&rm=3",
@@ -14,19 +14,36 @@ const FASHION_IMAGES = [
   "https://tse2.mm.bing.net/th/id/OIP.6TaDgTnr9F2P0IXGFKgscgHaM9?w=682&h=1194&rs=1&pid=ImgDetMain&o=7&rm=3",
 ];
 
-export default function AnimatedHero() {
+export type HomeHeroPayload = {
+  tagline: string;
+  title_line_1: string;
+  title_line_2: string;
+  description: string;
+  slides: Array<{ id: number; image_url: string | null; alt_text?: string; sort_order?: number }>;
+};
+
+type AnimatedHeroProps = {
+  hero?: HomeHeroPayload | null;
+};
+
+export default function AnimatedHero({ hero }: AnimatedHeroProps) {
+  const fromApi = hero?.slides?.map((s) => s.image_url).filter((u): u is string => Boolean(u)) ?? [];
+  const images = fromApi.length > 0 ? fromApi : FALLBACK_MARQUEE_IMAGES;
+
   return (
     <AnimatedMarqueeHero
-      tagline="Discover Timeless Elegance"
+      tagline={hero?.tagline ?? "Discover Timeless Elegance"}
       title={
         <>
-          THE BLUE
-          <br />
-          WARDROBE
+          <span className="block">{hero?.title_line_1 ?? "THE BLUE"}</span>
+          <span className="block">{hero?.title_line_2 ?? "WARDROBE"}</span>
         </>
       }
-      description="Rare fabrics. Timeless design. Global luxury. Experience our exclusive collections crafted with attention to detail and the finest materials."
-      images={FASHION_IMAGES}
+      description={
+        hero?.description ??
+        "Rare fabrics. Timeless design. Global luxury. Experience our exclusive collections crafted with attention to detail and the finest materials."
+      }
+      images={images}
     />
   );
 }

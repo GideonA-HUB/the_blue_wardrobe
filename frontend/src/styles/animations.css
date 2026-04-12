@@ -409,3 +409,29 @@ html {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 }
+
+/* Interactive selector (Atelier) — fade-in for heading */
+@keyframes tbwFadeInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-tbw-fade-in-top {
+  opacity: 0;
+  transform: translateY(-16px);
+  animation: tbwFadeInFromTop 0.75s ease-out forwards;
+}
+
+.tbw-delay-300 {
+  animation-delay: 0.25s;
+}
+
+.tbw-delay-600 {
+  animation-delay: 0.45s;
+}

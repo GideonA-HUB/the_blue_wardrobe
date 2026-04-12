@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import api from '../lib/api'
+import InteractiveSelector from './ui/interactive-selector'
+import type { AtelierSlide } from './ui/interactive-selector'
 
 type Video = {
   id: number
@@ -30,7 +32,12 @@ type Comment = {
   created_at: string
 }
 
-export default function VideoSection() {
+type VideoSectionProps = {
+  /** CMS-driven accordion under “The Atelier” intro (Django: Atelier story slides) */
+  atelierSlides?: AtelierSlide[]
+}
+
+export default function VideoSection({ atelierSlides = [] }: VideoSectionProps) {
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
   const [playingVideo, setPlayingVideo] = useState<number | null>(null)
@@ -216,12 +223,14 @@ export default function VideoSection() {
     loadComments(video.id)
   }
 
-  if (loading || videos.length === 0) return null
+  if (!loading && videos.length === 0 && atelierSlides.length === 0) {
+    return null
+  }
 
   return (
     <section className="py-16 md:py-24 bg-gradient-to-b from-white to-blue-50/30">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
+        <div className="text-center mb-10 md:mb-12">
           <h2 className="text-4xl md:text-5xl font-serif font-semibold text-blue-wardrobe-dark mb-4">
             The Atelier
           </h2>
@@ -230,6 +239,27 @@ export default function VideoSection() {
           </p>
         </div>
 
+        {atelierSlides.length > 0 && (
+          <div className="mb-12 md:mb-16 max-w-6xl mx-auto">
+            <InteractiveSelector
+              slides={atelierSlides}
+              introTitle="Stories from the atelier"
+              introSubtitle="Explore craftsmanship, rare fabrics, and timeless design — select a story to reveal more."
+            />
+          </div>
+        )}
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="animate-pulse rounded-lg bg-blue-100/40 aspect-[9/16] max-h-[420px]" />
+            ))}
+          </div>
+        ) : videos.length === 0 ? (
+          <p className="text-center text-gray-500 py-6 text-sm md:text-base max-w-lg mx-auto">
+            Video stories will appear here when published in the admin.
+          </p>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {videos.map((video, index) => (
             <div
@@ -374,6 +404,7 @@ export default function VideoSection() {
             </div>
           ))}
         </div>
+        )}
 
         {/* Video Modal */}
         {selectedVideo && (

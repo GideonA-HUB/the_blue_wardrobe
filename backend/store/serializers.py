@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from .models import (
     Collection, Design, DesignImage, SizeMeasurement, SizeInventory, Cart, CartItem, Material, SiteAsset, Order, OrderItem,
-    Customer, ContactMessage, Subscriber, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, DesignReview
+    Customer, ContactMessage, Subscriber, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, DesignReview,
+    HomeHeroCopy, HeroMarqueeSlide, AtelierStorySlide,
 )
 
 
@@ -9,6 +10,44 @@ class MaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Material
         fields = ['id', 'name', 'description']
+
+
+def absolute_media_url(request, file_field):
+    if not file_field:
+        return None
+    try:
+        url = file_field.url
+        if isinstance(url, str) and url.startswith(('http://', 'https://')):
+            return url
+        if isinstance(url, str) and url.startswith('//'):
+            return f'https:{url}'
+        if request:
+            return request.build_absolute_uri(url)
+        return url
+    except (AttributeError, ValueError, TypeError):
+        return None
+
+
+class HeroMarqueeSlideSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HeroMarqueeSlide
+        fields = ['id', 'image_url', 'alt_text', 'sort_order']
+
+    def get_image_url(self, obj):
+        return absolute_media_url(self.context.get('request'), obj.image)
+
+
+class AtelierStorySlideSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AtelierStorySlide
+        fields = ['id', 'title', 'description', 'image_url', 'icon_key', 'sort_order']
+
+    def get_image_url(self, obj):
+        return absolute_media_url(self.context.get('request'), obj.image)
 
 
 class DesignImageSerializer(serializers.ModelSerializer):

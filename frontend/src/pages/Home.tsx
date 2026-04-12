@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import api from '../lib/api'
-import AnimatedHero from '../components/AnimatedHero'
+import AnimatedHero, { type HomeHeroPayload } from '../components/AnimatedHero'
+import type { AtelierSlide } from '../components/ui/interactive-selector'
 import { useOptimizedScroll } from '../hooks/useOptimizedScroll'
 import NewsletterBanner from '../components/NewsletterBanner'
 import VideoSection from '../components/VideoSection'
@@ -29,12 +30,18 @@ type Design = {
   total_reviews: number
 }
 
+type HomepageApi = {
+  hero: HomeHeroPayload
+  atelier_slides: AtelierSlide[]
+}
+
 export default function Home() {
   const [allDesigns, setAllDesigns] = useState<Design[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const scrollY = useOptimizedScroll()
+  const [homepage, setHomepage] = useState<HomepageApi | null>(null)
   
   const designsPerPage = 5
   const totalPages = Math.ceil(allDesigns.length / designsPerPage)
@@ -60,6 +67,11 @@ export default function Home() {
     }
     
     fetchDesigns()
+
+    api
+      .get<HomepageApi>('/homepage/')
+      .then((r) => setHomepage(r.data))
+      .catch(() => setHomepage(null))
   }, [])
 
   const handlePageChange = (page: number) => {
@@ -120,7 +132,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      <AnimatedHero />
+      <AnimatedHero hero={homepage?.hero} />
       
       {/* Featured Designs Section */}
       <section 
@@ -347,7 +359,7 @@ export default function Home() {
         )}
       </section>
 
-      <VideoSection />
+      <VideoSection atelierSlides={homepage?.atelier_slides ?? []} />
       <InfoCardsSection />
       <NewsletterBanner />
     </div>
