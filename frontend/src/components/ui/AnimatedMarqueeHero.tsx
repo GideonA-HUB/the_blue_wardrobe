@@ -66,7 +66,7 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: "easeOut" }}
-          className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white font-serif leading-[1.1]"
+          className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white font-serif leading-[1.06]"
         >
           {title}
         </motion.h1>
@@ -76,7 +76,7 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
           animate="show"
           variants={FADE_IN_ANIMATION_VARIANTS}
           transition={{ delay: 0.35 }}
-          className="mt-4 sm:mt-5 max-w-xl text-sm sm:text-lg text-blue-50/95 px-1"
+          className="mt-4 sm:mt-5 max-w-xl text-lg sm:text-lg md:text-xl text-blue-50/95 px-1"
         >
           {description}
         </motion.p>
@@ -93,9 +93,9 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
         ) : null}
       </div>
 
-      <div className="pointer-events-none absolute bottom-0 left-0 w-full h-[60%] sm:h-[54%] md:h-2/5 [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_100%)] md:[mask-image:linear-gradient(to_bottom,transparent,black_18%,black_88%,transparent)]">
+      <div className="pointer-events-none absolute bottom-0 left-0 w-full h-[44%] sm:h-[40%] md:h-2/5 [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_86%,transparent)]">
         <motion.div
-          className="flex gap-3 sm:gap-4 pl-2 translate-y-4 sm:translate-y-2 md:translate-y-0"
+          className="flex h-full items-end gap-3 sm:gap-4 pl-2"
           animate={{
             x: ["-50%", "0%"],
             transition: {
@@ -108,7 +108,7 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
           {duplicatedImages.map((src, index) => (
             <div
               key={`${src}-${index}`}
-              className="relative aspect-[3/4] h-56 sm:h-60 md:h-64 flex-shrink-0"
+              className="relative aspect-[3/4] h-52 sm:h-56 md:h-64 flex-shrink-0"
               style={{
                 rotate: `${index % 2 === 0 ? -2 : 5}deg`,
               }}
