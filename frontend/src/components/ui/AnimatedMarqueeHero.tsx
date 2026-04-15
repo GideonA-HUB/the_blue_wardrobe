@@ -47,7 +47,7 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
         "relative w-full min-h-[100dvh] overflow-hidden bg-gradient-to-br from-blue-wardrobe-dark via-blue-wardrobe-light to-blue-wardrobe-dark",
         "flex flex-col items-center text-center px-4",
         /* Mobile: content starts below the nav — avoid vertical centering that pushes copy toward the bottom */
-        "pt-20 pb-8 sm:pt-24 sm:pb-10",
+        "pt-20 pb-0 sm:pt-24 sm:pb-0",
         "md:min-h-screen md:justify-center md:pt-0 md:pb-10",
         className
       )}
@@ -93,9 +93,9 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
         ) : null}
       </div>
 
-      <div className="pointer-events-none absolute bottom-0 left-0 w-full h-[44%] sm:h-[38%] md:h-2/5 [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_88%,transparent)]">
+      <div className="pointer-events-none absolute bottom-0 left-0 w-full h-[60%] sm:h-[54%] md:h-2/5 [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_100%)] md:[mask-image:linear-gradient(to_bottom,transparent,black_18%,black_88%,transparent)]">
         <motion.div
-          className="flex gap-3 sm:gap-4 pl-2"
+          className="flex gap-3 sm:gap-4 pl-2 translate-y-4 sm:translate-y-2 md:translate-y-0"
           animate={{
             x: ["-50%", "0%"],
             transition: {
@@ -108,7 +108,7 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
           {duplicatedImages.map((src, index) => (
             <div
               key={`${src}-${index}`}
-              className="relative aspect-[3/4] h-44 sm:h-52 md:h-64 flex-shrink-0"
+              className="relative aspect-[3/4] h-56 sm:h-60 md:h-64 flex-shrink-0"
               style={{
                 rotate: `${index % 2 === 0 ? -2 : 5}deg`,
               }}
