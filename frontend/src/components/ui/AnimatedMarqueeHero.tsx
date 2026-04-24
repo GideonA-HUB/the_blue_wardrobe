@@ -46,13 +46,16 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
       className={cn(
         "relative w-full min-h-[100dvh] overflow-hidden bg-gradient-to-br from-blue-wardrobe-dark via-blue-wardrobe-light to-blue-wardrobe-dark",
         "flex flex-col items-center text-center px-4",
-        /* Mobile: content starts below the nav — avoid vertical centering that pushes copy toward the bottom */
-        "pt-20 pb-0 sm:pt-24 sm:pb-0",
+        /* Mobile: positioned closer to images with proper overlay spacing */
+        "pt-16 pb-0 sm:pt-20 sm:pb-0",
         "md:min-h-screen md:justify-center md:pt-0 md:pb-10",
         className
       )}
     >
-      <div className="z-10 flex flex-col items-center w-full max-w-4xl mx-auto">
+      {/* Mobile top fade overlay for proper text overlay effect */}
+      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/60 via-black/30 to-transparent z-10 md:hidden" />
+      
+      <div className="z-20 flex flex-col items-center w-full max-w-4xl mx-auto">
         <motion.div
           initial="hidden"
           animate="show"
@@ -94,6 +97,9 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
       </div>
 
       <div className="pointer-events-none absolute bottom-0 left-0 w-full h-[44%] sm:h-[40%] md:h-2/5 [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_86%,transparent)]">
+        {/* Mobile fade overlay at top of images */}
+        <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-black/40 via-black/20 to-transparent z-10 md:hidden" />
+        
         <motion.div
           className="flex h-full items-end gap-3 sm:gap-4 pl-2"
           animate={{
@@ -114,15 +120,22 @@ export const AnimatedMarqueeHero: React.FC<AnimatedMarqueeHeroProps> = ({
               }}
             >
               {src ? (
-                <img
-                  src={src}
-                  alt=""
-                  className="h-full w-full object-cover object-top rounded-2xl shadow-lg"
-                />
+                <>
+                  <img
+                    src={src}
+                    alt=""
+                    className="h-full w-full object-cover object-top rounded-2xl shadow-lg"
+                  />
+                  {/* Mobile shadow/blur effect overlay */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/30 via-transparent to-black/20 md:hidden" />
+                </>
               ) : null}
             </div>
           ))}
         </motion.div>
+        
+        {/* Mobile fade overlay at bottom of images */}
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/50 via-black/30 to-transparent z-10 md:hidden" />
       </div>
     </section>
   );
