@@ -92,17 +92,15 @@ export default function Cart() {
   ) => {
     setUpdating(true)
     try {
-      await api.post('/cart/remove/', {
+      const response = await api.post('/cart/remove/', {
         design_id: designId,
         size: size,
         size_measurement_id: sizeMeasurementId,
       })
-      
-      // Update local state
+
+      // Update local state immediately so UI reflects removal without refresh.
       remove(designId, size.toString())
-      
-      // Reload server cart
-      await loadServerCart()
+      setServerCart(response.data)
       setNotice({ type: 'success', message: 'Design removed from your wardrobe successfully.' })
     } catch (error) {
       console.error('Failed to remove item:', error)

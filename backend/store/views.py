@@ -174,27 +174,23 @@ class CartViewSet(viewsets.ModelViewSet):
         if not design_id:
             return Response({'detail': 'design_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Backward-compatible fallback for clients sending {design_id, size}
-        if not size_measurement_id and size is not None:
-            measurement = (
-                SizeMeasurement.objects.filter(design_id=design_id, size=size, is_active=True)
-                .order_by('id')
-                .first()
-            )
-            if measurement:
-                size_measurement_id = measurement.id
-        
-        try:
-            cart_item = CartItem.objects.get(
-                cart=cart,
-                design_id=design_id,
-                size_measurement_id=size_measurement_id
-            )
-            cart_item.delete()
-            serializer = CartSerializer(cart)
-            return Response(serializer.data)
-        except CartItem.DoesNotExist:
+        # Robust matching:
+        # 1) Prefer explicit size_measurement_id.
+        # 2) Fallback to design + size for older clients.
+        # 3) As final fallback, remove latest line for that design.
+        queryset = CartItem.objects.filter(cart=cart, design_id=design_id)
+        if size_measurement_id:
+            queryset = queryset.filter(size_measurement_id=size_measurement_id)
+        elif size is not None:
+            queryset = queryset.filter(size_measurement__size=size)
+
+        cart_item = queryset.order_by('-id').first()
+        if not cart_item:
             return Response({'detail': 'Item not found in cart'}, status=status.HTTP_404_NOT_FOUND)
+
+        cart_item.delete()
+        serializer = CartSerializer(cart)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['post'])
     def clear_cart(self, request):
