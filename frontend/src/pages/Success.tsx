@@ -9,19 +9,18 @@ export default function Success() {
   const [params] = useSearchParams()
   const reference = params.get('reference')
   const txRef = params.get('tx_ref')
+  const transactionId = params.get('transaction_id')
   const payStatus = (params.get('status') || '').toLowerCase()
   const clearCart = useCart((s) => s.clear)
 
-  const flutterwaveCancelled = !!txRef && (payStatus === 'cancelled' || payStatus === 'canceled')
-
-  const flutterwaveSuccess =
-    !!txRef && (payStatus === 'successful' || payStatus === 'success')
+  const flutterwaveCancelled =
+    !!(txRef || transactionId) && (payStatus === 'cancelled' || payStatus === 'canceled')
 
   const [outcome, setOutcome] = useState<Outcome>(() => {
     if (flutterwaveCancelled) return 'cancelled'
-    if (reference || (txRef && (flutterwaveSuccess || !payStatus))) return 'pending'
-    if (txRef && payStatus && !flutterwaveSuccess && !flutterwaveCancelled) return 'failed'
-    if (!reference && !txRef) return 'idle'
+    // For Flutterwave, always verify on backend whenever we have tx_ref or transaction_id.
+    if (reference || txRef || transactionId) return 'pending'
+    if (!reference && !txRef && !transactionId) return 'idle'
     return 'pending'
   })
 
@@ -41,9 +40,9 @@ export default function Success() {
       return
     }
 
-    if (txRef && (flutterwaveSuccess || !payStatus)) {
+    if (txRef || transactionId) {
       api
-        .post('/flutterwave/verify/', { tx_ref: txRef })
+        .post('/flutterwave/verify/', { tx_ref: txRef, transaction_id: transactionId })
         .then(() => {
           clearCart()
           setOutcome('success')
@@ -51,7 +50,7 @@ export default function Success() {
         .catch(() => setOutcome('failed'))
       return
     }
-  }, [reference, txRef, payStatus, outcome, flutterwaveSuccess, clearCart])
+  }, [reference, txRef, transactionId, outcome, clearCart])
 
   if (outcome === 'cancelled') {
     return (

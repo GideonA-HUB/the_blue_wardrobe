@@ -169,6 +169,20 @@ class CartViewSet(viewsets.ModelViewSet):
         cart = self.get_object()
         design_id = request.data.get('design_id')
         size_measurement_id = request.data.get('size_measurement_id')
+        size = request.data.get('size')
+        
+        if not design_id:
+            return Response({'detail': 'design_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Backward-compatible fallback for clients sending {design_id, size}
+        if not size_measurement_id and size is not None:
+            measurement = (
+                SizeMeasurement.objects.filter(design_id=design_id, size=size, is_active=True)
+                .order_by('id')
+                .first()
+            )
+            if measurement:
+                size_measurement_id = measurement.id
         
         try:
             cart_item = CartItem.objects.get(
@@ -660,26 +674,39 @@ def verify_flutterwave(request):
     if not settings.FLUTTERWAVE_SECRET_KEY:
         return Response({'detail': 'Flutterwave is not configured'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     tx_ref = (request.data.get('tx_ref') or '').strip()
-    if not tx_ref:
-        return Response({'detail': 'tx_ref required'}, status=status.HTTP_400_BAD_REQUEST)
+    transaction_id = (request.data.get('transaction_id') or '').strip()
+    if not tx_ref and not transaction_id:
+        return Response({'detail': 'tx_ref or transaction_id required'}, status=status.HTTP_400_BAD_REQUEST)
 
     headers = {'Authorization': f'Bearer {settings.FLUTTERWAVE_SECRET_KEY}'}
-    resp = requests.get(
-        'https://api.flutterwave.com/v3/transactions/verify_by_reference',
-        params={'tx_ref': tx_ref},
-        headers=headers,
-        timeout=60,
-    )
+    # Prefer tx_ref (our canonical idempotency key); fall back to transaction_id when redirects omit tx_ref.
+    if tx_ref:
+        resp = requests.get(
+            'https://api.flutterwave.com/v3/transactions/verify_by_reference',
+            params={'tx_ref': tx_ref},
+            headers=headers,
+            timeout=60,
+        )
+    else:
+        resp = requests.get(
+            f'https://api.flutterwave.com/v3/transactions/{transaction_id}/verify',
+            headers=headers,
+            timeout=60,
+        )
     payload = resp.json() if resp.content else {}
     if resp.status_code != 200 or payload.get('status') != 'success':
-        return Response({'detail': 'verification failed'}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response(
+            {'detail': payload.get('message') or 'verification failed'},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
 
     data = payload.get('data') or {}
     status_str = (data.get('status') or '').lower()
+    resolved_tx_ref = (data.get('tx_ref') or tx_ref or '').strip()
     if status_str != 'successful':
         PaymentLog.objects.create(
             gateway='flutterwave',
-            reference=tx_ref,
+            reference=resolved_tx_ref or transaction_id,
             status=status_str or 'failed',
             amount=float(data.get('amount') or 0),
             raw_response=payload,
@@ -698,7 +725,7 @@ def verify_flutterwave(request):
 
     order, created_new = finalize_order_from_cart(
         gateway='flutterwave',
-        reference=tx_ref,
+        reference=resolved_tx_ref or transaction_id,
         amount=amount,
         status_str='successful',
         raw_payload=payload,
@@ -707,7 +734,7 @@ def verify_flutterwave(request):
         customer_meta=customer_meta,
         metadata=metadata,
         paystack_reference='',
-        flutterwave_tx_ref=tx_ref,
+        flutterwave_tx_ref=resolved_tx_ref or transaction_id,
     )
     if created_new:
         send_order_emails(order, customer_email)

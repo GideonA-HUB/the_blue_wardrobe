@@ -73,12 +73,17 @@ export default function Cart() {
     }
   }
 
-  const handleRemoveItem = async (designId: number, size: number) => {
+  const handleRemoveItem = async (
+    designId: number,
+    size: number,
+    sizeMeasurementId?: number
+  ) => {
     setUpdating(true)
     try {
       await api.post('/cart/remove/', {
         design_id: designId,
-        size: size
+        size: size,
+        size_measurement_id: sizeMeasurementId,
       })
       
       // Update local state
@@ -202,8 +207,10 @@ export default function Cart() {
                       NGN {it.subtotal.toLocaleString()}
                     </div>
                   </div>
-                  <button 
-                    onClick={() => handleRemoveItem(it.design.id, it.size)} 
+                  <button
+                    onClick={() =>
+                      handleRemoveItem(it.design.id, it.size, it.size_measurement?.id)
+                    }
                     disabled={updating}
                     className="text-red-600 hover:text-red-700 font-medium transition-colors disabled:opacity-50"
                   >
