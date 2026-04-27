@@ -148,8 +148,7 @@ export default function Cart() {
     }
   }
 
-  // Use server cart if available, otherwise fall back to local cart
-  const displayItems = serverCart?.items || localItems.map(it => ({
+  const localDisplayItems = localItems.map(it => ({
     id: it.id,
     design: { 
       id: it.id, 
@@ -166,9 +165,18 @@ export default function Cart() {
     subtotal: it.price * it.qty,
     is_available: true
   }))
+
+  // Prefer non-empty authoritative server cart; otherwise fall back to local state
+  // so users don't see a false empty wardrobe when session cookies drift.
+  const useServerCart = !!serverCart && serverCart.total_items > 0
+  const displayItems = useServerCart ? serverCart.items : localDisplayItems
   
-  const subtotal = serverCart?.total_amount ?? localItems.reduce((s, it) => s + it.price * it.qty, 0)
-  const totalItems = serverCart?.total_items ?? localItems.reduce((s, it) => s + it.qty, 0)
+  const subtotal = useServerCart
+    ? serverCart.total_amount
+    : localItems.reduce((s, it) => s + it.price * it.qty, 0)
+  const totalItems = useServerCart
+    ? serverCart.total_items
+    : localItems.reduce((s, it) => s + it.qty, 0)
 
   if (loading) {
     return (

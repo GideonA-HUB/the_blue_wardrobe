@@ -30,6 +30,24 @@ const getCSRFToken = () => {
   return cookieValue
 }
 
+const CART_SESSION_KEY = 'tbw_cart_session_id'
+
+const getOrCreateCartSessionId = () => {
+  try {
+    const existing = localStorage.getItem(CART_SESSION_KEY)
+    if (existing) return existing
+    const generated =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `tbw-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    localStorage.setItem(CART_SESSION_KEY, generated)
+    return generated
+  } catch {
+    // localStorage may be unavailable in some browsing modes.
+    return `tbw-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  }
+}
+
 const api = axios.create({
   baseURL: getBaseURL(),
   headers: { 'Content-Type': 'application/json' },
@@ -39,8 +57,12 @@ const api = axios.create({
 // Add CSRF token to requests
 api.interceptors.request.use((config) => {
   const csrfToken = getCSRFToken()
+  const cartSessionId = getOrCreateCartSessionId()
   if (csrfToken) {
     config.headers['X-CSRFToken'] = csrfToken
+  }
+  if (cartSessionId) {
+    config.headers['X-Session-ID'] = cartSessionId
   }
   return config
 })

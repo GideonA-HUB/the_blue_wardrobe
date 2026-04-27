@@ -58,8 +58,7 @@ export default function Checkout() {
     }
   }
 
-  // Use server cart if available, otherwise fall back to local cart
-  const displayItems = serverCart?.items || localItems.map(it => ({
+  const localDisplayItems = localItems.map(it => ({
     id: it.id,
     design: { id: it.id, title: it.title },
     size: parseInt(it.size),
@@ -68,9 +67,16 @@ export default function Checkout() {
     subtotal: it.price * it.qty,
     is_available: true
   }))
+
+  const useServerCart = !!serverCart && serverCart.total_items > 0
+  const displayItems = useServerCart ? serverCart.items : localDisplayItems
   
-  const subtotal = serverCart?.total_amount || localItems.reduce((s, it) => s + it.price * it.qty, 0)
-  const totalItems = serverCart?.total_items || localItems.reduce((s, it) => s + it.qty, 0)
+  const subtotal = useServerCart
+    ? serverCart.total_amount
+    : localItems.reduce((s, it) => s + it.price * it.qty, 0)
+  const totalItems = useServerCart
+    ? serverCart.total_items
+    : localItems.reduce((s, it) => s + it.qty, 0)
 
   const onPay = async () => {
     if (!email || !firstName || !lastName || !phone.trim() || !address.trim()) {
