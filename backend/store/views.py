@@ -15,7 +15,7 @@ from django.views.decorators.http import require_GET
 from django.middleware.csrf import get_token
 
 from .models import (
-    Collection, Design, DesignImage, SizeInventory, Cart, CartItem, SiteAsset, ContactMessage, Subscriber, Order,
+    Collection, Design, DesignImage, SizeInventory, SizeMeasurement, Cart, CartItem, SiteAsset, ContactMessage, Subscriber, Order,
     Customer, OrderItem, PaymentLog, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, Material, DesignReview,
     HomeHeroCopy, HeroMarqueeSlide, AtelierStorySlide,
 )

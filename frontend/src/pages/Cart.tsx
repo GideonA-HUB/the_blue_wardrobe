@@ -41,7 +41,6 @@ type CartData = {
 
 export default function Cart() {
   const localItems = useCart((s) => s.items)
-  const update = useCart((s) => s.updateQty)
   const remove = useCart((s) => s.remove)
   const clear = useCart((s) => s.clear)
   const navigate = useNavigate()
@@ -49,6 +48,19 @@ export default function Cart() {
   const [serverCart, setServerCart] = useState<CartData | null>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
+  const [pendingRemove, setPendingRemove] = useState<{
+    designId: number
+    size: number
+    sizeMeasurementId?: number
+    title: string
+  } | null>(null)
+  const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  useEffect(() => {
+    if (!notice) return
+    const t = window.setTimeout(() => setNotice(null), 3000)
+    return () => window.clearTimeout(t)
+  }, [notice])
 
   // Load cart from server on mount
   useEffect(() => {
@@ -91,9 +103,10 @@ export default function Cart() {
       
       // Reload server cart
       await loadServerCart()
+      setNotice({ type: 'success', message: 'Design removed from your wardrobe successfully.' })
     } catch (error) {
       console.error('Failed to remove item:', error)
-      alert('Failed to remove item from cart')
+      setNotice({ type: 'error', message: 'Failed to remove item from cart. Please try again.' })
     } finally {
       setUpdating(false)
     }
@@ -147,6 +160,17 @@ export default function Cart() {
 
   return (
     <div className="py-8 md:py-12">
+      {notice && (
+        <div
+          className={`mb-6 rounded-lg border px-4 py-3 text-sm ${
+            notice.type === 'success'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+              : 'border-red-200 bg-red-50 text-red-700'
+          }`}
+        >
+          {notice.message}
+        </div>
+      )}
       <h1 className="text-4xl font-serif font-semibold text-blue-wardrobe-dark mb-8">
         Your Wardrobe ({totalItems} {totalItems === 1 ? 'item' : 'items'})
       </h1>
@@ -209,7 +233,12 @@ export default function Cart() {
                   </div>
                   <button
                     onClick={() =>
-                      handleRemoveItem(it.design.id, it.size, it.size_measurement?.id)
+                      setPendingRemove({
+                        designId: it.design.id,
+                        size: it.size,
+                        sizeMeasurementId: it.size_measurement?.id,
+                        title: it.design.title,
+                      })
                     }
                     disabled={updating}
                     className="text-red-600 hover:text-red-700 font-medium transition-colors disabled:opacity-50"
@@ -252,6 +281,39 @@ export default function Cart() {
                   Empty Wardrobe
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingRemove && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 luxury-shadow-lg">
+            <h3 className="text-2xl font-serif font-semibold text-blue-wardrobe-dark mb-3">
+              Remove design?
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to remove <span className="font-semibold">{pendingRemove.title}</span> (size {pendingRemove.size}) from your wardrobe?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setPendingRemove(null)}
+                className="px-5 py-2.5 rounded-full border border-gray-300 text-gray-700 hover:border-gray-400 transition-colors"
+              >
+                No
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const item = pendingRemove
+                  setPendingRemove(null)
+                  await handleRemoveItem(item.designId, item.size, item.sizeMeasurementId)
+                }}
+                className="px-5 py-2.5 rounded-full bg-blue-wardrobe-dark text-white hover:bg-blue-wardrobe-light transition-colors"
+              >
+                Yes, remove
+              </button>
             </div>
           </div>
         </div>
