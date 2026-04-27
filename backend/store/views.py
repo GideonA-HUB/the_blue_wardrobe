@@ -90,13 +90,15 @@ class CartViewSet(viewsets.ModelViewSet):
     serializer_class = CartSerializer
     
     def get_queryset(self):
-        session_id = self.request.session.session_key or self.request.META.get('HTTP_X_SESSION_ID')
+        # Prefer explicit client cart session so cart survives cookie/session drift.
+        session_id = self.request.META.get('HTTP_X_SESSION_ID') or self.request.session.session_key
         if not session_id:
             return Cart.objects.none()
         return Cart.objects.prefetch_related('items__design').filter(session_id=session_id)
     
     def get_object(self):
-        session_id = self.request.session.session_key or self.request.META.get('HTTP_X_SESSION_ID')
+        # Prefer explicit client cart session so cart survives cookie/session drift.
+        session_id = self.request.META.get('HTTP_X_SESSION_ID') or self.request.session.session_key
         print(f"Initial session_id: {session_id}")
         print(f"Session exists: {self.request.session.exists(self.request.session.session_key) if self.request.session.session_key else False}")
         
@@ -113,6 +115,11 @@ class CartViewSet(viewsets.ModelViewSet):
         if not session_id:
             raise ValueError("Unable to create or retrieve session ID")
         
+        # Keep Django session and explicit cart session aligned when possible.
+        if self.request.session.session_key != session_id:
+            self.request.session['tbw_cart_session_id'] = session_id
+            self.request.session.save()
+
         print(f"Final session_id: {session_id}")
         cart, created = Cart.objects.get_or_create(
             session_id=session_id,

@@ -75,16 +75,19 @@ export default function Cart() {
       const response = await api.get('/cart/')
       setServerCart(response.data)
 
-      // Keep navbar/cart badge in sync with authoritative server cart.
-      const syncedLocal = (response.data.items || []).map((item: CartItem) => ({
-        id: item.design.id,
-        title: item.design.title,
-        price: item.unit_price,
-        size: item.size,
-        qty: item.quantity,
-        image: item.design.images?.[0]?.image_url,
-      }))
-      replaceItems(syncedLocal)
+      // Keep navbar/cart badge in sync with server cart, but do not wipe local cart
+      // when server unexpectedly returns empty while local items exist.
+      if ((response.data.items || []).length > 0 || localItems.length === 0) {
+        const syncedLocal = (response.data.items || []).map((item: CartItem) => ({
+          id: item.design.id,
+          title: item.design.title,
+          price: item.unit_price,
+          size: item.size,
+          qty: item.quantity,
+          image: item.design.images?.[0]?.image_url,
+        }))
+        replaceItems(syncedLocal)
+      }
     } catch (error) {
       console.error('Failed to load cart:', error)
     } finally {
