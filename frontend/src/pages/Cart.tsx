@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../store/cart'
 import api from '../lib/api'
+import axios from 'axios'
 
 type CartItem = {
   id: number
@@ -43,6 +44,7 @@ export default function Cart() {
   const localItems = useCart((s) => s.items)
   const remove = useCart((s) => s.remove)
   const clear = useCart((s) => s.clear)
+  const replaceItems = useCart((s) => s.replaceItems)
   const navigate = useNavigate()
   
   const [serverCart, setServerCart] = useState<CartData | null>(null)
@@ -72,12 +74,17 @@ export default function Cart() {
       setLoading(true)
       const response = await api.get('/cart/')
       setServerCart(response.data)
-      
-      // Sync local cart with server cart
-      // (This is a simple sync - you might want more sophisticated logic)
-      if (response.data.items.length === 0) {
-        clear()
-      }
+
+      // Keep navbar/cart badge in sync with authoritative server cart.
+      const syncedLocal = (response.data.items || []).map((item: CartItem) => ({
+        id: item.design.id,
+        title: item.design.title,
+        price: item.unit_price,
+        size: item.size,
+        qty: item.quantity,
+        image: item.design.images?.[0]?.image_url,
+      }))
+      replaceItems(syncedLocal)
     } catch (error) {
       console.error('Failed to load cart:', error)
     } finally {
@@ -99,12 +106,27 @@ export default function Cart() {
       })
 
       // Update local state immediately so UI reflects removal without refresh.
-      remove(designId, size.toString())
+      remove(designId, size)
       setServerCart(response.data)
+      const syncedLocal = (response.data.items || []).map((item: CartItem) => ({
+        id: item.design.id,
+        title: item.design.title,
+        price: item.unit_price,
+        size: item.size,
+        qty: item.quantity,
+        image: item.design.images?.[0]?.image_url,
+      }))
+      replaceItems(syncedLocal)
       setNotice({ type: 'success', message: 'Design removed from your wardrobe successfully.' })
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to remove item:', error)
-      setNotice({ type: 'error', message: 'Failed to remove item from cart. Please try again.' })
+      // If backend says 404, item may already be removed; reload and treat based on fresh cart.
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        await loadServerCart()
+        setNotice({ type: 'success', message: 'Design removed from your wardrobe successfully.' })
+      } else {
+        setNotice({ type: 'error', message: 'Failed to remove item from cart. Please try again.' })
+      }
     } finally {
       setUpdating(false)
     }
@@ -145,8 +167,8 @@ export default function Cart() {
     is_available: true
   }))
   
-  const subtotal = serverCart?.total_amount || localItems.reduce((s, it) => s + it.price * it.qty, 0)
-  const totalItems = serverCart?.total_items || localItems.reduce((s, it) => s + it.qty, 0)
+  const subtotal = serverCart?.total_amount ?? localItems.reduce((s, it) => s + it.price * it.qty, 0)
+  const totalItems = serverCart?.total_items ?? localItems.reduce((s, it) => s + it.qty, 0)
 
   if (loading) {
     return (
