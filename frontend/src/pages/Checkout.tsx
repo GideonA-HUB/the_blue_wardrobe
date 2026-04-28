@@ -39,7 +39,7 @@ export default function Checkout() {
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
-  const [paymentGateway, setPaymentGateway] = useState<'paystack' | 'flutterwave'>('flutterwave')
+  const [paymentGateway] = useState<'flutterwave'>('flutterwave')
 
   // Load cart from server on mount
   useEffect(() => {
@@ -113,14 +113,10 @@ export default function Checkout() {
         },
       }
 
-      const path =
-        paymentGateway === 'flutterwave' ? '/flutterwave/initiate/' : '/paystack/initiate/'
+      const path = '/flutterwave/initiate/'
       const resp = await api.post(path, payload)
 
-      const authUrl =
-        paymentGateway === 'flutterwave'
-          ? resp.data?.data?.link
-          : resp.data?.data?.authorization_url || resp.data?.authorization_url
+      const authUrl = resp.data?.data?.link
 
       if (authUrl) {
         // Do not clear cart here — user may cancel on the gateway; cart clears after verified payment on /success
@@ -267,28 +263,12 @@ export default function Checkout() {
             
             <div className="mb-4">
               <p className="text-sm font-medium text-gray-700 mb-2">Payment method</p>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setPaymentGateway('flutterwave')}
-                  className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${
-                    paymentGateway === 'flutterwave'
-                      ? 'border-blue-wardrobe-dark bg-blue-wardrobe-dark/5 text-blue-wardrobe-dark'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                  }`}
+                  className="flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium border-blue-wardrobe-dark bg-blue-wardrobe-dark/5 text-blue-wardrobe-dark"
                 >
                   Flutterwave
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentGateway('paystack')}
-                  className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${
-                    paymentGateway === 'paystack'
-                      ? 'border-blue-wardrobe-dark bg-blue-wardrobe-dark/5 text-blue-wardrobe-dark'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                  }`}
-                >
-                  Paystack
                 </button>
               </div>
             </div>
@@ -299,11 +279,7 @@ export default function Checkout() {
                 disabled={!firstName || !lastName || !email || !phone.trim() || !address.trim() || processing || displayItems.some(item => !item.is_available)}
                 className="w-full px-6 py-4 bg-blue-wardrobe-dark text-white rounded-full hover:bg-blue-wardrobe-light transition-all duration-300 font-medium luxury-shadow hover:luxury-shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
-                {processing
-                  ? 'Processing...'
-                  : paymentGateway === 'flutterwave'
-                    ? 'Pay with Flutterwave'
-                    : 'Pay with Paystack'}
+                {processing ? 'Processing...' : 'Pay with Flutterwave'}
               </button>
               <button 
                 type="button"
@@ -316,11 +292,7 @@ export default function Checkout() {
             
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-600 text-center mb-2">
-                <strong>
-                  {paymentGateway === 'flutterwave'
-                    ? 'Secure payment via Flutterwave'
-                    : 'Secure payment via Paystack'}
-                </strong>
+                <strong>Secure payment via Flutterwave</strong>
               </p>
               <p className="text-xs text-gray-500 text-center">
                 You will be redirected to complete your purchase on the provider&apos;s secure page.

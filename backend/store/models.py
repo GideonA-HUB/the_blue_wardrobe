@@ -404,6 +404,7 @@ class Order(models.Model):
         ('flutterwave', 'Flutterwave'),
     ]
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
+    delivery_address = models.TextField(blank=True, default='')
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_provider = models.CharField(

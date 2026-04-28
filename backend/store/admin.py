@@ -309,13 +309,38 @@ class CustomerAdmin(admin.ModelAdmin):
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
+    readonly_fields = ('design', 'size', 'quantity', 'unit_price')
+    can_delete = False
 
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'customer', 'total_amount', 'status', 'created_at')
+    list_display = ('id', 'customer_email', 'customer_phone', 'total_amount', 'status', 'created_at')
     list_filter = ('status', 'created_at')
+    search_fields = ('id', 'customer__email', 'customer__first_name', 'customer__last_name', 'paystack_reference', 'flutterwave_tx_ref')
+    readonly_fields = (
+        'customer', 'delivery_address', 'total_amount', 'payment_provider',
+        'paystack_reference', 'flutterwave_tx_ref', 'created_at',
+    )
+    fields = (
+        'customer',
+        'delivery_address',
+        'total_amount',
+        'status',
+        'payment_provider',
+        'paystack_reference',
+        'flutterwave_tx_ref',
+        'created_at',
+    )
     inlines = [OrderItemInline]
+
+    def customer_email(self, obj):
+        return obj.customer.email if obj.customer else '-'
+    customer_email.short_description = 'Customer'
+
+    def customer_phone(self, obj):
+        return obj.customer.phone if obj.customer and obj.customer.phone else '-'
+    customer_phone.short_description = 'Phone'
 
 
 @admin.register(ContactMessage)

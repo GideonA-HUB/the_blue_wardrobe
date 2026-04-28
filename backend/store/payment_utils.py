@@ -157,9 +157,27 @@ def finalize_order_from_cart(
             "phone": phone,
         },
     )
+    # Keep customer profile fresh for fulfillment contacts.
+    updated_fields: list[str] = []
+    first_name = (customer_meta.get("firstName") or "").strip()
+    last_name = (customer_meta.get("lastName") or "").strip()
+    if first_name and customer.first_name != first_name:
+        customer.first_name = first_name
+        updated_fields.append("first_name")
+    if last_name and customer.last_name != last_name:
+        customer.last_name = last_name
+        updated_fields.append("last_name")
+    if phone and customer.phone != phone:
+        customer.phone = phone
+        updated_fields.append("phone")
+    if updated_fields:
+        customer.save(update_fields=updated_fields)
+
+    delivery_address = (metadata.get("deliveryAddress") or "").strip()
 
     order = Order.objects.create(
         customer=customer,
+        delivery_address=delivery_address,
         total_amount=Decimal(str(amount)).quantize(Decimal("0.01")),
         status="confirmed",
         payment_provider=gateway,

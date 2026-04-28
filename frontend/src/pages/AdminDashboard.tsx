@@ -59,10 +59,21 @@ type InfoCard = {
 
 type Order = {
   id: number
+  delivery_address?: string
   total_amount: number
   status: string
   created_at: string
-  customer?: { email: string; first_name: string; last_name: string }
+  payment_provider?: string
+  paystack_reference?: string
+  flutterwave_tx_ref?: string
+  customer?: { email: string; first_name: string; last_name: string; phone?: string }
+  items?: Array<{
+    id: number
+    design: { id: number; title: string; sku?: string }
+    size: number
+    quantity: number
+    unit_price: number
+  }>
 }
 
 type ContactMessage = {
@@ -141,6 +152,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState<{ type: string; item?: any } | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const { setLoading: setGlobalLoading } = useLoading()
 
   useEffect(() => {
@@ -917,7 +929,11 @@ export default function AdminDashboard() {
                         </td>
                         <td className="py-3 px-4 text-sm text-gray-600">{new Date(order.created_at).toLocaleDateString()}</td>
                         <td className="py-3 px-4">
-                          <button className="text-blue-wardrobe-light hover:text-blue-wardrobe-dark transition-colors">
+                          <button
+                            onClick={() => setSelectedOrder(order)}
+                            className="text-blue-wardrobe-light hover:text-blue-wardrobe-dark transition-colors"
+                            title="View order details"
+                          >
                             <FaEye />
                           </button>
                         </td>
@@ -1078,6 +1094,101 @@ export default function AdminDashboard() {
               handleSave(apiType, data, showModal.item?.id)
             }}
           />
+        )}
+
+        {selectedOrder && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedOrder(null)}
+          >
+            <motion.div
+              className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+              initial={{ scale: 0.95, y: 12 }}
+              animate={{ scale: 1, y: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-blue-wardrobe-light/10 flex items-center justify-between">
+                <h3 className="text-2xl font-serif font-semibold text-blue-wardrobe-dark">
+                  Order #{selectedOrder.id}
+                </h3>
+                <button onClick={() => setSelectedOrder(null)} className="text-gray-500 hover:text-gray-700">
+                  <FaTimesCircle size={24} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="rounded-lg border border-blue-wardrobe-light/20 p-4">
+                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Customer</div>
+                    <div className="font-semibold text-blue-wardrobe-dark">
+                      {selectedOrder.customer?.first_name || selectedOrder.customer?.last_name
+                        ? `${selectedOrder.customer?.first_name || ''} ${selectedOrder.customer?.last_name || ''}`.trim()
+                        : 'N/A'}
+                    </div>
+                    <div className="text-sm text-gray-700 mt-1">{selectedOrder.customer?.email || 'N/A'}</div>
+                    <div className="text-sm text-gray-700">{selectedOrder.customer?.phone || 'No phone provided'}</div>
+                  </div>
+                  <div className="rounded-lg border border-blue-wardrobe-light/20 p-4">
+                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Delivery Address</div>
+                    <div className="text-sm text-gray-800 whitespace-pre-wrap">
+                      {selectedOrder.delivery_address || 'No delivery address captured.'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="rounded-lg border border-blue-wardrobe-light/20 p-4">
+                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Amount</div>
+                    <div className="font-semibold text-blue-wardrobe-dark">NGN {selectedOrder.total_amount.toLocaleString()}</div>
+                  </div>
+                  <div className="rounded-lg border border-blue-wardrobe-light/20 p-4">
+                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Status</div>
+                    <div className="font-semibold text-blue-wardrobe-dark capitalize">{selectedOrder.status}</div>
+                  </div>
+                  <div className="rounded-lg border border-blue-wardrobe-light/20 p-4">
+                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Payment</div>
+                    <div className="font-semibold text-blue-wardrobe-dark capitalize">{selectedOrder.payment_provider || 'N/A'}</div>
+                    <div className="text-xs text-gray-600 mt-1 break-all">
+                      {selectedOrder.flutterwave_tx_ref || selectedOrder.paystack_reference || ''}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-semibold text-blue-wardrobe-dark mb-3">Order Items</h4>
+                  {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                    <div className="overflow-x-auto border border-blue-wardrobe-light/20 rounded-lg">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-blue-wardrobe-light/5">
+                            <th className="text-left py-2 px-3 text-sm text-blue-wardrobe-dark">Design</th>
+                            <th className="text-left py-2 px-3 text-sm text-blue-wardrobe-dark">Size</th>
+                            <th className="text-left py-2 px-3 text-sm text-blue-wardrobe-dark">Qty</th>
+                            <th className="text-left py-2 px-3 text-sm text-blue-wardrobe-dark">Unit Price</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedOrder.items.map((item) => (
+                            <tr key={item.id} className="border-t border-blue-wardrobe-light/10">
+                              <td className="py-2 px-3 text-sm">{item.design?.title || 'Design'}</td>
+                              <td className="py-2 px-3 text-sm">{item.size}</td>
+                              <td className="py-2 px-3 text-sm">{item.quantity}</td>
+                              <td className="py-2 px-3 text-sm">NGN {Number(item.unit_price).toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600">No line items available on this order.</p>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </div>
     </div>
