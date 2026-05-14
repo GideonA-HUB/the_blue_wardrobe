@@ -21,7 +21,7 @@ export default function Collections() {
   }, [])
 
   return (
-    <div className="py-8 md:py-12">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-12 lg:px-8">
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-serif font-semibold text-blue-wardrobe-dark mb-4">
           The Dress Diaries Collection
@@ -32,12 +32,12 @@ export default function Collections() {
       </div>
       
       {collections.length > 0 ? (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 lg:gap-8">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3 lg:gap-8">
           {collections.map((c, index) => (
             <Link
               to={`/collections/${c.id}`}
               key={c.id}
-              className="group luxury-shadow overflow-hidden rounded-lg bg-white transition-all duration-500 hover:-translate-y-2 hover:luxury-shadow-lg"
+              className="group luxury-shadow overflow-hidden rounded-xl sm:rounded-lg bg-white border border-gray-100/80 transition-all duration-500 hover:-translate-y-2 hover:luxury-shadow-lg"
               style={{
                 animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
               }}
@@ -63,15 +63,20 @@ export default function Collections() {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
-              <div className="p-4 sm:p-5 md:p-6">
-                <h3 className="mb-2 text-lg font-serif font-semibold text-blue-wardrobe-dark transition-colors group-hover:text-blue-wardrobe-light sm:text-xl">
+              <div className="p-2.5 sm:p-5 md:p-6">
+                <h3 className="mb-1 sm:mb-2 text-xs sm:text-lg font-serif font-semibold text-blue-wardrobe-dark transition-colors group-hover:text-blue-wardrobe-light sm:text-xl line-clamp-2 leading-snug">
                   {c.code} — {c.title}
                 </h3>
-                <p className="text-sm text-gray-600 mt-2 line-clamp-3 leading-relaxed">
+                <p className="hidden sm:block text-sm text-gray-600 mt-2 line-clamp-3 leading-relaxed">
                   {c.story || 'A collection of timeless designs crafted from rare, luxurious fabrics.'}
                 </p>
-                <div className="mt-4 text-sm text-blue-wardrobe-light font-medium group-hover:underline">
-                  Explore Collection →
+                <div className="mt-2 sm:mt-4">
+                  <span className="sm:hidden block w-full rounded-lg border border-gray-300 py-1.5 text-center text-[11px] font-medium text-blue-wardrobe-dark transition-colors group-hover:border-blue-wardrobe-light group-hover:bg-blue-50/60">
+                    Explore
+                  </span>
+                  <span className="hidden sm:inline text-sm text-blue-wardrobe-light font-medium group-hover:underline">
+                    Explore Collection →
+                  </span>
                 </div>
               </div>
             </Link>

@@ -141,12 +141,12 @@ export default function CollectionDetail() {
           Designs in this diary
         </h2>
         {collection.designs.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 md:gap-6 lg:gap-8">
             {collection.designs.map((d, index) => (
               <Link
                 to={`/designs/${d.id}`}
                 key={d.id}
-                className="group luxury-shadow rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white transform hover:-translate-y-2"
+                className="group luxury-shadow rounded-xl sm:rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white transform hover:-translate-y-2 border border-gray-100/80"
                 style={{
                   animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
                 }}
@@ -191,42 +191,43 @@ export default function CollectionDetail() {
                     </div>
                   )}
                   {d.has_discount && (
-                    <div className="absolute top-4 left-4 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                    <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
                       {d.discount_percentage}% OFF
                     </div>
                   )}
                   {d.total_stock === 0 && (
-                    <div className="absolute top-4 right-4 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                    <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
                       OUT OF STOCK
                     </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
-                <div className="p-4 md:p-6">
-                  <div className="text-xs tracking-[0.15em] uppercase text-gray-500 mb-2">
+                <div className="p-2.5 sm:p-4 md:p-6">
+                  <div className="text-[10px] sm:text-xs tracking-[0.12em] sm:tracking-[0.15em] uppercase text-gray-500 mb-1 sm:mb-2 line-clamp-1">
                     {collection.code}
                   </div>
-                  <h3 className="text-base md:text-lg font-serif font-semibold text-blue-wardrobe-dark mb-2 group-hover:text-blue-wardrobe-light transition-colors">
+                  <h3 className="text-xs sm:text-base md:text-lg font-serif font-semibold text-blue-wardrobe-dark mb-1 sm:mb-2 line-clamp-2 group-hover:text-blue-wardrobe-light transition-colors leading-snug">
                     {d.title}
                   </h3>
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
                       {d.has_discount && (
-                        <div className="text-sm text-red-600 line-through">
+                        <div className="text-[10px] sm:text-sm text-red-600 line-through">
                           NGN {d.price.toLocaleString()}
                         </div>
                       )}
-                      <p className="text-lg font-bold text-blue-wardrobe-dark">
+                      <p className="text-sm sm:text-lg font-bold text-blue-wardrobe-dark">
                         NGN {d.effective_price.toLocaleString()}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <div className={`text-sm font-medium ${
-                        d.total_stock > 0 ? 'text-emerald-600' : 'text-red-600'
-                      }`}>
-                        {d.total_stock > 0 ? `${d.total_stock} in stock` : 'Out of stock'}
-                      </div>
+                    <div className={`text-[10px] sm:text-sm font-medium sm:text-right ${
+                      d.total_stock > 0 ? 'text-emerald-600' : 'text-red-600'
+                    }`}>
+                      {d.total_stock > 0 ? `${d.total_stock} in stock` : 'Out of stock'}
                     </div>
+                  </div>
+                  <div className="mt-2 sm:mt-3 w-full rounded-lg border border-gray-300 py-1.5 sm:py-2 text-center text-[11px] sm:text-sm font-medium text-blue-wardrobe-dark transition-colors group-hover:border-blue-wardrobe-light group-hover:bg-blue-50/60">
+                    View design
                   </div>
                 </div>
               </Link>

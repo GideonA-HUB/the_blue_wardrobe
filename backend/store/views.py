@@ -581,6 +581,7 @@ def initiate_flutterwave(request):
         'customer': customer_meta,
         'phone': phone,
         'email': email,
+        'deliveryAddress': delivery,
     })
 
     payload = {
@@ -719,10 +720,8 @@ def verify_flutterwave(request):
     meta = parse_flutterwave_meta(data)
     cart = meta.get('cart') or []
     customer_meta = meta.get('customer') or {}
-    metadata = {
-        'phone': meta.get('phone', ''),
-        'email': meta.get('email', ''),
-    }
+    # Pass full parsed meta so deliveryAddress and other TBW fields reach finalize_order_from_cart.
+    metadata = dict(meta) if isinstance(meta, dict) else {}
     customer_email = (data.get('customer') or {}).get('email') or meta.get('email')
     amount = float(data.get('amount') or 0)
 

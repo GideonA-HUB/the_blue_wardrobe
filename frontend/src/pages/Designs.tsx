@@ -198,12 +198,12 @@ export default function Designs() {
         }}
       >
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 md:gap-6 lg:gap-8">
             {[...Array(12)].map((_, index) => (
-              <div key={index} className="animate-pulse">
-                <div className="aspect-[3/4] w-full bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg mb-4"></div>
-                <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div key={index} className="animate-pulse rounded-xl border border-gray-100/80 bg-white p-2.5 sm:p-4">
+                <div className="aspect-[3/4] w-full bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg mb-2 sm:mb-4" />
+                <div className="h-3 sm:h-4 bg-gray-200 rounded mb-1.5 sm:mb-2" />
+                <div className="h-3 sm:h-4 bg-gray-200 rounded w-3/4" />
               </div>
             ))}
           </div>
@@ -213,7 +213,7 @@ export default function Designs() {
               isTransitioning ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'
             }`}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 md:gap-6 lg:gap-8">
               {currentDesigns.map((design, index) => (
                 <div
                   key={design.id}
@@ -225,7 +225,7 @@ export default function Designs() {
                 >
                   <Link
                     to={`/designs/${design.id}`}
-                    className="group luxury-shadow rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white block"
+                    className="group luxury-shadow rounded-xl sm:rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white block border border-gray-100/80"
                   >
                     <div className="relative aspect-[3/4] w-full bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden cursor-pointer group">
                       {design.images?.length > 0 ? (
@@ -267,37 +267,37 @@ export default function Designs() {
                         </div>
                       )}
                       {design.has_discount && (
-                        <div className="absolute top-4 left-4 bg-red-600 text-white text-xs px-2 py-1 rounded-full animate-bounce">
+                        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full animate-bounce">
                           {design.discount_percentage}% OFF
                         </div>
                       )}
                       {design.total_stock === 0 && (
-                        <div className="absolute top-4 right-4 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
                           OUT OF STOCK
                         </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
-                    <div className="p-4 md:p-6">
-                      <div className="text-xs tracking-[0.15em] uppercase text-gray-500 mb-2">
+                    <div className="p-2.5 sm:p-4 md:p-6">
+                      <div className="text-[10px] sm:text-xs tracking-[0.12em] sm:tracking-[0.15em] uppercase text-gray-500 mb-1 sm:mb-2 line-clamp-1">
                         {design.collection}
                       </div>
-                      <h3 className="text-base md:text-lg font-serif font-semibold text-blue-wardrobe-dark mb-2 group-hover:text-blue-wardrobe-light transition-colors">
+                      <h3 className="text-xs sm:text-base md:text-lg font-serif font-semibold text-blue-wardrobe-dark mb-1 sm:mb-2 line-clamp-2 group-hover:text-blue-wardrobe-light transition-colors leading-snug">
                         {design.title}
                       </h3>
-                      <div className="flex items-center justify-between">
-                        <div>
+                      <div className="flex items-start justify-between gap-1">
+                        <div className="min-w-0 flex-1">
                           {design.has_discount && (
-                            <div className="text-sm text-red-600 line-through">
+                            <div className="text-[10px] sm:text-sm text-red-600 line-through">
                               NGN {design.price.toLocaleString()}
                             </div>
                           )}
-                          <div className="text-lg font-semibold text-blue-wardrobe-dark">
+                          <div className="text-sm sm:text-lg font-semibold text-blue-wardrobe-dark">
                             NGN {design.effective_price.toLocaleString()}
                           </div>
                         </div>
                         {design.total_reviews > 0 && (
-                          <div className="flex items-center gap-1">
+                          <div className="hidden sm:flex shrink-0 items-center gap-1">
                             <span className="text-yellow-500">★</span>
                             <span className="text-sm text-gray-600">
                               {design.average_rating.toFixed(1)} ({design.total_reviews})
@@ -305,8 +305,8 @@ export default function Designs() {
                           </div>
                         )}
                       </div>
-                      <div className="mt-4 text-sm text-blue-wardrobe-light font-medium group-hover:underline">
-                        View Design →
+                      <div className="mt-2 sm:mt-4 w-full rounded-lg border border-gray-300 py-1.5 sm:py-2 text-center text-[11px] sm:text-sm font-medium text-blue-wardrobe-dark transition-colors group-hover:border-blue-wardrobe-light group-hover:bg-blue-50/60">
+                        View design
                       </div>
                     </div>
                   </Link>

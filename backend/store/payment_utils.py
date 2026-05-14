@@ -47,6 +47,14 @@ def _phone_from_meta(metadata: dict, customer_meta: dict) -> str:
     return (metadata.get("phone") or customer_meta.get("phone") or "") or ""
 
 
+def _delivery_from_meta(metadata: dict[str, Any]) -> str:
+    for key in ("deliveryAddress", "delivery_address", "delivery", "address"):
+        v = metadata.get(key)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    return ""
+
+
 def send_order_emails(order: Order, customer_email: str | None) -> None:
     """Customer + owner transactional emails via Resend (non-fatal on failure)."""
     resend_client = get_resend_client()
@@ -173,7 +181,7 @@ def finalize_order_from_cart(
     if updated_fields:
         customer.save(update_fields=updated_fields)
 
-    delivery_address = (metadata.get("deliveryAddress") or "").strip()
+    delivery_address = _delivery_from_meta(metadata)
 
     order = Order.objects.create(
         customer=customer,
@@ -236,29 +244,37 @@ def parse_flutterwave_meta(data: dict[str, Any]) -> dict[str, Any]:
         return {}
     if isinstance(raw, str):
         try:
-            return json.loads(raw)
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else {}
         except json.JSONDecodeError:
             return {}
     if isinstance(raw, dict):
         inner = raw.get("tbw_metadata")
         if isinstance(inner, str):
             try:
-                return json.loads(inner)
+                parsed = json.loads(inner)
+                return parsed if isinstance(parsed, dict) else {}
             except json.JSONDecodeError:
                 return {}
         if inner and isinstance(inner, dict):
             return inner
-        return raw
+        return raw if raw else {}
     if isinstance(raw, list):
+        merged: dict[str, Any] = {}
         for entry in raw:
             if not isinstance(entry, dict):
                 continue
-            if entry.get("metaname") == "tbw_metadata":
-                mv = entry.get("metavalue")
-                if isinstance(mv, str):
-                    try:
-                        return json.loads(mv)
-                    except json.JSONDecodeError:
-                        return {}
-        return {}
+            mv = entry.get("metavalue")
+            if isinstance(mv, dict):
+                merged.update(mv)
+                continue
+            if not isinstance(mv, str):
+                continue
+            try:
+                obj = json.loads(mv)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(obj, dict):
+                merged.update(obj)
+        return merged
     return {}
