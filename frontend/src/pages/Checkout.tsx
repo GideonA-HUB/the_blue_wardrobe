@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../lib/api'
 import { useCart } from '../store/cart'
+import { usePayCurrency, type PayCurrency } from '../store/checkoutCurrency'
 
 type CartItem = {
   id: number
@@ -34,16 +35,23 @@ export default function Checkout() {
   const [serverCart, setServerCart] = useState<CartData | null>(null)
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
+  const [fx, setFx] = useState<{ ngn_per_usd: string; ngn_per_gbp: string } | null>(null)
+  const { payCurrency, setPayCurrency } = usePayCurrency()
   const [email, setEmail] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
-  const [paymentGateway] = useState<'flutterwave'>('flutterwave')
-
   // Load cart from server on mount
   useEffect(() => {
     loadServerCart()
+  }, [])
+
+  useEffect(() => {
+    api
+      .get('/currency-fx/')
+      .then((r) => setFx(r.data))
+      .catch(() => setFx(null))
   }, [])
 
   const loadServerCart = async () => {
@@ -74,9 +82,15 @@ export default function Checkout() {
   const subtotal = useServerCart
     ? serverCart.total_amount
     : localItems.reduce((s, it) => s + it.price * it.qty, 0)
-  const totalItems = useServerCart
-    ? serverCart.total_items
-    : localItems.reduce((s, it) => s + it.qty, 0)
+
+  const chargeApprox = useMemo(() => {
+    if (!fx || payCurrency === 'NGN') return null
+    const npu = parseFloat(fx.ngn_per_usd)
+    const npg = parseFloat(fx.ngn_per_gbp)
+    if (payCurrency === 'USD' && npu > 0) return (subtotal / npu).toFixed(2)
+    if (payCurrency === 'GBP' && npg > 0) return (subtotal / npg).toFixed(2)
+    return null
+  }, [fx, payCurrency, subtotal])
 
   const onPay = async () => {
     if (!email || !firstName || !lastName || !phone.trim() || !address.trim()) {
@@ -100,7 +114,7 @@ export default function Checkout() {
 
       const payload = {
         email,
-        amount: subtotal,
+        currency: payCurrency,
         metadata: {
           cart: cartItems,
           customer: {
@@ -248,7 +262,14 @@ export default function Checkout() {
               <div className="border-t border-gray-200 pt-2">
                 <div className="flex justify-between text-lg font-bold text-blue-wardrobe-dark">
                   <span>Total</span>
-                  <span>NGN {subtotal.toLocaleString()}</span>
+                  <div className="text-right">
+                    <div>NGN {subtotal.toLocaleString()}</div>
+                    {payCurrency !== 'NGN' && chargeApprox != null && (
+                      <div className="text-sm font-semibold text-gray-700 mt-1">
+                        ≈ {payCurrency} {Number(chargeApprox).toLocaleString()}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -261,6 +282,22 @@ export default function Checkout() {
               </div>
             )}
             
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Payment currency</label>
+              <select
+                value={payCurrency}
+                onChange={(e) => setPayCurrency(e.target.value as PayCurrency)}
+                className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light"
+              >
+                <option value="NGN">Nigerian Naira (NGN)</option>
+                <option value="USD">US Dollar (USD)</option>
+                <option value="GBP">British Pound (GBP)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                Prices are maintained in NGN; we convert at checkout using the store&apos;s FX settings. Your card will be charged in the currency you choose (where Flutterwave supports it).
+              </p>
+            </div>
+
             <div className="mb-4">
               <p className="text-sm font-medium text-gray-700 mb-2">Payment method</p>
               <div className="flex gap-2">

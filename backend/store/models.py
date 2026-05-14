@@ -4,6 +4,7 @@ from django.db.models import Avg
 from django.utils.text import slugify
 from django.utils import timezone
 from django.core.files.storage import default_storage
+from decimal import Decimal
 
 
 class Material(models.Model):
@@ -380,6 +381,46 @@ class AtelierStorySlide(models.Model):
         return self.title
 
 
+class StoreCurrencySettings(models.Model):
+    """
+    Singleton (pk=1): how many NGN equal one unit of foreign currency.
+    Used to derive USD/GBP display prices from NGN catalogue prices and for Flutterwave checkout conversion.
+    """
+
+    ngn_per_usd = models.DecimalField(
+        max_digits=14,
+        decimal_places=4,
+        default=Decimal("1550"),
+        help_text="NGN per 1 USD (e.g. 1550 means $1 ≈ ₦1,550)",
+    )
+    ngn_per_gbp = models.DecimalField(
+        max_digits=14,
+        decimal_places=4,
+        default=Decimal("1980"),
+        help_text="NGN per 1 GBP (e.g. 1980 means £1 ≈ ₦1,980)",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Store currency & FX"
+        verbose_name_plural = "Store currency & FX"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        return
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(
+            pk=1,
+            defaults={"ngn_per_usd": Decimal("1550"), "ngn_per_gbp": Decimal("1980")},
+        )
+        return obj
+
+
 class Customer(models.Model):
     email = models.EmailField()
     first_name = models.CharField(max_length=100, blank=True)
@@ -405,7 +446,18 @@ class Order(models.Model):
     ]
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
     delivery_address = models.TextField(blank=True, default='')
+    currency = models.CharField(
+        max_length=3,
+        default='NGN',
+        help_text='ISO 4217 currency the customer was charged in',
+    )
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    total_ngn_equivalent = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+        help_text='Same order total expressed in NGN for unified sales reporting',
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_provider = models.CharField(
         max_length=20,
@@ -442,6 +494,7 @@ class PaymentLog(models.Model):
     reference = models.CharField(max_length=200, db_index=True)
     status = models.CharField(max_length=50)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default='NGN')
     raw_response = models.JSONField(default=dict, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

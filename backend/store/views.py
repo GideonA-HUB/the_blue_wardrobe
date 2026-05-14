@@ -20,6 +20,13 @@ from .models import (
     HomeHeroCopy, HeroMarqueeSlide, AtelierStorySlide,
 )
 from .payment_utils import finalize_order_from_cart, parse_flutterwave_meta, send_order_emails
+from .currency_utils import (
+    ALLOWED_CHARGE_CURRENCIES,
+    cart_total_ngn,
+    convert_from_ngn,
+    get_fx_for_serializer_context,
+    public_fx_dict,
+)
 from .email_utils import newsletter_welcome_html
 from .serializers import (
     CollectionSerializer, DesignSerializer, SiteAssetSerializer,
@@ -40,6 +47,11 @@ def get_resend_client():
 class CollectionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CollectionSerializer
 
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["fx"] = get_fx_for_serializer_context()
+        return ctx
+
     def get_queryset(self):
         queryset = Collection.objects.prefetch_related('materials', 'designs').all().order_by('order', 'code', '-created_at')
         featured = (self.request.query_params.get('featured') or '').strip().lower()
@@ -51,6 +63,11 @@ class CollectionViewSet(viewsets.ReadOnlyModelViewSet):
 class DesignViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Design.objects.prefetch_related('images', 'size_inventory', 'size_measurements', 'reviews').all()
     serializer_class = DesignSerializer
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["fx"] = get_fx_for_serializer_context()
+        return ctx
 
     @action(detail=True, methods=['get', 'post'])
     def reviews(self, request, pk=None):
@@ -404,6 +421,11 @@ class AdminDesignViewSet(viewsets.ModelViewSet):
     serializer_class = DesignSerializer
     permission_classes = [IsAdminUser]
 
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["fx"] = get_fx_for_serializer_context()
+        return ctx
+
 
 class AdminDesignReviewViewSet(viewsets.ModelViewSet):
     """Admin ViewSet for managing design reviews"""
@@ -556,14 +578,20 @@ def initiate_paystack(request):
 @api_view(['POST'])
 def initiate_flutterwave(request):
     """
-    Same payload shape as Paystack: { email, amount, metadata: { cart, customer, phone? } }.
+    { email, currency: NGN|USD|GBP, metadata: { cart, customer, phone, deliveryAddress } }.
+    Amount is computed server-side from cart (NGN catalogue) and converted using StoreCurrencySettings.
     Returns Flutterwave checkout link in data.link.
     """
     if not settings.FLUTTERWAVE_SECRET_KEY:
         return Response({'detail': 'Flutterwave is not configured'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     data = request.data
     email = (data.get('email') or '').strip()
-    amount_raw = float(data.get('amount', 0) or 0)
+    currency = (data.get('currency') or 'NGN').upper().strip()
+    if currency not in ALLOWED_CHARGE_CURRENCIES:
+        return Response(
+            {'detail': 'currency must be one of: NGN, USD, GBP'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     metadata = data.get('metadata') or {}
     customer_meta = metadata.get('customer') or {}
     name = f"{customer_meta.get('firstName', '').strip()} {customer_meta.get('lastName', '').strip()}".strip() or email
@@ -574,20 +602,29 @@ def initiate_flutterwave(request):
     if not delivery:
         return Response({'detail': 'Delivery address is required'}, status=status.HTTP_400_BAD_REQUEST)
 
+    cart_lines = metadata.get('cart') or []
+    total_ngn = cart_total_ngn(cart_lines)
+    if total_ngn <= 0:
+        return Response({'detail': 'Cart is empty or invalid'}, status=status.HTTP_400_BAD_REQUEST)
+
+    amount_charged = convert_from_ngn(total_ngn, currency)
+    amount_raw = float(amount_charged)
+
     tx_ref = f"TBW-{uuid.uuid4().hex}"
     redirect_url = f"{settings.PUBLIC_SITE_URL.rstrip('/')}/success"
     tbw_meta = json.dumps({
-        'cart': metadata.get('cart') or [],
+        'cart': cart_lines,
         'customer': customer_meta,
         'phone': phone,
         'email': email,
         'deliveryAddress': delivery,
+        'payCurrency': currency,
     })
 
     payload = {
         'tx_ref': tx_ref,
         'amount': f'{amount_raw:.2f}',
-        'currency': 'NGN',
+        'currency': currency,
         'redirect_url': redirect_url,
         'payment_options': 'card,account,ussd,mobilemoney',
         'customer': {
@@ -649,6 +686,7 @@ def verify_paystack(request):
             reference=reference,
             status=status_str or 'failed',
             amount=amount,
+            currency='NGN',
             raw_response=payload,
         )
         return Response({'detail': 'payment not successful', 'status': status_str}, status=status.HTTP_400_BAD_REQUEST)
@@ -665,6 +703,7 @@ def verify_paystack(request):
         metadata=metadata,
         paystack_reference=reference,
         flutterwave_tx_ref='',
+        charge_currency='NGN',
     )
     if created_new:
         send_order_emails(order, customer_email)
@@ -713,6 +752,7 @@ def verify_flutterwave(request):
             reference=resolved_tx_ref or transaction_id,
             status=status_str or 'failed',
             amount=float(data.get('amount') or 0),
+            currency=(data.get('currency') or 'NGN').upper()[:3],
             raw_response=payload,
         )
         return Response({'detail': 'payment not successful', 'status': status_str}, status=status.HTTP_400_BAD_REQUEST)
@@ -722,6 +762,8 @@ def verify_flutterwave(request):
     customer_meta = meta.get('customer') or {}
     # Pass full parsed meta so deliveryAddress and other TBW fields reach finalize_order_from_cart.
     metadata = dict(meta) if isinstance(meta, dict) else {}
+    charge_currency = (data.get('currency') or metadata.get('payCurrency') or 'NGN').upper()[:3]
+    metadata['payCurrency'] = charge_currency
     customer_email = (data.get('customer') or {}).get('email') or meta.get('email')
     amount = float(data.get('amount') or 0)
 
@@ -737,6 +779,7 @@ def verify_flutterwave(request):
         metadata=metadata,
         paystack_reference='',
         flutterwave_tx_ref=resolved_tx_ref or transaction_id,
+        charge_currency=charge_currency,
     )
     if created_new:
         send_order_emails(order, customer_email)
@@ -746,10 +789,18 @@ def verify_flutterwave(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
+def currency_fx_public(request):
+    """Public FX rates (NGN per USD / GBP) for storefront display math."""
+    return Response(public_fx_dict())
+
+
+@api_view(['GET'])
 @permission_classes([IsAdminUser])
 def admin_metrics(request):
     """
     Enhanced metrics endpoint for the owner dashboard with chart data.
+    Unified sales use total_ngn_equivalent; sales_by_currency shows charged amounts per ISO currency.
     """
     from django.utils import timezone as dj_tz
     from django.db.models import Sum, Count
@@ -760,18 +811,18 @@ def admin_metrics(request):
     start_of_week = start_of_day - timedelta(days=start_of_day.weekday())
     start_of_month = start_of_day.replace(day=1)
 
-    def range_sum(qs):
-        return qs.aggregate(total=Sum('total_amount'))['total'] or 0
+    def range_sum_ngn(qs):
+        return qs.aggregate(total=Sum('total_ngn_equivalent'))['total'] or 0
 
     confirmed = Order.objects.filter(status__in=['confirmed', 'shipped', 'delivered'])
     all_orders = Order.objects.all()
 
-    # Daily sales for last 7 days (bar chart)
+    # Daily sales for last 7 days (bar chart) — NGN equivalent for one comparable series
     daily_sales_data = []
     for i in range(6, -1, -1):
         day_start = (start_of_day - timedelta(days=i))
         day_end = day_start + timedelta(days=1)
-        day_sales = range_sum(confirmed.filter(created_at__gte=day_start, created_at__lt=day_end))
+        day_sales = range_sum_ngn(confirmed.filter(created_at__gte=day_start, created_at__lt=day_end))
         daily_sales_data.append({
             'date': day_start.strftime('%Y-%m-%d'),
             'day': day_start.strftime('%a'),
@@ -790,21 +841,37 @@ def admin_metrics(request):
             month_end = now
         else:
             month_end = (month_start + timedelta(days=32)).replace(day=1)
-        month_sales = range_sum(confirmed.filter(created_at__gte=month_start, created_at__lt=month_end))
+        month_sales = range_sum_ngn(confirmed.filter(created_at__gte=month_start, created_at__lt=month_end))
         monthly_sales_data.append({
             'month': month_start.strftime('%b %Y'),
             'sales': float(month_sales),
         })
 
+    by_currency = confirmed.values('currency').annotate(
+        revenue=Sum('total_amount'),
+        orders=Count('id'),
+        ngn_equivalent=Sum('total_ngn_equivalent'),
+    )
+    sales_by_currency = [
+        {
+            'currency': row['currency'] or 'NGN',
+            'revenue': float(row['revenue'] or 0),
+            'orders': row['orders'],
+            'ngn_equivalent': float(row['ngn_equivalent'] or 0),
+        }
+        for row in by_currency
+    ]
+
     data = {
-        "total_sales": float(range_sum(confirmed)),
+        "total_sales": float(range_sum_ngn(confirmed)),
         "total_orders": confirmed.count(),
-        "daily_sales": float(range_sum(confirmed.filter(created_at__gte=start_of_day))),
-        "weekly_sales": float(range_sum(confirmed.filter(created_at__gte=start_of_week))),
-        "monthly_sales": float(range_sum(confirmed.filter(created_at__gte=start_of_month))),
+        "daily_sales": float(range_sum_ngn(confirmed.filter(created_at__gte=start_of_day))),
+        "weekly_sales": float(range_sum_ngn(confirmed.filter(created_at__gte=start_of_week))),
+        "monthly_sales": float(range_sum_ngn(confirmed.filter(created_at__gte=start_of_month))),
         "daily_sales_chart": daily_sales_data,
         "monthly_sales_chart": monthly_sales_data,
         "order_status_chart": status_data,
+        "sales_by_currency": sales_by_currency,
         "total_customers": Customer.objects.count(),
         "total_subscribers": Subscriber.objects.count(),
         "total_contact_messages": ContactMessage.objects.count(),

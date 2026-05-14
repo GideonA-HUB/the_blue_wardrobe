@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import api, { fetchCSRFToken } from '../lib/api'
 import { useCart } from '../store/cart'
 import Toast from '../components/Toast'
+import DesignPriceLines from '../components/DesignPriceLines'
 
 interface SizeMeasurement {
   id: number
@@ -49,6 +50,8 @@ interface Design {
   sku: string
   price: number
   effective_price: number
+  effective_price_usd?: number | null
+  effective_price_gbp?: number | null
   has_discount: boolean
   discount_percentage?: number
   total_stock: number
@@ -306,9 +309,7 @@ export default function Product() {
                   NGN {design.price.toLocaleString()}
                 </div>
               )}
-              <p className="text-2xl md:text-3xl font-bold text-blue-wardrobe-dark">
-                NGN {design.effective_price.toLocaleString()}
-              </p>
+              <DesignPriceLines design={design} className="[&>div:first-child]:text-2xl [&>div:first-child]:md:text-3xl [&>div:first-child]:font-bold" />
               {design.has_discount && (
                 <div className="bg-red-600 text-white text-xs px-2 py-1 rounded-full inline-block mt-1">
                   {design.discount_percentage}% OFF

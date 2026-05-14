@@ -8,7 +8,7 @@ from .models import (
     Material, Collection, Design, DesignImage, SizeMeasurement, SizeInventory, Cart, CartItem, SiteAsset, Customer, Order, OrderItem,
     ContactMessage, Subscriber, PaymentLog, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard,
     BusinessProfile, BlogPost, BlogPostMedia, BlogComment, BlogPostLike, BlogCommentLike, DesignReview,
-    HomeHeroCopy, HeroMarqueeSlide, AtelierStorySlide,
+    HomeHeroCopy, HeroMarqueeSlide, AtelierStorySlide, StoreCurrencySettings,
 )
 
 
@@ -315,17 +315,19 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'customer_email', 'customer_phone', 'total_amount', 'status', 'created_at')
-    list_filter = ('status', 'created_at')
+    list_display = ('id', 'customer_email', 'customer_phone', 'currency', 'total_amount', 'total_ngn_equivalent', 'status', 'created_at')
+    list_filter = ('status', 'currency', 'created_at')
     search_fields = ('id', 'customer__email', 'customer__first_name', 'customer__last_name', 'paystack_reference', 'flutterwave_tx_ref')
     readonly_fields = (
-        'customer', 'delivery_address', 'total_amount', 'payment_provider',
+        'customer', 'delivery_address', 'currency', 'total_amount', 'total_ngn_equivalent', 'payment_provider',
         'paystack_reference', 'flutterwave_tx_ref', 'created_at',
     )
     fields = (
         'customer',
         'delivery_address',
+        'currency',
         'total_amount',
+        'total_ngn_equivalent',
         'status',
         'payment_provider',
         'paystack_reference',
@@ -355,7 +357,7 @@ class SubscriberAdmin(admin.ModelAdmin):
 
 @admin.register(PaymentLog)
 class PaymentLogAdmin(admin.ModelAdmin):
-    list_display = ('reference', 'status', 'amount', 'paid_at', 'created_at')
+    list_display = ('reference', 'status', 'amount', 'currency', 'paid_at', 'created_at')
     search_fields = ('reference',)
 
 
@@ -580,3 +582,14 @@ class AtelierStorySlideAdmin(admin.ModelAdmin):
     list_editable = ('sort_order', 'is_active')
     ordering = ('sort_order', 'id')
     search_fields = ('title', 'description')
+
+
+@admin.register(StoreCurrencySettings)
+class StoreCurrencySettingsAdmin(admin.ModelAdmin):
+    list_display = ('ngn_per_usd', 'ngn_per_gbp', 'updated_at')
+
+    def has_add_permission(self, request):
+        return not StoreCurrencySettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False

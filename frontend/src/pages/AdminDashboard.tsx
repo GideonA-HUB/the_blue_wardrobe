@@ -19,6 +19,12 @@ type Metrics = {
   daily_sales_chart: Array<{ date: string; day: string; sales: number }>
   monthly_sales_chart: Array<{ month: string; sales: number }>
   order_status_chart: Array<{ status: string; count: number }>
+  sales_by_currency?: Array<{
+    currency: string
+    revenue: number
+    orders: number
+    ngn_equivalent: number
+  }>
   total_customers: number
   total_subscribers: number
   total_contact_messages: number
@@ -61,6 +67,8 @@ type Order = {
   id: number
   delivery_address?: string
   total_amount: number
+  total_ngn_equivalent?: number
+  currency?: string
   status: string
   created_at: string
   payment_provider?: string
@@ -439,11 +447,11 @@ export default function AdminDashboard() {
             {/* Metrics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {[
-                { label: 'Total Sales', value: `NGN ${metrics.total_sales.toLocaleString()}`, icon: FaChartLine, color: 'blue' },
+                { label: 'Total Sales (NGN equiv.)', value: `NGN ${metrics.total_sales.toLocaleString()}`, icon: FaChartLine, color: 'blue' },
                 { label: 'Total Orders', value: metrics.total_orders.toString(), icon: FaShoppingCart, color: 'blue' },
-                { label: 'Today\'s Sales', value: `NGN ${metrics.daily_sales.toLocaleString()}`, icon: FaArrowUp, color: 'green' },
-                { label: 'This Week', value: `NGN ${metrics.weekly_sales.toLocaleString()}`, icon: FaChartLine, color: 'blue' },
-                { label: 'This Month', value: `NGN ${metrics.monthly_sales.toLocaleString()}`, icon: FaChartLine, color: 'blue' },
+                { label: 'Today\'s Sales (NGN equiv.)', value: `NGN ${metrics.daily_sales.toLocaleString()}`, icon: FaArrowUp, color: 'green' },
+                { label: 'This Week (NGN equiv.)', value: `NGN ${metrics.weekly_sales.toLocaleString()}`, icon: FaChartLine, color: 'blue' },
+                { label: 'This Month (NGN equiv.)', value: `NGN ${metrics.monthly_sales.toLocaleString()}`, icon: FaChartLine, color: 'blue' },
                 { label: 'Customers', value: metrics.total_customers.toString(), icon: FaUsers, color: 'blue' },
                 { label: 'Subscribers', value: metrics.total_subscribers.toString(), icon: FaUsers, color: 'blue' },
                 { label: 'Collections', value: metrics.total_collections.toString(), icon: FaImages, color: 'blue' },
@@ -467,6 +475,30 @@ export default function AdminDashboard() {
               })}
             </div>
 
+            {(metrics.sales_by_currency ?? []).length > 0 && (
+              <motion.div
+                className="bg-white p-6 rounded-xl shadow-md border border-blue-wardrobe-light/10 mb-8"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <h3 className="text-lg font-semibold text-blue-wardrobe-dark mb-4">Revenue by checkout currency</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {(metrics.sales_by_currency ?? []).map((row) => (
+                    <div key={row.currency} className="rounded-lg border border-gray-200 p-4">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">{row.currency}</div>
+                      <div className="text-xl font-bold text-blue-wardrobe-dark">
+                        {row.currency} {row.revenue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-2">{row.orders} orders</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        NGN equiv. {row.ngn_equivalent.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Daily Sales Chart */}
@@ -484,7 +516,7 @@ export default function AdminDashboard() {
                     <YAxis stroke="#1e3a8a" />
                     <Tooltip
                       contentStyle={{ backgroundColor: '#fff', border: '1px solid #1e40af', borderRadius: '8px' }}
-                      formatter={(value: any) => `NGN ${value.toLocaleString()}`}
+                      formatter={(value: number) => `NGN ${value.toLocaleString()} (equiv.)`}
                     />
                     <Bar dataKey="sales" fill="#1e40af" radius={[8, 8, 0, 0]} />
                   </BarChart>
@@ -536,7 +568,7 @@ export default function AdminDashboard() {
                   <YAxis stroke="#1e3a8a" />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#fff', border: '1px solid #1e40af', borderRadius: '8px' }}
-                    formatter={(value: any) => `NGN ${value.toLocaleString()}`}
+                    formatter={(value: number) => `NGN ${value.toLocaleString()} (equiv.)`}
                   />
                   <Bar dataKey="sales" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                 </BarChart>
@@ -913,7 +945,14 @@ export default function AdminDashboard() {
                       >
                         <td className="py-3 px-4 font-semibold">#{order.id}</td>
                         <td className="py-3 px-4">{order.customer?.email || 'N/A'}</td>
-                        <td className="py-3 px-4 font-semibold text-blue-wardrobe-dark">NGN {order.total_amount.toLocaleString()}</td>
+                        <td className="py-3 px-4 font-semibold text-blue-wardrobe-dark">
+                          {(order.currency || 'NGN')} {order.total_amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          {order.currency && order.currency !== 'NGN' && order.total_ngn_equivalent != null && (
+                            <span className="block text-xs font-normal text-gray-500">
+                              ≈ NGN {Number(order.total_ngn_equivalent).toLocaleString()}
+                            </span>
+                          )}
+                        </td>
                         <td className="py-3 px-4">
                           <select
                             value={order.status}
@@ -1141,8 +1180,17 @@ export default function AdminDashboard() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="rounded-lg border border-blue-wardrobe-light/20 p-4">
-                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Amount</div>
-                    <div className="font-semibold text-blue-wardrobe-dark">NGN {selectedOrder.total_amount.toLocaleString()}</div>
+                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Amount charged</div>
+                    <div className="font-semibold text-blue-wardrobe-dark">
+                      {(selectedOrder.currency || 'NGN')}{' '}
+                      {selectedOrder.total_amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </div>
+                    {selectedOrder.currency && selectedOrder.currency !== 'NGN' && selectedOrder.total_ngn_equivalent != null && (
+                      <div className="text-sm text-gray-600 mt-2">
+                        NGN equivalent: NGN{' '}
+                        {Number(selectedOrder.total_ngn_equivalent).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      </div>
+                    )}
                   </div>
                   <div className="rounded-lg border border-blue-wardrobe-light/20 p-4">
                     <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Status</div>
@@ -1176,7 +1224,10 @@ export default function AdminDashboard() {
                               <td className="py-2 px-3 text-sm">{item.design?.title || 'Design'}</td>
                               <td className="py-2 px-3 text-sm">{item.size}</td>
                               <td className="py-2 px-3 text-sm">{item.quantity}</td>
-                              <td className="py-2 px-3 text-sm">NGN {Number(item.unit_price).toLocaleString()}</td>
+                              <td className="py-2 px-3 text-sm">
+                                {(selectedOrder.currency || 'NGN')}{' '}
+                                {Number(item.unit_price).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                              </td>
                             </tr>
                           ))}
                         </tbody>

@@ -23,7 +23,7 @@ const mockDesigns = Array.from({ length: 23 }, (_, i) => ({
 function testPaginationLogic() {
   console.log("Testing pagination logic...");
   
-  const designsPerPage = 5;
+  const designsPerPage = 6;
   const totalDesigns = mockDesigns.length;
   const totalPages = Math.ceil(totalDesigns / designsPerPage);
   

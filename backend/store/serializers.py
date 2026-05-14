@@ -1,4 +1,8 @@
+from decimal import Decimal
+
 from rest_framework import serializers
+
+from .currency_utils import convert_from_ngn
 from .models import (
     Collection, Design, DesignImage, SizeMeasurement, SizeInventory, Cart, CartItem, Material, SiteAsset, Order, OrderItem,
     Customer, ContactMessage, Subscriber, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, DesignReview,
@@ -110,6 +114,34 @@ class DesignSerializer(serializers.ModelSerializer):
     total_reviews = serializers.ReadOnlyField()
     rating_distribution = serializers.ReadOnlyField()
     reviews = serializers.SerializerMethodField()
+    price_usd = serializers.SerializerMethodField()
+    price_gbp = serializers.SerializerMethodField()
+    effective_price_usd = serializers.SerializerMethodField()
+    effective_price_gbp = serializers.SerializerMethodField()
+
+    def _to_foreign(self, amount_ngn, currency: str):
+        fx = self.context.get("fx")
+        try:
+            d = Decimal(str(amount_ngn))
+            if fx and currency == "USD":
+                return float((d / Decimal(str(fx["ngn_per_usd"]))).quantize(Decimal("0.01")))
+            if fx and currency == "GBP":
+                return float((d / Decimal(str(fx["ngn_per_gbp"]))).quantize(Decimal("0.01")))
+            return float(convert_from_ngn(d, currency))
+        except Exception:
+            return None
+
+    def get_price_usd(self, obj):
+        return self._to_foreign(obj.price, "USD")
+
+    def get_price_gbp(self, obj):
+        return self._to_foreign(obj.price, "GBP")
+
+    def get_effective_price_usd(self, obj):
+        return self._to_foreign(obj.effective_price, "USD")
+
+    def get_effective_price_gbp(self, obj):
+        return self._to_foreign(obj.effective_price, "GBP")
     
     class Meta:
         model = Design
@@ -118,7 +150,8 @@ class DesignSerializer(serializers.ModelSerializer):
             'price', 'discount_price', 'video', 'video_url', 'has_discount', 
             'effective_price', 'discount_percentage', 'total_stock', 'images', 
             'size_inventory', 'size_measurements', 'created_at', 'updated_at',
-            'average_rating', 'total_reviews', 'rating_distribution', 'reviews'
+            'average_rating', 'total_reviews', 'rating_distribution', 'reviews',
+            'price_usd', 'price_gbp', 'effective_price_usd', 'effective_price_gbp',
         ]
     
     def get_video_url(self, obj):
@@ -284,7 +317,9 @@ class OrderSerializer(serializers.ModelSerializer):
             'id',
             'customer',
             'delivery_address',
+            'currency',
             'total_amount',
+            'total_ngn_equivalent',
             'status',
             'payment_provider',
             'paystack_reference',

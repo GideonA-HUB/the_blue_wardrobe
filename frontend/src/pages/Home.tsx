@@ -8,6 +8,7 @@ import { useOptimizedScroll } from '../hooks/useOptimizedScroll'
 import NewsletterBanner from '../components/NewsletterBanner'
 import VideoSection from '../components/VideoSection'
 import InfoCardsSection from '../components/InfoCardsSection'
+import DesignPriceLines from '../components/DesignPriceLines'
 
 type Design = {
   id: number
@@ -18,6 +19,8 @@ type Design = {
   discount_price?: number
   has_discount: boolean
   effective_price: number
+  effective_price_usd?: number | null
+  effective_price_gbp?: number | null
   discount_percentage: number
   total_stock: number
   images: Array<{
@@ -43,7 +46,7 @@ export default function Home() {
   const scrollY = useOptimizedScroll()
   const [homepage, setHomepage] = useState<HomepageApi | null>(null)
   
-  const designsPerPage = 5
+  const designsPerPage = 6
   const totalPages = Math.ceil(allDesigns.length / designsPerPage)
   const startIndex = (currentPage - 1) * designsPerPage
   const endIndex = startIndex + designsPerPage
@@ -174,7 +177,7 @@ export default function Home() {
         
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 md:gap-6 lg:gap-8">
-            {[...Array(5)].map((_, index) => (
+            {[...Array(6)].map((_, index) => (
               <div key={index} className="animate-pulse rounded-xl border border-gray-100/80 bg-white p-2.5 sm:p-4">
                 <div className="aspect-[3/4] w-full bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg mb-2 sm:mb-4" />
                 <div className="h-3 sm:h-4 bg-gray-200 rounded mb-1.5 sm:mb-2" />
@@ -263,13 +266,11 @@ export default function Home() {
                       <div className="flex items-start justify-between gap-1">
                         <div className="min-w-0 flex-1">
                           {design.has_discount && (
-                            <div className="text-[10px] sm:text-sm text-red-600 line-through">
+                            <div className="text-[10px] sm:text-sm text-red-600 line-through mb-0.5">
                               NGN {design.price.toLocaleString()}
                             </div>
                           )}
-                          <div className="text-sm sm:text-lg font-semibold text-blue-wardrobe-dark">
-                            NGN {design.effective_price.toLocaleString()}
-                          </div>
+                          <DesignPriceLines design={design} className="[&>div:first-child]:text-sm [&>div:first-child]:sm:text-lg" />
                         </div>
                         {design.total_reviews > 0 && (
                           <div className="hidden sm:flex shrink-0 items-center gap-1">

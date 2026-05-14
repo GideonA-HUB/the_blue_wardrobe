@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import api from '../lib/api'
+import DesignPriceLines from '../components/DesignPriceLines'
 
 type Material = {
   id: number
@@ -16,6 +17,8 @@ type Design = {
   discount_price?: number
   has_discount: boolean
   effective_price: number
+  effective_price_usd?: number | null
+  effective_price_gbp?: number | null
   discount_percentage: number
   total_stock: number
   images: DesignImage[]
@@ -216,9 +219,7 @@ export default function CollectionDetail() {
                           NGN {d.price.toLocaleString()}
                         </div>
                       )}
-                      <p className="text-sm sm:text-lg font-bold text-blue-wardrobe-dark">
-                        NGN {d.effective_price.toLocaleString()}
-                      </p>
+                      <DesignPriceLines design={d} className="[&>div:first-child]:text-sm [&>div:first-child]:sm:text-lg [&>div:first-child]:font-bold" />
                     </div>
                     <div className={`text-[10px] sm:text-sm font-medium sm:text-right ${
                       d.total_stock > 0 ? 'text-emerald-600' : 'text-red-600'

@@ -14,6 +14,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from .currency_utils import cart_total_ngn, convert_from_ngn
 from .email_utils import (
     order_confirmation_customer_html,
     order_notification_owner_html,
@@ -63,6 +64,7 @@ def send_order_emails(order: Order, customer_email: str | None) -> None:
     resend_client.api_key = settings.RESEND_API_KEY
     site = getattr(settings, "SITE_NAME", "THE BLUE WARDROBE")
     from_addr = _resend_from()
+    pay_ccy = (getattr(order, "currency", None) or "NGN").upper()
     try:
         if customer_email:
             resend_client.Emails.send(
@@ -73,6 +75,7 @@ def send_order_emails(order: Order, customer_email: str | None) -> None:
                     "html": order_confirmation_customer_html(
                         order_id=order.id,
                         total=order.total_amount,
+                        currency=pay_ccy,
                         site_name=site,
                     ),
                 }
@@ -92,6 +95,7 @@ def send_order_emails(order: Order, customer_email: str | None) -> None:
                         order_id=order.id,
                         total=order.total_amount,
                         customer_email=customer_email or "",
+                        currency=pay_ccy,
                         site_name=site,
                     ),
                 }
@@ -145,6 +149,7 @@ def finalize_order_from_cart(
     metadata: dict[str, Any],
     paystack_reference: str = "",
     flutterwave_tx_ref: str = "",
+    charge_currency: str | None = None,
 ) -> tuple[Order, bool]:
     """
     Create order + line items, decrement SizeMeasurement stock, log payment.
@@ -183,10 +188,18 @@ def finalize_order_from_cart(
 
     delivery_address = _delivery_from_meta(metadata)
 
+    pay_currency = (charge_currency or metadata.get("payCurrency") or "NGN").upper()
+    if pay_currency not in ("NGN", "USD", "GBP"):
+        pay_currency = "NGN"
+
+    total_ngn_equivalent = cart_total_ngn(cart)
+
     order = Order.objects.create(
         customer=customer,
         delivery_address=delivery_address,
+        currency=pay_currency,
         total_amount=Decimal(str(amount)).quantize(Decimal("0.01")),
+        total_ngn_equivalent=total_ngn_equivalent,
         status="confirmed",
         payment_provider=gateway,
         paystack_reference=paystack_reference or "",
@@ -212,7 +225,8 @@ def finalize_order_from_cart(
         if not size_measurement or size_measurement.stock < qty:
             continue
 
-        unit_price = design.effective_price
+        unit_price_ngn = Decimal(str(design.effective_price))
+        unit_price = convert_from_ngn(unit_price_ngn, pay_currency)
         OrderItem.objects.create(
             order=order,
             design=design,
@@ -230,6 +244,7 @@ def finalize_order_from_cart(
         reference=reference,
         status=status_str,
         amount=order.total_amount,
+        currency=pay_currency,
         raw_response=raw_payload,
         paid_at=timezone.now(),
     )

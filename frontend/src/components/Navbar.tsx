@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useCart } from '../store/cart'
 import LogoSpinner from './LogoSpinner'
 import api from '../lib/api'
+import { usePayCurrency, type PayCurrency } from '../store/checkoutCurrency'
 
 export default function Navbar() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
@@ -11,6 +12,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const localItems = useCart((s) => s.items)
+  const { payCurrency, setPayCurrency } = usePayCurrency()
 
   // Handle scroll effect
   useEffect(() => {
@@ -118,6 +120,22 @@ export default function Navbar() {
           >
             Contact
           </Link>
+          <div className="flex items-center gap-2">
+            <label htmlFor="nav-pay-currency" className="sr-only">
+              Checkout currency
+            </label>
+            <select
+              id="nav-pay-currency"
+              value={payCurrency}
+              onChange={(e) => setPayCurrency(e.target.value as PayCurrency)}
+              className="text-sm border border-gray-300 rounded-md px-2 py-1.5 bg-white text-blue-wardrobe-dark"
+              title="Currency for Flutterwave checkout"
+            >
+              <option value="NGN">NGN</option>
+              <option value="USD">USD</option>
+              <option value="GBP">GBP</option>
+            </select>
+          </div>
           <Link 
             to="/cart" 
             className="text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-wardrobe-light after:transition-all hover:after:w-full flex items-center gap-2 nav-transition hover-lift"
@@ -187,6 +205,18 @@ export default function Navbar() {
             >
               Contact
             </Link>
+            <div className="flex items-center gap-2 py-2">
+              <span className="text-sm text-gray-600">Pay in</span>
+              <select
+                value={payCurrency}
+                onChange={(e) => setPayCurrency(e.target.value as PayCurrency)}
+                className="text-sm border border-gray-300 rounded-md px-2 py-1.5 bg-white flex-1"
+              >
+                <option value="NGN">NGN</option>
+                <option value="USD">USD</option>
+                <option value="GBP">GBP</option>
+              </select>
+            </div>
             <Link 
               to="/cart" 
               className="flex items-center gap-2 text-blue-wardrobe-dark hover:text-blue-wardrobe-light font-medium transition-colors py-2 nav-transition"
