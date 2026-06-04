@@ -516,17 +516,24 @@ def subscribe(request):
         serializer.save()
         email = serializer.validated_data.get('email')
         try:
+            from .payment_utils import _resend_from, _send_resend_email
+
             resend_client = get_resend_client()
             if settings.RESEND_API_KEY and resend_client and email:
                 resend_client.api_key = settings.RESEND_API_KEY
-                resend_client.Emails.send({
-                    'from': settings.RESEND_FROM_EMAIL,
-                    'to': [email],
-                    'subject': f"You're on the list — {settings.SITE_NAME}",
-                    'html': newsletter_welcome_html(site_name=settings.SITE_NAME),
-                })
-        except Exception:
-            pass
+                _send_resend_email(
+                    resend_client=resend_client,
+                    params={
+                        'from': _resend_from(),
+                        'to': [email],
+                        'subject': f"You're on the list — {settings.SITE_NAME}",
+                        'html': newsletter_welcome_html(site_name=settings.SITE_NAME),
+                    },
+                    label='newsletter welcome',
+                )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning('Newsletter welcome email failed: %s', e)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

@@ -279,16 +279,22 @@ if not DEBUG:
 
 # Resend, Paystack, Flutterwave and owner contact
 RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
+# Must use an address on your verified Resend domain (e.g. thebluewardrobe.ng)
 RESEND_FROM_EMAIL = os.getenv(
     'RESEND_FROM_EMAIL',
-    'THE BLUE WARDROBE <no-reply@bluewardrobe.luxury>',
+    'THE BLUE WARDROBE <orders@thebluewardrobe.ng>',
 )
+RESEND_REPLY_TO = os.getenv('RESEND_REPLY_TO', '')
+# Optional absolute URL for logo in emails; otherwise logo_primary from Site Assets or /favicon.ico
+EMAIL_LOGO_URL = os.getenv('EMAIL_LOGO_URL', '')
 SITE_NAME = os.getenv('SITE_NAME', 'THE BLUE WARDROBE')
 PAYSTACK_SECRET = os.getenv('PAYSTACK_SECRET', '')
 FLUTTERWAVE_SECRET_KEY = os.getenv('FLUTTERWAVE_SECRET_KEY', '')
 # Public site URL for payment redirects (no trailing slash); e.g. https://www.thebluewardrobe.com
 PUBLIC_SITE_URL = os.getenv('PUBLIC_SITE_URL', 'http://localhost:5173')
 OWNER_EMAIL = os.getenv('OWNER_EMAIL', '')
+# Comma-separated extra owner inboxes (optional; OWNER_EMAIL still used if OWNER_EMAILS empty)
+OWNER_EMAILS = os.getenv('OWNER_EMAILS', '')
 OWNER_NOTIFICATION_WEBHOOK = os.getenv('OWNER_NOTIFICATION_WEBHOOK', '')
 
 LOGGING = {

@@ -60,20 +60,34 @@ Get this from your Paystack dashboard: https://dashboard.paystack.com/#/settings
 
 ### Email Service (Resend)
 
+Your domain **thebluewardrobe.ng** must be verified in Resend. The **from** address must use that domain or sends will fail silently in older builds; check Railway logs for `Resend ... failed`.
+
 ```
 RESEND_API_KEY=re_your_resend_api_key
+RESEND_FROM_EMAIL=THE BLUE WARDROBE <orders@thebluewardrobe.ng>
+PUBLIC_SITE_URL=https://www.thebluewardrobe.com
+RESEND_REPLY_TO=hello@thebluewardrobe.ng
+EMAIL_LOGO_URL=
 ```
 
-Get this from your Resend dashboard: https://resend.com/api-keys
+- **RESEND_API_KEY** — https://resend.com/api-keys  
+- **RESEND_FROM_EMAIL** — Required. Use `@thebluewardrobe.ng` (not `@bluewardrobe.luxury` or other domains).  
+- **PUBLIC_SITE_URL** — Used for logo links and buttons in emails (no trailing slash).  
+- **EMAIL_LOGO_URL** — Optional full URL to logo image; if empty, uses Django `logo_primary` asset or `/favicon.ico`.
 
 ### Owner Notifications
 
 ```
-OWNER_EMAIL=your-email@example.com
-OWNER_NOTIFICATION_WEBHOOK=https://your-webhook-url.com/notify
+OWNER_EMAIL=owner@your-inbox.com
+OWNER_EMAILS=partner@example.com,ops@example.com
+OWNER_NOTIFICATION_WEBHOOK=
 ```
 
-**Note:** `OWNER_NOTIFICATION_WEBHOOK` is optional - only set if you have a webhook endpoint for notifications.
+- **OWNER_EMAIL** — **Required** for owner order alert emails. Your Railway screenshot had `RESEND_API_KEY` but not `OWNER_EMAIL`; without it, only the customer email is attempted and the owner gets nothing.  
+- **OWNER_EMAILS** — Optional comma-separated extra recipients.  
+- **OWNER_NOTIFICATION_WEBHOOK** — Optional (Zapier/n8n) for push/WhatsApp-style alerts; not built into the app directly.
+
+After deploy, place a test order and check **Resend → Logs** and **Railway → Deployments → Logs** for lines like `Resend customer order #N sent successfully` or `Resend ... failed`.
 
 ---
 
