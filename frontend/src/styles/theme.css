@@ -1,0 +1,122 @@
+/* THE BLUE WARDROBE — light / dark design tokens */
+:root {
+  --tbw-bg: #ffffff;
+  --tbw-surface: #ffffff;
+  --tbw-surface-muted: #f8fafc;
+  --tbw-text: #1e293b;
+  --tbw-text-muted: #64748b;
+  --tbw-heading: #1e3a8a;
+  --tbw-border: #e2e8f0;
+  --tbw-input-bg: #ffffff;
+  --tbw-shadow: rgba(30, 58, 138, 0.1);
+}
+
+html.dark {
+  color-scheme: dark;
+  --tbw-bg: #0a1020;
+  --tbw-surface: #121a2e;
+  --tbw-surface-muted: #1a2438;
+  --tbw-text: #e8eef7;
+  --tbw-text-muted: #94a3b8;
+  --tbw-heading: #93c5fd;
+  --tbw-border: #334155;
+  --tbw-input-bg: #1e293b;
+  --tbw-shadow: rgba(10, 143, 255, 0.12);
+}
+
+/* Base document */
+html.dark body {
+  background-color: var(--tbw-bg);
+  color: var(--tbw-text);
+}
+
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark h6 {
+  color: var(--tbw-heading);
+}
+
+/* Surfaces — skip gradients, media, and explicit brand blocks */
+html.dark .bg-white:not(.theme-keep-light):not([class*='gradient']):not([class*='from-']):not([class*='to-']) {
+  background-color: var(--tbw-surface) !important;
+}
+
+html.dark .bg-gray-50:not(.theme-keep-light) {
+  background-color: var(--tbw-surface-muted) !important;
+}
+
+html.dark .bg-gray-100:not(.theme-keep-light) {
+  background-color: var(--tbw-surface-muted) !important;
+}
+
+html.dark .bg-neutral-50 {
+  background-color: var(--tbw-surface-muted) !important;
+}
+
+html.dark .bg-blue-50 {
+  background-color: #152238 !important;
+}
+
+/* Text — preserve text-white on colored buttons/badges */
+html.dark .text-blue-wardrobe-dark:not(.text-white) {
+  color: var(--tbw-text) !important;
+}
+
+html.dark .text-gray-900,
+html.dark .text-gray-800,
+html.dark .text-gray-700 {
+  color: var(--tbw-text) !important;
+}
+
+html.dark .text-gray-600,
+html.dark .text-gray-500,
+html.dark .text-gray-400 {
+  color: var(--tbw-text-muted) !important;
+}
+
+html.dark .text-blue-900 {
+  color: #bfdbfe !important;
+}
+
+/* Borders */
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-gray-300 {
+  border-color: var(--tbw-border) !important;
+}
+
+/* Form controls */
+html.dark input:not([type='checkbox']):not([type='radio']):not([type='range']),
+html.dark textarea,
+html.dark select {
+  background-color: var(--tbw-input-bg);
+  color: var(--tbw-text);
+  border-color: var(--tbw-border);
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--tbw-text-muted);
+}
+
+/* Cards & shadows */
+html.dark .luxury-shadow {
+  box-shadow: 0 4px 20px var(--tbw-shadow), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+html.dark .luxury-shadow-lg {
+  box-shadow: 0 10px 40px var(--tbw-shadow), 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Loading overlay */
+html.dark .tbw-loading-overlay {
+  background-color: rgba(10, 16, 32, 0.92) !important;
+}
+
+/* Hover states on nav / menus */
+html.dark .hover\:bg-gray-100:hover {
+  background-color: var(--tbw-surface-muted) !important;
+}

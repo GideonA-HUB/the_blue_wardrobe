@@ -2,7 +2,7 @@ import React from 'react'
 
 export default function LoadingSpinner() {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 backdrop-blur-sm">
+    <div className="tbw-loading-overlay fixed inset-0 z-50 flex items-center justify-center bg-white/90 backdrop-blur-sm">
       <div className="relative w-24 h-24">
         {/* Outer ring - Blue */}
         <div className="absolute inset-0 border-4 border-blue-wardrobe-light/30 rounded-full"></div>
