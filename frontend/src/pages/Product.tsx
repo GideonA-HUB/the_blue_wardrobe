@@ -373,10 +373,10 @@ export default function Product() {
                         className={`
                           relative py-3 px-4 rounded-lg border-2 font-medium transition-all duration-200
                           ${isSelected 
-                            ? 'border-blue-wardrobe-dark bg-blue-wardrobe-dark text-white' 
+                            ? 'border-blue-wardrobe-dark bg-blue-wardrobe-dark text-white dark:border-blue-luxury-400 dark:bg-blue-luxury-500' 
                             : !hasAvailableMeasurements
-                            ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed line-through'
-                            : 'border-gray-300 text-gray-700 hover:border-blue-wardrobe-light hover:bg-blue-50'
+                            ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed line-through dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500'
+                            : 'border-gray-300 text-gray-700 hover:border-blue-wardrobe-light hover:bg-blue-50 hover:text-blue-wardrobe-dark dark:border-slate-600 dark:text-slate-200 dark:hover:border-blue-luxury-400 dark:hover:bg-blue-900/50 dark:hover:text-white'
                           }
                         `}
                       >
@@ -395,7 +395,7 @@ export default function Product() {
           {/* Size Details Modal */}
           {showSizeDetails && selectedSize && (
             <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 animate-fade-in">
-              <div className="bg-white rounded-2xl p-4 sm:p-8 max-w-lg w-full max-h-[90vh] sm:max-h-[85vh] overflow-y-auto luxury-shadow-lg transform transition-all duration-300 scale-100 animate-scale-in">
+              <div className="theme-keep-light bg-white rounded-2xl p-4 sm:p-8 max-w-lg w-full max-h-[90vh] sm:max-h-[85vh] overflow-y-auto luxury-shadow-lg transform transition-all duration-300 scale-100 animate-scale-in">
                 {/* Header */}
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-wardrobe-dark text-white rounded-full text-2xl font-bold mb-4">

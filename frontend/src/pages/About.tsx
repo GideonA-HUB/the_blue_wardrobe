@@ -78,15 +78,15 @@ export default function About() {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-[0.95fr,1.05fr] gap-8 items-start">
-        <div className="rounded-[2rem] bg-white p-8 luxury-shadow border border-blue-wardrobe-light/10">
-          <p className="text-sm uppercase tracking-[0.3em] text-blue-wardrobe-light">About the CEO</p>
-          <div className="mt-5 whitespace-pre-line text-base leading-8 text-gray-700">{profile.about_ceo}</div>
+        <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-8 luxury-shadow border border-blue-wardrobe-light/10 dark:border-slate-700">
+          <p className="text-sm uppercase tracking-[0.3em] text-blue-wardrobe-light dark:text-blue-luxury-300">About the CEO</p>
+          <div className="mt-5 whitespace-pre-line text-base leading-8 text-gray-700 dark:text-slate-300">{profile.about_ceo}</div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {sections.map((key) => (
-            <article key={key} className="rounded-[2rem] bg-gradient-to-b from-white to-blue-50/60 p-7 border border-blue-wardrobe-light/10 luxury-shadow">
-              <h3 className="text-2xl font-serif text-blue-wardrobe-dark">{labels[key]}</h3>
-              <p className="mt-4 whitespace-pre-line leading-7 text-gray-700">{profile[key]}</p>
+            <article key={key} className="rounded-[2rem] bg-gradient-to-b from-white to-blue-50/60 dark:from-slate-800 dark:to-slate-900 p-7 border border-blue-wardrobe-light/10 dark:border-slate-700 luxury-shadow">
+              <h3 className="text-2xl font-serif text-blue-wardrobe-dark dark:text-blue-luxury-200">{labels[key]}</h3>
+              <p className="mt-4 whitespace-pre-line leading-7 text-gray-700 dark:text-slate-300">{profile[key]}</p>
             </article>
           ))}
         </div>

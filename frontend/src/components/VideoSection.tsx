@@ -228,13 +228,13 @@ export default function VideoSection({ atelierSlides = [] }: VideoSectionProps) 
   }
 
   return (
-    <section className="py-16 md:py-24 bg-gradient-to-b from-white to-blue-50/30">
+    <section className="tbw-page-gradient py-16 md:py-24 bg-gradient-to-b from-white to-blue-50/30">
       <div className="container mx-auto px-4">
         <div className="text-center mb-10 md:mb-12">
-          <h2 className="text-4xl md:text-5xl font-serif font-semibold text-blue-wardrobe-dark mb-4">
+          <h2 className="text-4xl md:text-5xl font-serif font-semibold text-blue-wardrobe-dark dark:text-blue-luxury-200 mb-4">
             The Atelier
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-slate-300 max-w-2xl mx-auto">
             Experience our collections through moving stories of craftsmanship, rare fabrics, and timeless design.
           </p>
         </div>

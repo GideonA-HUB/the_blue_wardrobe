@@ -27,10 +27,10 @@ export default function Blog() {
 
   return (
     <div className="space-y-12 pb-12">
-      <section className="rounded-[2rem] bg-gradient-to-br from-blue-50 to-white p-8 md:p-12 border border-blue-wardrobe-light/10 luxury-shadow">
-        <p className="text-sm uppercase tracking-[0.3em] text-blue-wardrobe-light">Brand Journal</p>
-        <h1 className="mt-4 text-4xl md:text-6xl font-serif font-semibold text-blue-wardrobe-dark">Stories, craft and future-facing vision.</h1>
-        <p className="mt-5 max-w-3xl text-lg text-gray-600">Explore campaign notes, creative direction, behind-the-scenes updates, business reflections, and the evolving world of THE BLUE WARDROBE.</p>
+      <section className="tbw-page-gradient-br rounded-[2rem] bg-gradient-to-br from-blue-50 to-white p-8 md:p-12 border border-blue-wardrobe-light/10 luxury-shadow dark:border-slate-700">
+        <p className="text-sm uppercase tracking-[0.3em] text-blue-wardrobe-light dark:text-blue-luxury-300">Brand Journal</p>
+        <h1 className="mt-4 text-4xl md:text-6xl font-serif font-semibold text-blue-wardrobe-dark dark:text-blue-luxury-200">Stories, craft and future-facing vision.</h1>
+        <p className="mt-5 max-w-3xl text-lg text-gray-600 dark:text-slate-300">Explore campaign notes, creative direction, behind-the-scenes updates, business reflections, and the evolving world of THE BLUE WARDROBE.</p>
       </section>
 
       {loading ? (

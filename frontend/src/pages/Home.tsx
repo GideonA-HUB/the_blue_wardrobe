@@ -140,28 +140,25 @@ export default function Home() {
       {/* Featured Designs Section */}
       <section 
         id="designs-section"
-        className="mt-16 md:mt-24 mb-16 md:mb-20 relative overflow-hidden"
-        style={{
-          transform: `translateY(${scrollY * 0.02}px)`,
-        }}
+        className="relative mb-16 mt-16 overflow-hidden pt-4 md:mb-20 md:mt-24 md:pt-6"
       >
-        {/* Background parallax element */}
+        {/* Background parallax element — background only, not the heading */}
         <div 
-          className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-purple-50/20 -z-10"
+          className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-50/30 to-purple-50/20 dark:from-slate-900/60 dark:to-slate-950/40"
           style={{
             transform: `translateY(${scrollY * 0.01}px)`,
           }}
         />
         
-        <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between relative z-10">
+        <div className="relative z-10 mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="text-center md:text-left">
-            <h2 className="mb-4 text-4xl font-serif font-semibold text-blue-wardrobe-dark md:text-5xl">
+            <h2 className="mb-4 text-4xl font-serif font-semibold text-blue-wardrobe-dark dark:text-blue-luxury-200 md:text-5xl">
               Featured Designs
             </h2>
-            <p className="mx-auto max-w-2xl text-lg text-gray-600 md:mx-0">
+            <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-slate-300 md:mx-0">
               Discover our latest dress diaries crafted from rare, luxurious fabrics sourced globally.
             </p>
-            <div className="mt-4 text-sm text-gray-500">
+            <div className="mt-4 text-sm text-gray-500 dark:text-slate-400">
               Page {currentPage} of {totalPages} • {allDesigns.length} designs total
             </div>
           </div>
@@ -191,19 +188,18 @@ export default function Home() {
               isTransitioning ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'
             }`}
           >
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 md:gap-6 lg:gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 items-stretch gap-2 sm:gap-4 md:gap-6 lg:gap-8">
               {currentDesigns.map((design, index) => (
                 <div
                   key={design.id}
-                  className="transform transition-all duration-700 hover:scale-105"
+                  className="h-full transform transition-all duration-700 hover:scale-105"
                   style={{
                     animation: `fadeInUp 0.8s ease-out ${index * 0.15}s both`,
-                    transform: `translateY(${scrollY * 0.005 * (index + 1)}px)`,
                   }}
                 >
                   <Link
                     to={`/designs/${design.id}`}
-                    className="group luxury-shadow rounded-xl sm:rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white block border border-gray-100/80"
+                    className="group luxury-shadow flex h-full flex-col rounded-xl sm:rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white block border border-gray-100/80 dark:border-slate-700"
                   >
                     <div className="relative aspect-[3/4] w-full bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden cursor-pointer group">
                       {design.images?.length > 0 ? (
@@ -256,20 +252,22 @@ export default function Home() {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
-                    <div className="p-2.5 sm:p-4 md:p-6">
-                      <div className="text-[10px] sm:text-xs tracking-[0.12em] sm:tracking-[0.15em] uppercase text-gray-500 mb-1 sm:mb-2 line-clamp-1">
+                    <div className="flex flex-1 flex-col p-2.5 sm:p-4 md:p-6">
+                      <div className="text-[10px] sm:text-xs tracking-[0.12em] sm:tracking-[0.15em] uppercase text-gray-500 dark:text-slate-400 mb-1 sm:mb-2 line-clamp-1">
                         {design.collection}
                       </div>
-                      <h3 className="text-xs sm:text-base md:text-lg font-serif font-semibold text-blue-wardrobe-dark mb-1 sm:mb-2 line-clamp-2 group-hover:text-blue-wardrobe-light transition-colors leading-snug">
+                      <h3 className="text-xs sm:text-base md:text-lg font-serif font-semibold text-blue-wardrobe-dark dark:text-slate-100 mb-1 sm:mb-2 line-clamp-2 group-hover:text-blue-wardrobe-light dark:group-hover:text-blue-luxury-300 transition-colors leading-snug">
                         {design.title}
                       </h3>
-                      <div className="flex items-start justify-between gap-1">
+                      <div className="flex flex-1 items-start justify-between gap-1">
                         <div className="min-w-0 flex-1">
-                          {design.has_discount && (
-                            <div className="text-[10px] sm:text-sm text-red-600 line-through mb-0.5">
-                              NGN {design.price.toLocaleString()}
-                            </div>
-                          )}
+                          <div className="min-h-[1.125rem] sm:min-h-[1.25rem]">
+                            {design.has_discount ? (
+                              <div className="text-[10px] sm:text-sm text-red-500 line-through mb-0.5">
+                                NGN {design.price.toLocaleString()}
+                              </div>
+                            ) : null}
+                          </div>
                           <DesignPriceLines design={design} className="[&>div:first-child]:text-sm [&>div:first-child]:sm:text-lg" />
                         </div>
                         {design.total_reviews > 0 && (
@@ -281,7 +279,7 @@ export default function Home() {
                           </div>
                         )}
                       </div>
-                      <div className="mt-2 sm:mt-4 w-full rounded-lg border border-gray-300 py-1.5 sm:py-2 text-center text-[11px] sm:text-sm font-medium text-blue-wardrobe-dark transition-colors group-hover:border-blue-wardrobe-light group-hover:bg-blue-50/60">
+                      <div className="mt-2 sm:mt-4 w-full rounded-lg border border-gray-300 dark:border-slate-600 py-1.5 sm:py-2 text-center text-[11px] sm:text-sm font-medium text-blue-wardrobe-dark dark:text-slate-200 transition-colors group-hover:border-blue-wardrobe-light group-hover:bg-blue-50/60 dark:group-hover:border-blue-luxury-400 dark:group-hover:bg-blue-900/40">
                         View design
                       </div>
                     </div>

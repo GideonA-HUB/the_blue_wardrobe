@@ -20,20 +20,20 @@ export default function Contact() {
   }
 
   return (
-    <div className="relative py-12 md:py-20 bg-gradient-to-b from-blue-50 via-white to-blue-50/40 overflow-hidden">
+    <div className="tbw-contact-gradient relative overflow-hidden py-12 md:py-20 bg-gradient-to-b from-blue-50 via-white to-blue-50/40">
       {/* Subtle background orbs for depth */}
-      <div className="pointer-events-none absolute inset-0 opacity-60">
+      <div className="pointer-events-none absolute inset-0 opacity-60 dark:opacity-30">
         <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-wardrobe-light/10 rounded-full blur-3xl" />
         <div className="absolute top-1/3 -right-24 w-80 h-80 bg-blue-wardrobe-dark/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-white rounded-full blur-3xl opacity-70" />
+        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-white dark:bg-blue-900/20 rounded-full blur-3xl opacity-70" />
       </div>
 
       <div className="relative max-w-3xl mx-auto px-4">
         <div className="text-center mb-12 animate-fade-in-up">
-          <h1 className="text-4xl md:text-5xl font-serif font-semibold text-blue-wardrobe-dark mb-4 tracking-wide">
+          <h1 className="text-4xl md:text-5xl font-serif font-semibold text-blue-wardrobe-dark dark:text-blue-luxury-200 mb-4 tracking-wide">
             Contact the Atelier
           </h1>
-          <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto">
             For bespoke inquiries, sizing guidance or private viewings of The Dress Diaries, leave a note for the designer.
           </p>
         </div>
