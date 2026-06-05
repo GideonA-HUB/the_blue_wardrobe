@@ -426,10 +426,10 @@ export default function Product() {
                       .map((measurement, index) => (
                       <div
                         key={measurement.id}
-                        className={`relative border-2 rounded-xl p-5 cursor-pointer transition-all duration-300 hover:luxury-shadow-md ${
+                        className={`tbw-light-surface relative cursor-pointer rounded-xl border-2 p-5 transition-all duration-300 hover:luxury-shadow-md ${
                           selectedSizeMeasurements.includes(measurement.id)
-                            ? 'border-blue-wardrobe-dark bg-gradient-to-r from-blue-50 to-blue-100 transform scale-[1.02]'
-                            : 'border-gray-200 hover:border-blue-wardrobe-light hover:bg-gray-50'
+                            ? 'tbw-light-surface--selected border-blue-wardrobe-dark transform scale-[1.02]'
+                            : 'border-gray-200 hover:border-blue-wardrobe-light'
                         }`}
                         style={{ animationDelay: `${index * 100}ms` }}
                         onClick={() => {
@@ -454,26 +454,26 @@ export default function Product() {
                         {/* Measurements Display */}
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                           <div className="flex-1">
-                            <div className="font-serif text-lg font-semibold text-blue-wardrobe-dark mb-3">
+                            <div className="tbw-on-light-heading mb-3 font-serif text-lg font-semibold text-blue-wardrobe-dark">
                               Measurements
                             </div>
-                            <div className="grid grid-cols-3 gap-2 sm:gap-4 text-sm">
+                            <div className="grid grid-cols-3 gap-2 text-sm sm:gap-4">
                               <div className="text-center">
-                                <div className="text-gray-500 text-xs uppercase tracking-wide mb-1">Bust</div>
-                                <div className="font-semibold text-blue-wardrobe-dark">{measurement.bust}"</div>
+                                <div className="tbw-on-light-muted mb-1 text-xs uppercase tracking-wide text-gray-500">Bust</div>
+                                <div className="tbw-on-light-body font-semibold text-blue-wardrobe-dark">{measurement.bust}"</div>
                               </div>
                               <div className="text-center">
-                                <div className="text-gray-500 text-xs uppercase tracking-wide mb-1">Waist</div>
-                                <div className="font-semibold text-blue-wardrobe-dark">{measurement.waist}"</div>
+                                <div className="tbw-on-light-muted mb-1 text-xs uppercase tracking-wide text-gray-500">Waist</div>
+                                <div className="tbw-on-light-body font-semibold text-blue-wardrobe-dark">{measurement.waist}"</div>
                               </div>
                               <div className="text-center">
-                                <div className="text-gray-500 text-xs uppercase tracking-wide mb-1">Hips</div>
-                                <div className="font-semibold text-blue-wardrobe-dark">{measurement.hips}"</div>
+                                <div className="tbw-on-light-muted mb-1 text-xs uppercase tracking-wide text-gray-500">Hips</div>
+                                <div className="tbw-on-light-body font-semibold text-blue-wardrobe-dark">{measurement.hips}"</div>
                               </div>
                             </div>
                           </div>
-                          <div className="text-center sm:text-right sm:ml-6">
-                            <div className="text-sm text-gray-600 mb-1">Available</div>
+                          <div className="text-center sm:ml-6 sm:text-right">
+                            <div className="tbw-on-light-muted mb-1 text-sm text-gray-600">Available</div>
                             <div className={`font-semibold ${
                               measurement.stock <= 5 ? 'text-yellow-600' : 'text-green-600'
                             }`}>
@@ -597,23 +597,23 @@ export default function Product() {
       </div>
 
       {/* Reviews Section */}
-      <div className="mt-20 relative overflow-hidden">
-        {/* Background gradient for parallax effect */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-wardrobe-light/5 via-white to-purple-wardrobe/5 transform -skew-y-3"></div>
+      <div className="relative mt-20 overflow-hidden pb-12">
+        {/* Background gradient */}
+        <div className="tbw-reviews-section-bg absolute inset-0 -skew-y-3 transform bg-gradient-to-br from-blue-wardrobe-light/5 via-white to-purple-wardrobe/5" />
         
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
-          <div className="text-center mb-12 animate-fade-in">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 bg-gradient-to-r from-blue-wardrobe-dark to-purple-wardrobe bg-clip-text text-transparent">
+          <div className="mb-12 animate-fade-in text-center">
+            <h2 className="mb-4 font-serif text-4xl font-bold text-blue-wardrobe-dark dark:text-blue-luxury-200 md:text-5xl">
               Customer Reviews
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-slate-300">
               Discover what our customers are saying about their Blue Wardrobe experience
             </p>
           </div>
           
           {/* Rating Summary Card */}
-          <div className="bg-white rounded-2xl shadow-xl p-8 mb-12 transform hover:scale-105 transition-all duration-500 luxury-shadow">
+          <div className="mb-12 transform rounded-2xl bg-white p-8 shadow-xl transition-all duration-500 hover:scale-105 luxury-shadow dark:border dark:border-slate-700 dark:bg-slate-900">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
               {/* Average Rating */}
               <div className="text-center lg:text-left">
@@ -623,22 +623,22 @@ export default function Product() {
                 <div className="mb-2">
                   {renderStars(Math.round(design.average_rating))}
                 </div>
-                <div className="text-gray-600 font-medium">{design.total_reviews} Verified Reviews</div>
-                <div className="text-sm text-gray-500 mt-2">Based on customer feedback</div>
+                <div className="font-medium text-gray-600 dark:text-slate-300">{design.total_reviews} Verified Reviews</div>
+                <div className="mt-2 text-sm text-gray-500 dark:text-slate-400">Based on customer feedback</div>
               </div>
               
               {/* Rating Distribution */}
               <div className="space-y-3">
-                <h4 className="font-semibold text-gray-900 mb-4">Rating Distribution</h4>
+                <h4 className="mb-4 font-semibold text-gray-900 dark:text-slate-100">Rating Distribution</h4>
                 {[5, 4, 3, 2, 1].map((rating) => {
                   const count = design.rating_distribution[rating] || 0
                   const percentage = design.total_reviews > 0 ? (count / design.total_reviews) * 100 : 0
                   return (
                     <div key={rating} className="group">
                       <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-700 w-8">{rating}</span>
-                        <span className="text-yellow-400 text-lg group-hover:scale-110 transition-transform">★</span>
-                        <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                        <span className="w-8 text-sm font-medium text-gray-700 dark:text-slate-300">{rating}</span>
+                        <span className="text-lg text-yellow-400 transition-transform group-hover:scale-110">★</span>
+                        <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-slate-700">
                           <div 
                             className="bg-gradient-to-r from-yellow-400 to-orange-400 h-3 rounded-full transition-all duration-1000 ease-out transform origin-left"
                             style={{ 
@@ -647,7 +647,7 @@ export default function Product() {
                             }}
                           />
                         </div>
-                        <span className="text-sm text-gray-600 w-12 text-right font-medium">{count}</span>
+                        <span className="w-12 text-right text-sm font-medium text-gray-600 dark:text-slate-400">{count}</span>
                       </div>
                     </div>
                   )
@@ -675,10 +675,10 @@ export default function Product() {
         {/* Review Form */}
         {showReviewForm && (
           <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 transform transition-all duration-500 animate-slide-up luxury-shadow">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Share Your Experience</h3>
-                <p className="text-gray-600">Help others make informed decisions</p>
+            <div className="transform animate-slide-up rounded-2xl bg-white p-8 shadow-2xl transition-all duration-500 luxury-shadow dark:border dark:border-slate-700 dark:bg-slate-900">
+              <div className="mb-8 text-center">
+                <h3 className="mb-2 text-2xl font-bold text-gray-900 dark:text-slate-100">Share Your Experience</h3>
+                <p className="text-gray-600 dark:text-slate-300">Help others make informed decisions</p>
               </div>
               
               <form onSubmit={handleReviewSubmit} className="space-y-6">
@@ -768,12 +768,12 @@ export default function Product() {
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {design.reviews.length === 0 ? (
-              <div className="col-span-full text-center py-16">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-4">
+              <div className="col-span-full rounded-2xl py-16 text-center dark:bg-slate-900/40">
+                <div className="mb-4 inline-flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800">
                   <span className="text-3xl">📝</span>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Reviews Yet</h3>
-                <p className="text-gray-600 mb-6">Be the first to share your experience with this design!</p>
+                <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-slate-100">No Reviews Yet</h3>
+                <p className="mb-6 text-gray-600 dark:text-slate-300">Be the first to share your experience with this design!</p>
                 <button
                   onClick={() => setShowReviewForm(true)}
                   className="px-6 py-3 bg-blue-wardrobe-dark text-white rounded-xl hover:bg-blue-wardrobe-light transition-all duration-300 font-medium"

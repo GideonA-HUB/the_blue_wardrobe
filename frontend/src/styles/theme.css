@@ -172,3 +172,49 @@ html.dark .theme-keep-light .text-gray-500,
 html.dark .theme-keep-light .text-gray-700 {
   color: #64748b !important;
 }
+
+html.dark .theme-keep-light .text-gray-900 {
+  color: #1e293b !important;
+}
+
+/* Light-surface cards inside modals — always dark text on pale background */
+html.dark .theme-keep-light .tbw-light-surface {
+  background-color: #f8fafc !important;
+  color: #1e293b !important;
+}
+
+html.dark .theme-keep-light .tbw-light-surface.tbw-light-surface--selected {
+  background-color: #eff6ff !important;
+  border-color: #1e3a8a !important;
+}
+
+html.dark .theme-keep-light .tbw-light-surface:hover {
+  background-color: #f1f5f9 !important;
+}
+
+html.dark .theme-keep-light .tbw-light-surface .tbw-on-light-heading {
+  color: #1e3a8a !important;
+}
+
+html.dark .theme-keep-light .tbw-light-surface .tbw-on-light-body {
+  color: #1e293b !important;
+}
+
+html.dark .theme-keep-light .tbw-light-surface .tbw-on-light-muted {
+  color: #64748b !important;
+}
+
+/* Play icon must stay visible on white thumbnail button */
+html.dark .tbw-play-icon {
+  color: #1e3a8a !important;
+}
+
+/* Product reviews section background in dark mode */
+html.dark .tbw-reviews-section-bg {
+  background: linear-gradient(
+    to bottom right,
+    rgba(30, 58, 138, 0.15),
+    var(--tbw-bg),
+    rgba(88, 28, 135, 0.12)
+  ) !important;
+}

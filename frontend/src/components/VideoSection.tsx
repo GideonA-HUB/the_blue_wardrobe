@@ -330,8 +330,8 @@ export default function VideoSection({ atelierSlides = [] }: VideoSectionProps) 
                       className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center cursor-pointer"
                       onClick={() => handleVideoPlay(video)}
                     >
-                      <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                        <svg className="w-8 h-8 text-blue-wardrobe-dark ml-1" fill="currentColor" viewBox="0 0 24 24">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/95 shadow-lg ring-2 ring-blue-wardrobe-dark/25 transition-transform group-hover:scale-110">
+                        <svg className="tbw-play-icon ml-1 h-8 w-8 text-blue-wardrobe-dark" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
                           <path d="M8 5v14l11-7z" />
                         </svg>
                       </div>
