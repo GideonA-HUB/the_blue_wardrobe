@@ -129,19 +129,19 @@ export default function Footer() {
             <h4 className={footerHeadingClass}>Information</h4>
             <ul className="space-y-3">
               <li>
-                <a href="#" className={footerLinkClass}>
+                <Link to="/shipping-returns" className={footerLinkClass}>
                   Shipping & Returns
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className={footerLinkClass}>
+                <Link to="/privacy" className={footerLinkClass}>
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className={footerLinkClass}>
+                <Link to="/terms" className={footerLinkClass}>
                   Terms of Service
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

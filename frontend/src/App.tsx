@@ -12,6 +12,9 @@ import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Success from './pages/Success'
 import Contact from './pages/Contact'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfService from './pages/TermsOfService'
+import ShippingReturns from './pages/ShippingReturns'
 import AdminDashboard from './pages/AdminDashboard'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
@@ -62,6 +65,9 @@ export default function App() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/success" element={<Success />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/shipping-returns" element={<ShippingReturns />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route path="/owner" element={<AdminDashboard />} />
         </Routes>
       </main>
