@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api, { fetchCSRFToken } from '../lib/api'
+import { applyPageSeo } from '../lib/seo'
 import { useCart } from '../store/cart'
 import Toast from '../components/Toast'
 import DesignPriceLines from '../components/DesignPriceLines'
+import ShareButtons from '../components/ShareButtons'
 
 interface SizeMeasurement {
   id: number
@@ -109,10 +111,27 @@ export default function Product() {
     
     api.get(`/designs/${id}/`).then((r) => {
       setDesign(r.data)
-      document.title = `${r.data.title} — THE BLUE WARDROBE`
+      const pageUrl =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/designs/${r.data.id}`
+          : ''
+      applyPageSeo({
+        title: `${r.data.title} — THE BLUE WARDROBE`,
+        description:
+          r.data.description ||
+          `Discover ${r.data.title} from THE BLUE WARDROBE — luxury fashion crafted from rare fabrics.`,
+        url: pageUrl,
+        image: r.data.images?.[0]?.image_url || null,
+        type: 'product',
+      })
     }).catch(() => {})
     .finally(() => setLoading(false))
   }, [id])
+
+  const shareUrl = useMemo(() => {
+    if (typeof window === 'undefined' || !design) return ''
+    return `${window.location.origin}/designs/${design.id}`
+  }, [design])
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -220,7 +239,8 @@ export default function Product() {
                      </div>
                    `;
                    modal.onclick = (e) => {
-                     if (e.target === modal || e.target.tagName === 'BUTTON') {
+                     const target = e.target as HTMLElement | null
+                     if (target === modal || target?.tagName === 'BUTTON') {
                        document.body.removeChild(modal);
                      }
                    };
@@ -279,7 +299,8 @@ export default function Product() {
                       </div>
                     `;
                     modal.onclick = (e) => {
-                      if (e.target === modal || e.target.tagName === 'BUTTON') {
+                      const target = e.target as HTMLElement | null
+                      if (target === modal || target?.tagName === 'BUTTON') {
                         document.body.removeChild(modal);
                       }
                     };
@@ -587,11 +608,22 @@ export default function Product() {
             
             {/* Checkout button for users ready to proceed */}
             <button
-              className="w-full max-w-xs px-8 py-3 border-2 border-blue-wardrobe-dark text-blue-wardrobe-dark rounded-full hover:bg-blue-wardrobe-dark hover:text-white transition-all duration-300 font-medium"
+              className="w-full max-w-xs px-8 py-3 border-2 border-blue-wardrobe-dark text-blue-wardrobe-dark rounded-full hover:bg-blue-wardrobe-dark hover:text-white transition-all duration-300 font-medium dark:border-slate-300 dark:text-slate-100 dark:hover:bg-blue-luxury-500 dark:hover:border-blue-luxury-500"
               onClick={() => navigate('/checkout')}
             >
               Proceed to Checkout
             </button>
+
+            <ShareButtons
+              variant="product"
+              title={design.title}
+              description={
+                design.description ||
+                'A timeless piece from The Dress Diaries Collection by THE BLUE WARDROBE.'
+              }
+              url={shareUrl || (typeof window !== 'undefined' ? window.location.href : '')}
+              imageUrl={design.images?.[0]?.image_url}
+            />
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import api from '../lib/api'
+import { applyPageSeo } from '../lib/seo'
 import BlogMediaRenderer, { BlogMediaItem } from '../components/BlogMediaRenderer'
 import ShareButtons from '../components/ShareButtons'
 
@@ -50,7 +51,19 @@ export default function BlogPostDetail() {
     try {
       const response = await api.get(`/blog/${slug}/`)
       setPost(response.data)
-      document.title = `${response.data.title} — THE BLUE WARDROBE`
+      const pageUrl =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/blog/${response.data.slug}`
+          : ''
+      applyPageSeo({
+        title: `${response.data.title} — THE BLUE WARDROBE`,
+        description:
+          response.data.excerpt ||
+          `Read ${response.data.title} on THE BLUE WARDROBE Journal.`,
+        url: pageUrl,
+        image: response.data.cover_image || null,
+        type: 'article',
+      })
       setError(null)
     } catch {
       setError('Unable to load this article right now.')
@@ -163,7 +176,12 @@ export default function BlogPostDetail() {
         </div>
       </article>
 
-      <ShareButtons title={post.title} url={canonicalUrl} />
+      <ShareButtons
+        title={post.title}
+        description={post.excerpt || post.content}
+        url={canonicalUrl}
+        imageUrl={post.cover_image}
+      />
 
       <section className="grid grid-cols-1 lg:grid-cols-[1.05fr,0.95fr] gap-8 items-start">
         <div className="rounded-[2rem] border border-blue-wardrobe-light/10 bg-white p-8 luxury-shadow">

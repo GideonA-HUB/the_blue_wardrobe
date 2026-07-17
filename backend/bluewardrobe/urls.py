@@ -17,6 +17,8 @@ def service_unavailable(detail):
 
 
 def frontend_app(request):
+    from bluewardrobe.share_meta import inject_share_meta
+
     index_candidates = [
         settings.FRONTEND_BUILD_DIR / 'index.html',
         settings.BASE_DIR / 'templates' / 'index.html',
@@ -24,7 +26,9 @@ def frontend_app(request):
     for index_file in index_candidates:
         try:
             if index_file.exists():
-                return HttpResponse(index_file.read_text(encoding='utf-8'), content_type='text/html')
+                html_doc = index_file.read_text(encoding='utf-8')
+                html_doc = inject_share_meta(html_doc, request)
+                return HttpResponse(html_doc, content_type='text/html')
         except Exception as exc:
             logger.exception('Failed to serve frontend index from %s: %s', index_file, exc)
     return HttpResponse('Frontend build is not available.', status=503, content_type='text/plain')
