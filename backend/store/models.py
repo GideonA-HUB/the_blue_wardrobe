@@ -113,11 +113,67 @@ class Design(models.Model):
         storage=get_video_storage,
         help_text='Product video file (MP4, WebM, etc.)'
     )
+    # Atelier Reserve (preorder) — unreleased dresses customers can reserve
+    is_preorder = models.BooleanField(
+        default=False,
+        help_text='Atelier Reserve: allow customers to preorder this unreleased dress',
+    )
+    preorder_start_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the preorder reservation window opens',
+    )
+    preorder_end_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the preorder reservation window closes',
+    )
+    preorder_wait_days = models.PositiveIntegerField(
+        default=14,
+        help_text='Estimated wait in days after the order is placed',
+    )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.sku} - {self.title}"
+
+    def save(self, *args, **kwargs):
+        from datetime import timedelta
+
+        if self.is_preorder:
+            now = timezone.now()
+            if not self.preorder_start_at:
+                self.preorder_start_at = now
+            if not self.preorder_wait_days or self.preorder_wait_days < 1:
+                self.preorder_wait_days = 14
+            if not self.preorder_end_at:
+                self.preorder_end_at = self.preorder_start_at + timedelta(days=14)
+            elif self.preorder_end_at <= self.preorder_start_at:
+                self.preorder_end_at = self.preorder_start_at + timedelta(days=14)
+        else:
+            self.preorder_start_at = None
+            self.preorder_end_at = None
+            # Keep preorder_wait_days for when preorder is re-enabled
+        super().save(*args, **kwargs)
+
+    @property
+    def preorder_status(self):
+        """Return 'open', 'upcoming', 'closed', or 'off' for Atelier Reserve."""
+        if not self.is_preorder:
+            return 'off'
+        now = timezone.now()
+        start = self.preorder_start_at
+        end = self.preorder_end_at
+        if start and now < start:
+            return 'upcoming'
+        if end and now > end:
+            return 'closed'
+        return 'open'
+
+    @property
+    def is_preorder_purchasable(self):
+        return self.preorder_status == 'open'
 
     @property
     def has_discount(self):

@@ -174,17 +174,84 @@ class DesignAdminForm(forms.ModelForm):
 @admin.register(Design)
 class DesignAdmin(admin.ModelAdmin):
     form = DesignAdminForm
-    list_display = ('sku', 'title', 'price', 'discount_price', 'get_total_stock', 'collection')
+    list_display = (
+        'sku',
+        'title',
+        'price',
+        'discount_price',
+        'is_preorder',
+        'preorder_wait_days',
+        'get_total_stock',
+        'collection',
+    )
     search_fields = ('sku', 'title')
-    list_filter = ('collection', 'created_at')
+    list_filter = ('collection', 'is_preorder', 'created_at')
+    list_editable = ('is_preorder',)
     readonly_fields = ('created_at', 'updated_at')
     inlines = [DesignImageInline, SizeMeasurementInline, SizeInventoryInline]
-    
+    actions = ['start_14_day_preorder', 'stop_preorder']
+    fieldsets = (
+        (None, {
+            'fields': (
+                'collection',
+                'sku',
+                'title',
+                'description',
+                'price',
+                'discount_price',
+                'video',
+            ),
+        }),
+        ('Atelier Reserve (Preorder)', {
+            'classes': ('collapse',),
+            'description': (
+                'Mark unreleased dresses for private preorder. '
+                'If start/end are empty when Preorder is enabled, they default to now and now + 14 days.'
+            ),
+            'fields': (
+                'is_preorder',
+                'preorder_start_at',
+                'preorder_end_at',
+                'preorder_wait_days',
+            ),
+        }),
+        ('Timestamps', {
+            'classes': ('collapse',),
+            'fields': ('created_at', 'updated_at'),
+        }),
+    )
+
     def get_total_stock(self, obj):
         total = sum(measurement.stock for measurement in obj.size_measurements.all())
         return total
     get_total_stock.short_description = 'Total Stock'
-    
+
+    @admin.action(description='Start 14-day Atelier Reserve for selected')
+    def start_14_day_preorder(self, request, queryset):
+        from datetime import timedelta
+        from django.utils import timezone as dj_tz
+
+        now = dj_tz.now()
+        updated = 0
+        for design in queryset:
+            design.is_preorder = True
+            design.preorder_start_at = now
+            design.preorder_end_at = now + timedelta(days=14)
+            if not design.preorder_wait_days:
+                design.preorder_wait_days = 14
+            design.save()
+            updated += 1
+        self.message_user(request, f'Started 14-day Atelier Reserve for {updated} design(s).')
+
+    @admin.action(description='Stop Atelier Reserve for selected')
+    def stop_preorder(self, request, queryset):
+        updated = 0
+        for design in queryset:
+            design.is_preorder = False
+            design.save()
+            updated += 1
+        self.message_user(request, f'Stopped Atelier Reserve for {updated} design(s).')
+
     def clean(self, obj):
         # Handle video field issues before saving
         if obj.video:

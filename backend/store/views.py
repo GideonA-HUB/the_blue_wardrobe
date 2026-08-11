@@ -69,6 +69,40 @@ class DesignViewSet(viewsets.ReadOnlyModelViewSet):
         ctx["fx"] = get_fx_for_serializer_context()
         return ctx
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        filter_param = (self.request.query_params.get('filter') or '').strip().lower()
+        if filter_param in ('preorders', 'preorder', 'atelier-reserve', 'atelier_reserve'):
+            from django.utils import timezone as dj_tz
+            from django.db.models import Q
+
+            now = dj_tz.now()
+            qs = qs.filter(is_preorder=True).filter(
+                Q(preorder_end_at__isnull=True) | Q(preorder_end_at__gt=now)
+            ).order_by('preorder_start_at', '-created_at')
+        return qs
+
+    @action(detail=False, methods=['get'], url_path='atelier-reserve')
+    def atelier_reserve(self, request):
+        """
+        Atelier Reserve — designs available for preorder (open or upcoming).
+        Excludes closed reservation windows. Cap ~100.
+        """
+        from django.utils import timezone as dj_tz
+        from django.db.models import Q
+
+        now = dj_tz.now()
+        qs = (
+            Design.objects.prefetch_related(
+                'images', 'size_inventory', 'size_measurements', 'reviews'
+            )
+            .filter(is_preorder=True)
+            .filter(Q(preorder_end_at__isnull=True) | Q(preorder_end_at__gt=now))
+            .order_by('preorder_start_at', '-created_at')[:100]
+        )
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['get', 'post'])
     def reviews(self, request, pk=None):
         """Get reviews for a design or submit a new review"""
@@ -163,6 +197,21 @@ class CartViewSet(viewsets.ModelViewSet):
         
         try:
             design = Design.objects.get(id=design_id)
+
+            # Atelier Reserve: only allow add during open preorder window
+            if design.is_preorder:
+                status_label = design.preorder_status
+                if status_label == 'upcoming':
+                    return Response(
+                        {'detail': 'This Atelier Reserve dress is not open for preorder yet.'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                if status_label == 'closed':
+                    return Response(
+                        {'detail': 'This Atelier Reserve window has closed.'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
             size_measurement = design.size_measurements.get(id=size_measurement_id, is_active=True)
             
             if size_measurement.stock < quantity:

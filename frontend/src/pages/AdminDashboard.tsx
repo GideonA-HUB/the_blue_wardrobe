@@ -662,6 +662,7 @@ export default function AdminDashboard() {
                     <tr className="border-b border-blue-wardrobe-light/20">
                       <th className="text-left py-3 px-4 text-blue-wardrobe-dark">SKU</th>
                       <th className="text-left py-3 px-4 text-blue-wardrobe-dark">Title</th>
+                      <th className="text-left py-3 px-4 text-blue-wardrobe-dark">Flags</th>
                       <th className="text-left py-3 px-4 text-blue-wardrobe-dark">Collection</th>
                       <th className="text-left py-3 px-4 text-blue-wardrobe-dark">Price</th>
                       <th className="text-left py-3 px-4 text-blue-wardrobe-dark">Stock</th>
@@ -673,6 +674,15 @@ export default function AdminDashboard() {
                       <tr key={design.id} className="border-b border-blue-wardrobe-light/10 hover:bg-blue-wardrobe-light/5 transition-colors">
                         <td className="py-3 px-4 font-mono text-sm">{design.sku}</td>
                         <td className="py-3 px-4 font-semibold text-blue-wardrobe-dark">{design.title}</td>
+                        <td className="py-3 px-4">
+                          {design.is_preorder ? (
+                            <span className="inline-flex rounded-full bg-blue-wardrobe-dark px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white">
+                              Preorder
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </td>
                         <td className="py-3 px-4 text-sm text-gray-600">{design.collection || 'N/A'}</td>
                         <td className="py-3 px-4 font-semibold">NGN {design.price.toLocaleString()}</td>
                         <td className="py-3 px-4">{design.stock}</td>
@@ -1247,6 +1257,21 @@ export default function AdminDashboard() {
 }
 
 // Modal Component for Add/Edit Forms
+function isoToDatetimeLocal(iso?: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function datetimeLocalToIso(value?: string | null): string | null {
+  if (!value || !String(value).trim()) return null
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toISOString()
+}
+
 function Modal({ type, item, collections, materials, onClose, onSave }: {
   type: string
   item?: any
@@ -1255,7 +1280,43 @@ function Modal({ type, item, collections, materials, onClose, onSave }: {
   onClose: () => void
   onSave: (data: any) => void
 }) {
-  const [formData, setFormData] = useState<any>(item || getDefaultData(type))
+  const [formData, setFormData] = useState<any>(() => {
+    if (type === 'design') {
+      const defaults = {
+        sku: '',
+        title: '',
+        description: '',
+        price: '',
+        sizes: [],
+        stock: 0,
+        collection_id: '',
+        images: [],
+        is_preorder: false,
+        preorder_start_at: '',
+        preorder_end_at: '',
+        preorder_wait_days: 14,
+      }
+      if (!item) return defaults
+      let collectionId = item.collection_id || item.collection?.id || ''
+      if (!collectionId && typeof item.collection === 'string') {
+        const match = collections.find(
+          (c) => c.title === item.collection || c.code === item.collection || `${c.code} - ${c.title}` === item.collection
+        )
+        collectionId = match?.id || ''
+      }
+      return {
+        ...defaults,
+        ...item,
+        collection_id: collectionId,
+        is_preorder: Boolean(item.is_preorder),
+        preorder_start_at: isoToDatetimeLocal(item.preorder_start_at),
+        preorder_end_at: isoToDatetimeLocal(item.preorder_end_at),
+        preorder_wait_days: item.preorder_wait_days ?? 14,
+      }
+    }
+    const defaults = getDefaultData(type)
+    return item ? { ...defaults, ...item } : defaults
+  })
   const [saving, setSaving] = useState(false)
 
   function getDefaultData(type: string) {
@@ -1263,7 +1324,20 @@ function Modal({ type, item, collections, materials, onClose, onSave }: {
       case 'collection':
         return { code: '', title: '', story: '', material_ids: [], order: 0, is_featured: true }
       case 'design':
-        return { sku: '', title: '', description: '', price: '', sizes: [], stock: 0, collection_id: '', images: [] }
+        return {
+          sku: '',
+          title: '',
+          description: '',
+          price: '',
+          sizes: [],
+          stock: 0,
+          collection_id: '',
+          images: [],
+          is_preorder: false,
+          preorder_start_at: '',
+          preorder_end_at: '',
+          preorder_wait_days: 14,
+        }
       case 'video':
         return { title: '', description: '', video_url: '', video_type: 'promotional', order: 0, is_featured: false }
       case 'info-card':
@@ -1285,6 +1359,23 @@ function Modal({ type, item, collections, materials, onClose, onSave }: {
           order: Number(formData.order ?? 0),
           is_featured: Boolean(formData.is_featured),
           ...(Array.isArray(formData.material_ids) ? { material_ids: formData.material_ids } : {}),
+        })
+      } else if (type === 'design') {
+        const waitDays = Number(formData.preorder_wait_days)
+        await onSave({
+          sku: formData.sku,
+          title: formData.title,
+          description: formData.description,
+          price: formData.price,
+          collection_id: formData.collection_id,
+          is_preorder: Boolean(formData.is_preorder),
+          preorder_start_at: formData.is_preorder
+            ? datetimeLocalToIso(formData.preorder_start_at)
+            : null,
+          preorder_end_at: formData.is_preorder
+            ? datetimeLocalToIso(formData.preorder_end_at)
+            : null,
+          preorder_wait_days: Number.isFinite(waitDays) && waitDays > 0 ? waitDays : 14,
         })
       } else {
         await onSave(formData)
@@ -1454,6 +1545,64 @@ function Modal({ type, item, collections, materials, onClose, onSave }: {
                     className="w-full border-2 border-blue-wardrobe-light/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light"
                   />
                 </div>
+              </div>
+
+              {/* Atelier Reserve / Preorder */}
+              <div className="rounded-xl border border-blue-wardrobe-light/20 bg-blue-50/40 p-4 space-y-4">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(formData.is_preorder)}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        is_preorder: e.target.checked,
+                        preorder_wait_days: formData.preorder_wait_days || 14,
+                      })
+                    }
+                    className="h-4 w-4 rounded text-blue-wardrobe-light focus:ring-blue-wardrobe-light"
+                  />
+                  <span className="text-sm font-medium text-blue-wardrobe-dark">
+                    Preorder / Atelier Reserve
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500">
+                  Mark unreleased dresses for private reservation. Empty start/end dates default to now and now + 14 days when saved.
+                </p>
+                {formData.is_preorder && (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Preorder Starts At</label>
+                      <input
+                        type="datetime-local"
+                        value={formData.preorder_start_at || ''}
+                        onChange={(e) => setFormData({ ...formData, preorder_start_at: e.target.value })}
+                        className="w-full border-2 border-blue-wardrobe-light/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Preorder Ends At</label>
+                      <input
+                        type="datetime-local"
+                        value={formData.preorder_end_at || ''}
+                        onChange={(e) => setFormData({ ...formData, preorder_end_at: e.target.value })}
+                        className="w-full border-2 border-blue-wardrobe-light/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Estimated Wait (days)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={formData.preorder_wait_days ?? 14}
+                        onChange={(e) =>
+                          setFormData({ ...formData, preorder_wait_days: Number(e.target.value) || 14 })
+                        }
+                        className="w-full border-2 border-blue-wardrobe-light/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}

@@ -9,6 +9,7 @@ import NewsletterBanner from '../components/NewsletterBanner'
 import VideoSection from '../components/VideoSection'
 import InfoCardsSection from '../components/InfoCardsSection'
 import DesignPriceLines from '../components/DesignPriceLines'
+import AtelierReserveSection from '../components/AtelierReserveSection'
 
 type Design = {
   id: number
@@ -31,6 +32,7 @@ type Design = {
   collection: string
   average_rating: number
   total_reviews: number
+  is_preorder?: boolean
 }
 
 type HomepageApi = {
@@ -136,6 +138,8 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       <AnimatedHero hero={homepage?.hero} />
+
+      <AtelierReserveSection />
       
       {/* Featured Designs Section */}
       <section 
@@ -240,7 +244,12 @@ export default function Home() {
                           </div>
                         </div>
                       )}
-                      {design.has_discount && (
+                      {design.is_preorder && (
+                        <div className="absolute left-2 top-2 rounded-full bg-blue-wardrobe-dark/90 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white sm:left-4 sm:top-4 sm:px-2 sm:py-1 sm:text-xs">
+                          Atelier Reserve
+                        </div>
+                      )}
+                      {design.has_discount && !design.is_preorder && (
                         <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full animate-bounce">
                           {design.discount_percentage}% OFF
                         </div>

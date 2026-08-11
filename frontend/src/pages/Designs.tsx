@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import api from '../lib/api'
 import DesignPriceLines from '../components/DesignPriceLines'
 
@@ -24,9 +24,19 @@ type Design = {
   collection: string
   average_rating: number
   total_reviews: number
+  is_preorder?: boolean
+  preorder_wait_days?: number
+  preorder_status?: string
 }
 
 export default function Designs() {
+  const [searchParams] = useSearchParams()
+  const filterParam = (searchParams.get('filter') || '').toLowerCase()
+  const isPreorderFilter =
+    filterParam === 'preorders' ||
+    filterParam === 'preorder' ||
+    filterParam === 'atelier-reserve'
+
   const [designs, setDesigns] = useState<Design[]>([])
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState<'newest' | 'price-low' | 'price-high' | 'rating'>('newest')
@@ -40,12 +50,16 @@ export default function Designs() {
   const currentDesigns = designs.slice(startIndex, endIndex)
 
   useEffect(() => {
-    document.title = 'All Designs — THE BLUE WARDROBE'
+    document.title = isPreorderFilter
+      ? 'Atelier Reserve — THE BLUE WARDROBE'
+      : 'All Designs — THE BLUE WARDROBE'
     
     const fetchDesigns = async () => {
       try {
         setLoading(true)
-        const response = await api.get('/designs/')
+        const response = isPreorderFilter
+          ? await api.get('/designs/atelier-reserve/')
+          : await api.get('/designs/')
         
         // Sort designs based on selected criteria
         let sortedDesigns = [...response.data]
@@ -75,7 +89,7 @@ export default function Designs() {
     }
     
     fetchDesigns()
-  }, [sortBy])
+  }, [sortBy, isPreorderFilter])
 
   const handlePageChange = (page: number) => {
     if (page === currentPage || page < 1 || page > totalPages) return
@@ -140,10 +154,12 @@ export default function Designs() {
         <div className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="mb-4 text-3xl font-serif font-semibold text-blue-wardrobe-dark dark:text-blue-luxury-200 md:text-4xl">
-              All Designs
+              {isPreorderFilter ? 'Atelier Reserve' : 'All Designs'}
             </h1>
             <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-slate-300">
-              Browse our complete collection of dress diaries, each crafted with attention to detail and luxury fabrics.
+              {isPreorderFilter
+                ? 'Reserve unreleased dresses — estimated wait 14 days after order.'
+                : 'Browse our complete collection of dress diaries, each crafted with attention to detail and luxury fabrics.'}
             </p>
             <div className="mt-4 text-sm text-gray-500 dark:text-slate-400">
               {designs.length} designs total
@@ -252,12 +268,22 @@ export default function Designs() {
                           </div>
                         </div>
                       )}
-                      {design.has_discount && (
+                      {design.is_preorder && (
+                        <div className="absolute left-2 top-2 rounded-full bg-blue-wardrobe-dark/90 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white sm:left-4 sm:top-4 sm:px-2 sm:py-1 sm:text-xs">
+                          Atelier Reserve
+                        </div>
+                      )}
+                      {design.has_discount && !design.is_preorder && (
                         <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full animate-bounce">
                           {design.discount_percentage}% OFF
                         </div>
                       )}
-                      {design.total_stock === 0 && (
+                      {design.has_discount && design.is_preorder && (
+                        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
+                          {design.discount_percentage}% OFF
+                        </div>
+                      )}
+                      {design.total_stock === 0 && !design.is_preorder && (
                         <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
                           OUT OF STOCK
                         </div>

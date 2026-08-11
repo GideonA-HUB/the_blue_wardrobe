@@ -68,6 +68,12 @@ interface Design {
   reviews: DesignReview[]
   created_at: string
   updated_at: string
+  is_preorder?: boolean
+  preorder_start_at?: string | null
+  preorder_end_at?: string | null
+  preorder_wait_days?: number
+  preorder_status?: 'open' | 'upcoming' | 'closed' | 'off'
+  is_preorder_purchasable?: boolean
 }
 
 export default function Product() {
@@ -321,9 +327,16 @@ export default function Product() {
         {/* Product Details */}
         <div className="animate-slide-right">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-2">
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-serif font-semibold text-blue-wardrobe-dark tracking-tight">
-              {design.title}
-            </h1>
+            <div>
+              {design.is_preorder && (
+                <span className="mb-2 inline-block rounded-full border border-blue-wardrobe-light/30 bg-blue-wardrobe-dark px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white dark:bg-blue-luxury-600">
+                  Atelier Reserve
+                </span>
+              )}
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-serif font-semibold text-blue-wardrobe-dark tracking-tight">
+                {design.title}
+              </h1>
+            </div>
             <div className="text-right sm:ml-4">
               {design.has_discount && (
                 <div className="text-red-600 text-sm md:text-base font-medium line-through">
@@ -341,6 +354,31 @@ export default function Product() {
           
           <div className="border-t border-gray-200 pt-4 md:pt-6 mb-4 md:mb-6">
             <p className="text-gray-700 leading-relaxed text-sm md:text-base">{design.description || 'A timeless piece from The Dress Diaries Collection.'}</p>
+            {design.is_preorder && (
+              <div className="mt-4 rounded-xl border border-blue-wardrobe-light/25 bg-blue-50/60 p-4 dark:border-blue-luxury-500/30 dark:bg-slate-800/80">
+                <p className="text-sm font-medium text-blue-wardrobe-dark dark:text-blue-luxury-200">
+                  This dress is available for preorder.
+                </p>
+                <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
+                  Estimated wait: <strong>{design.preorder_wait_days ?? 14} days</strong> after order.
+                </p>
+                {design.preorder_status === 'upcoming' && (
+                  <p className="mt-2 text-xs uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                    Reservation opens soon
+                  </p>
+                )}
+                {design.preorder_status === 'closed' && (
+                  <p className="mt-2 text-xs uppercase tracking-wider text-red-600 dark:text-red-400">
+                    This Atelier Reserve window has closed
+                  </p>
+                )}
+                {design.preorder_status === 'open' && (
+                  <p className="mt-2 text-xs uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                    Preorder window is open
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="mb-6">
@@ -546,9 +584,23 @@ export default function Product() {
           <div className="mt-8 space-y-4">
             <button
               className="w-full max-w-xs px-8 py-4 bg-blue-wardrobe-dark text-white rounded-full disabled:opacity-40 disabled:cursor-not-allowed tracking-wide hover:bg-blue-wardrobe-light transition-all duration-300 font-medium luxury-shadow hover:luxury-shadow-lg transform hover:scale-105 disabled:transform-none"
-              disabled={selectedSizeMeasurements.length === 0 || addingToWardrobe}
+              disabled={
+                selectedSizeMeasurements.length === 0 ||
+                addingToWardrobe ||
+                (design.is_preorder && design.preorder_status !== 'open')
+              }
               onClick={async () => {
                 if (!design || selectedSizeMeasurements.length === 0) return
+                if (design.is_preorder && design.preorder_status !== 'open') {
+                  setToast({
+                    message:
+                      design.preorder_status === 'upcoming'
+                        ? 'This Atelier Reserve dress is not open for preorder yet.'
+                        : 'This Atelier Reserve window has closed.',
+                    type: 'error',
+                  })
+                  return
+                }
                 
                 setAddingToWardrobe(true)
                 try {
@@ -587,7 +639,9 @@ export default function Product() {
                   
                   // Show success feedback
                   setToast({
-                    message: `✨ Added ${selectedSizeMeasurements.length} item(s) to your wardrobe!`,
+                    message: design.is_preorder
+                      ? `✨ Preorder reserved — estimated wait ${design.preorder_wait_days ?? 14} days`
+                      : `✨ Added ${selectedSizeMeasurements.length} item(s) to your wardrobe!`,
                     type: 'success'
                   })
                 } catch (error: any) {
@@ -603,7 +657,15 @@ export default function Product() {
                 }
               }}
             >
-              {addingToWardrobe ? 'Adding...' : `Add to Wardrobe${selectedSizeMeasurements.length > 1 ? ` (${selectedSizeMeasurements.length} items)` : ''}`}
+              {addingToWardrobe
+                ? (design.is_preorder ? 'Reserving…' : 'Adding...')
+                : design.is_preorder
+                  ? (design.preorder_status === 'closed'
+                      ? 'Preorder Closed'
+                      : design.preorder_status === 'upcoming'
+                        ? 'Opens Soon'
+                        : `Preorder Now${selectedSizeMeasurements.length > 1 ? ` (${selectedSizeMeasurements.length})` : ''}`)
+                  : `Add to Wardrobe${selectedSizeMeasurements.length > 1 ? ` (${selectedSizeMeasurements.length} items)` : ''}`}
             </button>
             
             {/* Checkout button for users ready to proceed */}

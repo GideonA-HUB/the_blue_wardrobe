@@ -118,6 +118,8 @@ class DesignSerializer(serializers.ModelSerializer):
     price_gbp = serializers.SerializerMethodField()
     effective_price_usd = serializers.SerializerMethodField()
     effective_price_gbp = serializers.SerializerMethodField()
+    preorder_status = serializers.ReadOnlyField()
+    is_preorder_purchasable = serializers.ReadOnlyField()
 
     def _to_foreign(self, amount_ngn, currency: str):
         fx = self.context.get("fx")
@@ -152,6 +154,8 @@ class DesignSerializer(serializers.ModelSerializer):
             'size_inventory', 'size_measurements', 'created_at', 'updated_at',
             'average_rating', 'total_reviews', 'rating_distribution', 'reviews',
             'price_usd', 'price_gbp', 'effective_price_usd', 'effective_price_gbp',
+            'is_preorder', 'preorder_start_at', 'preorder_end_at', 'preorder_wait_days',
+            'preorder_status', 'is_preorder_purchasable',
         ]
     
     def get_video_url(self, obj):
