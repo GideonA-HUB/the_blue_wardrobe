@@ -382,16 +382,54 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'customer_email', 'customer_phone', 'currency', 'total_amount', 'total_ngn_equivalent', 'status', 'created_at')
-    list_filter = ('status', 'currency', 'created_at')
-    search_fields = ('id', 'customer__email', 'customer__first_name', 'customer__last_name', 'paystack_reference', 'flutterwave_tx_ref')
+    list_display = (
+        'id',
+        'customer_email',
+        'customer_phone',
+        'delivery_type',
+        'international_region',
+        'country',
+        'delivery_fee',
+        'currency',
+        'total_amount',
+        'total_ngn_equivalent',
+        'status',
+        'created_at',
+    )
+    list_filter = ('status', 'delivery_type', 'international_region', 'currency', 'created_at')
+    search_fields = (
+        'id',
+        'customer__email',
+        'customer__first_name',
+        'customer__last_name',
+        'country',
+        'paystack_reference',
+        'flutterwave_tx_ref',
+    )
     readonly_fields = (
-        'customer', 'delivery_address', 'currency', 'total_amount', 'total_ngn_equivalent', 'payment_provider',
-        'paystack_reference', 'flutterwave_tx_ref', 'created_at',
+        'customer',
+        'delivery_address',
+        'delivery_type',
+        'international_region',
+        'country',
+        'subtotal',
+        'delivery_fee',
+        'currency',
+        'total_amount',
+        'total_ngn_equivalent',
+        'payment_provider',
+        'paystack_reference',
+        'flutterwave_tx_ref',
+        'created_at',
     )
     fields = (
         'customer',
         'delivery_address',
+        'delivery_type',
+        'international_region',
+        'country',
+        'subtotal',
+        'delivery_fee',
         'currency',
         'total_amount',
         'total_ngn_equivalent',
@@ -653,7 +691,23 @@ class AtelierStorySlideAdmin(admin.ModelAdmin):
 
 @admin.register(StoreCurrencySettings)
 class StoreCurrencySettingsAdmin(admin.ModelAdmin):
-    list_display = ('ngn_per_usd', 'ngn_per_gbp', 'updated_at')
+    list_display = (
+        'local_delivery_fee',
+        'international_delivery_fee',
+        'ngn_per_usd',
+        'ngn_per_gbp',
+        'ngn_per_cad',
+        'updated_at',
+    )
+    fields = (
+        'local_delivery_fee',
+        'international_delivery_fee',
+        'ngn_per_usd',
+        'ngn_per_gbp',
+        'ngn_per_cad',
+        'updated_at',
+    )
+    readonly_fields = ('updated_at',)
 
     def has_add_permission(self, request):
         return not StoreCurrencySettings.objects.exists()

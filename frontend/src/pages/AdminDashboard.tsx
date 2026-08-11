@@ -4,7 +4,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Toolti
 import { 
   FaChartLine, FaShoppingCart, FaUsers, FaEnvelope, FaVideo, FaImages, 
   FaBox, FaEdit, FaTrash, FaPlus, FaSignOutAlt, FaSpinner, FaCheckCircle,
-  FaTimesCircle, FaEye, FaArrowUp, FaArrowDown, FaTshirt, FaUser, FaStar
+  FaTimesCircle, FaEye, FaArrowUp, FaArrowDown, FaTshirt, FaUser, FaStar, FaCog
 } from 'react-icons/fa'
 import api from '../lib/api'
 import { useLoading } from '../hooks/useLoading'
@@ -66,6 +66,11 @@ type InfoCard = {
 type Order = {
   id: number
   delivery_address?: string
+  delivery_type?: 'local' | 'international'
+  international_region?: string
+  country?: string
+  subtotal?: number
+  delivery_fee?: number
   total_amount: number
   total_ngn_equivalent?: number
   currency?: string
@@ -82,6 +87,18 @@ type Order = {
     quantity: number
     unit_price: number
   }>
+}
+
+type StoreSettings = {
+  ngn_per_usd: string
+  ngn_per_gbp: string
+  ngn_per_cad: string
+  local_delivery_fee: string
+  international_delivery_fee: string
+  international_fee_usd?: string | null
+  international_fee_gbp?: string | null
+  international_fee_cad?: string | null
+  updated_at?: string | null
 }
 
 type ContactMessage = {
@@ -156,7 +173,16 @@ export default function AdminDashboard() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [materials, setMaterials] = useState<Material[]>([])
   const [reviews, setReviews] = useState<DesignReview[]>([])
-  const [activeTab, setActiveTab] = useState<'overview' | 'collections' | 'designs' | 'reviews' | 'videos' | 'info-cards' | 'orders' | 'messages' | 'subscribers' | 'customers' | 'content'>('overview')
+  const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null)
+  const [settingsForm, setSettingsForm] = useState({
+    local_delivery_fee: '0',
+    international_delivery_fee: '102000',
+    ngn_per_usd: '1550',
+    ngn_per_gbp: '1980',
+    ngn_per_cad: '1120',
+  })
+  const [settingsSaving, setSettingsSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState<'overview' | 'collections' | 'designs' | 'reviews' | 'videos' | 'info-cards' | 'orders' | 'messages' | 'subscribers' | 'customers' | 'content' | 'settings'>('overview')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState<{ type: string; item?: any } | null>(null)
@@ -179,7 +205,7 @@ export default function AdminDashboard() {
     try {
       const headers = { Authorization: `Token ${token}` }
       
-      const [metricsRes, collectionsRes, videosRes, infoCardsRes, ordersRes, messagesRes, subscribersRes, designsRes, customersRes, materialsRes, reviewsRes] = await Promise.all([
+      const [metricsRes, collectionsRes, videosRes, infoCardsRes, ordersRes, messagesRes, subscribersRes, designsRes, customersRes, materialsRes, reviewsRes, settingsRes] = await Promise.all([
         api.get('/admin/metrics/', { headers }),
         api.get('/admin/collections/', { headers }),
         api.get('/admin/videos/', { headers }),
@@ -191,6 +217,7 @@ export default function AdminDashboard() {
         api.get('/admin/customers/', { headers }),
         api.get('/admin/materials/', { headers }).catch(() => ({ data: [] })),
         api.get('/admin/design-reviews/', { headers }).catch(() => ({ data: [] })),
+        api.get('/admin/store-settings/', { headers }).catch(() => ({ data: null })),
       ])
       
       setMetrics(metricsRes.data)
@@ -204,6 +231,16 @@ export default function AdminDashboard() {
       setCustomers(customersRes.data)
       setMaterials(materialsRes.data)
       setReviews(reviewsRes.data)
+      if (settingsRes.data) {
+        setStoreSettings(settingsRes.data)
+        setSettingsForm({
+          local_delivery_fee: String(settingsRes.data.local_delivery_fee ?? '0'),
+          international_delivery_fee: String(settingsRes.data.international_delivery_fee ?? '102000'),
+          ngn_per_usd: String(settingsRes.data.ngn_per_usd ?? '1550'),
+          ngn_per_gbp: String(settingsRes.data.ngn_per_gbp ?? '1980'),
+          ngn_per_cad: String(settingsRes.data.ngn_per_cad ?? '1120'),
+        })
+      }
       setError(null)
     } catch (err: any) {
       setError('Failed to fetch data. Please check your credentials.')
@@ -255,6 +292,52 @@ export default function AdminDashboard() {
     } catch (err) {
       setError('Failed to update order status')
     }
+  }
+
+  const saveStoreSettings = async () => {
+    if (!token) return
+    setSettingsSaving(true)
+    setError(null)
+    try {
+      const headers = { Authorization: `Token ${token}` }
+      const res = await api.patch('/admin/store-settings/', settingsForm, { headers })
+      setStoreSettings(res.data)
+      setSettingsForm({
+        local_delivery_fee: String(res.data.local_delivery_fee ?? settingsForm.local_delivery_fee),
+        international_delivery_fee: String(res.data.international_delivery_fee ?? settingsForm.international_delivery_fee),
+        ngn_per_usd: String(res.data.ngn_per_usd ?? settingsForm.ngn_per_usd),
+        ngn_per_gbp: String(res.data.ngn_per_gbp ?? settingsForm.ngn_per_gbp),
+        ngn_per_cad: String(res.data.ngn_per_cad ?? settingsForm.ngn_per_cad),
+      })
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to save currency & delivery settings')
+    } finally {
+      setSettingsSaving(false)
+    }
+  }
+
+  const deliveryBadge = (order: Order) => {
+    const isIntl = order.delivery_type === 'international'
+    const region = (order.international_region || '').toUpperCase()
+    if (isIntl) {
+      return (
+        <span className="inline-flex flex-wrap items-center gap-1">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+            International
+          </span>
+          {region && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">
+              {region === 'CA' ? 'Canada' : region}
+            </span>
+          )}
+        </span>
+      )
+    }
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+        Local (Nigeria)
+      </span>
+    )
   }
 
   const handleDelete = async (type: string, id: number) => {
@@ -409,6 +492,7 @@ export default function AdminDashboard() {
             { id: 'subscribers', label: 'Subscribers', icon: FaUsers },
             { id: 'customers', label: 'Customers', icon: FaUser },
             { id: 'content', label: 'Content', icon: FaBox },
+            { id: 'settings', label: 'Settings', icon: FaCog },
           ].map((tab) => {
             const Icon = tab.icon
             return (
@@ -938,6 +1022,7 @@ export default function AdminDashboard() {
                     <tr className="border-b border-blue-wardrobe-light/20">
                       <th className="text-left py-3 px-4 text-blue-wardrobe-dark">Order ID</th>
                       <th className="text-left py-3 px-4 text-blue-wardrobe-dark">Customer</th>
+                      <th className="text-left py-3 px-4 text-blue-wardrobe-dark">Delivery</th>
                       <th className="text-left py-3 px-4 text-blue-wardrobe-dark">Amount</th>
                       <th className="text-left py-3 px-4 text-blue-wardrobe-dark">Status</th>
                       <th className="text-left py-3 px-4 text-blue-wardrobe-dark">Date</th>
@@ -955,6 +1040,7 @@ export default function AdminDashboard() {
                       >
                         <td className="py-3 px-4 font-semibold">#{order.id}</td>
                         <td className="py-3 px-4">{order.customer?.email || 'N/A'}</td>
+                        <td className="py-3 px-4">{deliveryBadge(order)}</td>
                         <td className="py-3 px-4 font-semibold text-blue-wardrobe-dark">
                           {(order.currency || 'NGN')} {order.total_amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                           {order.currency && order.currency !== 'NGN' && order.total_ngn_equivalent != null && (
@@ -1130,6 +1216,109 @@ export default function AdminDashboard() {
           </motion.div>
         )}
 
+        {activeTab === 'settings' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-md border border-blue-wardrobe-light/10 p-6 max-w-3xl"
+          >
+            <h2 className="text-2xl font-semibold text-blue-wardrobe-dark mb-2">Currency &amp; delivery settings</h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Edit local and international delivery fees (NGN) and FX rates used for checkout display conversions.
+              Payments remain charged via Flutterwave in NGN/USD/GBP.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Local delivery fee (NGN)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={settingsForm.local_delivery_fee}
+                  onChange={(e) => setSettingsForm((f) => ({ ...f, local_delivery_fee: e.target.value }))}
+                  className="w-full border border-blue-wardrobe-light/30 rounded-lg px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">International delivery fee (NGN)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={settingsForm.international_delivery_fee}
+                  onChange={(e) => setSettingsForm((f) => ({ ...f, international_delivery_fee: e.target.value }))}
+                  className="w-full border border-blue-wardrobe-light/30 rounded-lg px-3 py-2"
+                />
+                <p className="text-xs text-gray-500 mt-1">Default 102,000</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">NGN per 1 USD</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  value={settingsForm.ngn_per_usd}
+                  onChange={(e) => setSettingsForm((f) => ({ ...f, ngn_per_usd: e.target.value }))}
+                  className="w-full border border-blue-wardrobe-light/30 rounded-lg px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">NGN per 1 GBP</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  value={settingsForm.ngn_per_gbp}
+                  onChange={(e) => setSettingsForm((f) => ({ ...f, ngn_per_gbp: e.target.value }))}
+                  className="w-full border border-blue-wardrobe-light/30 rounded-lg px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">NGN per 1 CAD</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  value={settingsForm.ngn_per_cad}
+                  onChange={(e) => setSettingsForm((f) => ({ ...f, ngn_per_cad: e.target.value }))}
+                  className="w-full border border-blue-wardrobe-light/30 rounded-lg px-3 py-2"
+                />
+              </div>
+            </div>
+
+            {(storeSettings?.international_fee_usd || storeSettings?.international_fee_gbp) && (
+              <div className="mt-6 p-4 rounded-lg bg-blue-wardrobe-light/10 border border-blue-wardrobe-light/20">
+                <p className="text-sm font-medium text-blue-wardrobe-dark mb-2">International fee preview (approx.)</p>
+                <ul className="text-sm text-gray-700 space-y-1">
+                  {storeSettings.international_fee_usd && (
+                    <li>≈ USD {Number(storeSettings.international_fee_usd).toLocaleString(undefined, { maximumFractionDigits: 2 })}</li>
+                  )}
+                  {storeSettings.international_fee_gbp && (
+                    <li>≈ GBP {Number(storeSettings.international_fee_gbp).toLocaleString(undefined, { maximumFractionDigits: 2 })}</li>
+                  )}
+                  {storeSettings.international_fee_cad && (
+                    <li>≈ CAD {Number(storeSettings.international_fee_cad).toLocaleString(undefined, { maximumFractionDigits: 2 })}</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={saveStoreSettings}
+              disabled={settingsSaving}
+              className="mt-6 px-6 py-3 bg-blue-wardrobe-dark text-white rounded-full hover:bg-blue-wardrobe-light transition-colors disabled:opacity-50"
+            >
+              {settingsSaving ? 'Saving…' : 'Save settings'}
+            </button>
+            {storeSettings?.updated_at && (
+              <p className="text-xs text-gray-500 mt-3">
+                Last updated: {new Date(storeSettings.updated_at).toLocaleString()}
+              </p>
+            )}
+          </motion.div>
+        )}
+
         {/* Modals for Add/Edit */}
         {showModal && (
           <Modal
@@ -1181,8 +1370,20 @@ export default function AdminDashboard() {
                     <div className="text-sm text-gray-700">{selectedOrder.customer?.phone || 'No phone provided'}</div>
                   </div>
                   <div className="rounded-lg border border-blue-wardrobe-light/20 p-4">
-                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Delivery Address</div>
-                    <div className="text-sm text-gray-800 whitespace-pre-wrap">
+                    <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Delivery</div>
+                    <div className="mb-2">{deliveryBadge(selectedOrder)}</div>
+                    <div className="text-sm text-gray-700">
+                      Country: <strong>{selectedOrder.country || (selectedOrder.delivery_type === 'international' ? 'International' : 'Nigeria')}</strong>
+                    </div>
+                    <div className="text-sm text-gray-700 mt-1">
+                      Fee:{' '}
+                      <strong>
+                        {Number(selectedOrder.delivery_fee || 0) === 0
+                          ? 'FREE'
+                          : `NGN ${Number(selectedOrder.delivery_fee || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+                      </strong>
+                    </div>
+                    <div className="text-sm text-gray-800 whitespace-pre-wrap mt-3">
                       {selectedOrder.delivery_address || 'No delivery address captured.'}
                     </div>
                   </div>
@@ -1195,6 +1396,12 @@ export default function AdminDashboard() {
                       {(selectedOrder.currency || 'NGN')}{' '}
                       {selectedOrder.total_amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                     </div>
+                    {selectedOrder.subtotal != null && (
+                      <div className="text-sm text-gray-600 mt-2">
+                        Merchandise: {(selectedOrder.currency || 'NGN')}{' '}
+                        {Number(selectedOrder.subtotal).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      </div>
+                    )}
                     {selectedOrder.currency && selectedOrder.currency !== 'NGN' && selectedOrder.total_ngn_equivalent != null && (
                       <div className="text-sm text-gray-600 mt-2">
                         NGN equivalent: NGN{' '}

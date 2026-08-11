@@ -39,6 +39,7 @@ from .views import (
     csrf_token,
     homepage_content,
     currency_fx_public,
+    admin_store_settings,
 )
 
 router = DefaultRouter()
@@ -87,6 +88,7 @@ urlpatterns = [
     path('flutterwave/initiate/', initiate_flutterwave, name='flutterwave-initiate'),
     path('flutterwave/verify/', verify_flutterwave, name='flutterwave-verify'),
     path('currency-fx/', currency_fx_public, name='currency-fx-public'),
+    path('admin/store-settings/', admin_store_settings, name='admin-store-settings'),
     path('health/', health, name='health'),
     path('admin/metrics/', admin_metrics, name='admin-metrics'),
     path('csrf-token/', csrf_token, name='csrf-token'),

@@ -174,16 +174,51 @@ def order_confirmation_customer_html(
     customer_name: str = "",
     line_items: list[dict[str, Any]] | None = None,
     delivery_address: str = "",
+    delivery_type: str = "local",
+    international_region: str = "",
+    country: str = "",
+    delivery_fee: Decimal | float | None = None,
+    subtotal: Decimal | float | None = None,
 ) -> str:
     del site_name  # brand from settings
     cur = (currency or "NGN").upper()
     name_bit = f", {html.escape(customer_name)}" if customer_name else ""
     items_html = _line_items_rows(line_items or [], cur)
+
+    is_intl = (delivery_type or "local").lower() == "international"
+    if is_intl:
+        region = (international_region or "").upper() or "INTL"
+        delivery_label = f"International Delivery ({region})"
+    else:
+        delivery_label = "Delivery (Nigeria)"
+
+    fee_val = Decimal(str(delivery_fee or 0))
+    fee_line = (
+        f'<p style="margin:8px 0 0;font-size:14px;color:#1e293b;"><strong>{html.escape(delivery_label)}</strong>: {_fmt_money(fee_val, "NGN")}</p>'
+        if fee_val > 0
+        else f'<p style="margin:8px 0 0;font-size:14px;color:#1e293b;"><strong>{html.escape(delivery_label)}</strong>: FREE</p>'
+    )
+    country_line = ""
+    if country:
+        country_line = f'<p style="margin:4px 0 0;font-size:13px;color:#64748b;">Ship to: {html.escape(country)}</p>'
+
     addr_block = ""
     if delivery_address.strip():
         addr_block = f"""
-        <p style="margin:20px 0 8px;font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;">Delivery address</p>
-        <p style="margin:0;padding:14px 16px;background:#f8fafc;border-radius:10px;font-size:14px;line-height:1.5;color:#1e293b;white-space:pre-wrap;">{html.escape(delivery_address.strip())}</p>"""
+        <p style="margin:20px 0 8px;font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;">Delivery</p>
+        <div style="margin:0;padding:14px 16px;background:#f8fafc;border-radius:10px;">
+          {fee_line}
+          {country_line}
+          <p style="margin:12px 0 0;font-size:14px;line-height:1.5;color:#1e293b;white-space:pre-wrap;">{html.escape(delivery_address.strip())}</p>
+        </div>"""
+    else:
+        addr_block = f"""
+        <p style="margin:20px 0 8px;font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;">Delivery</p>
+        <div style="margin:0;padding:14px 16px;background:#f8fafc;border-radius:10px;">{fee_line}{country_line}</div>"""
+
+    subtotal_block = ""
+    if subtotal is not None:
+        subtotal_block = f'<p style="margin:12px 0 0;font-size:13px;color:#64748b;">Merchandise: {_fmt_money(subtotal, cur)}</p>'
 
     body = f"""
       <p style="margin:0 0 20px;">Dear customer{name_bit},</p>
@@ -194,6 +229,7 @@ def order_confirmation_customer_html(
           <p style="margin:0 0 16px;font-size:22px;font-weight:700;color:#1e3a8a;">#{order_id}</p>
           <p style="margin:0 0 6px;font-size:12px;color:#64748b;letter-spacing:0.06em;text-transform:uppercase;">Amount paid</p>
           <p style="margin:0;font-size:24px;font-weight:700;color:#0f172a;">{_fmt_money(total, cur)}</p>
+          {subtotal_block}
         </td></tr>
       </table>
       {addr_block}
@@ -228,6 +264,11 @@ def order_notification_owner_html(
     customer_name: str = "",
     customer_phone: str = "",
     delivery_address: str = "",
+    delivery_type: str = "local",
+    international_region: str = "",
+    country: str = "",
+    delivery_fee: Decimal | float | None = None,
+    subtotal: Decimal | float | None = None,
     line_items: list[dict[str, Any]] | None = None,
     payment_provider: str = "",
     payment_reference: str = "",
@@ -240,6 +281,21 @@ def order_notification_owner_html(
     if total_ngn_equivalent is not None and cur != "NGN":
         ngn_note = f'<p style="margin:8px 0 0;font-size:13px;color:#64748b;">NGN equivalent: {_fmt_money(total_ngn_equivalent, "NGN")}</p>'
 
+    is_intl = (delivery_type or "local").lower() == "international"
+    if is_intl:
+        region = (international_region or "").upper() or "INTL"
+        delivery_type_label = f"International — {region}"
+        delivery_fee_label = f"International Delivery ({region})"
+    else:
+        delivery_type_label = "Local (Nigeria)"
+        delivery_fee_label = "Delivery (Nigeria)"
+
+    fee_val = Decimal(str(delivery_fee or 0))
+    fee_display = _fmt_money(fee_val, "NGN") if fee_val > 0 else "FREE"
+    subtotal_line = ""
+    if subtotal is not None:
+        subtotal_line = f'<tr><td style="padding:8px 0;font-size:14px;"><span style="color:#64748b;">Merchandise subtotal</span><br><strong>{_fmt_money(subtotal, cur)}</strong></td></tr>'
+
     body = f"""
       <p style="margin:0 0 20px;"><strong>New paid order</strong> — action required for fulfillment.</p>
       <table role="presentation" width="100%" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:18px 20px;margin-bottom:20px;">
@@ -247,12 +303,17 @@ def order_notification_owner_html(
           <p style="margin:0 0 8px;font-size:12px;color:#9a3412;text-transform:uppercase;letter-spacing:0.06em;">Order #{order_id}</p>
           <p style="margin:0;font-size:22px;font-weight:700;color:#0f172a;">{_fmt_money(total, cur)}</p>
           {ngn_note}
+          <p style="margin:12px 0 0;font-size:14px;"><span style="display:inline-block;padding:4px 10px;border-radius:999px;background:{'#dbeafe' if is_intl else '#ecfdf5'};color:{'#1e40af' if is_intl else '#047857'};font-weight:600;">{html.escape(delivery_type_label)}</span></p>
         </td></tr>
       </table>
       <table role="presentation" width="100%" style="margin-bottom:20px;">
         <tr><td style="padding:8px 0;font-size:14px;"><span style="color:#64748b;">Customer</span><br><strong>{html.escape(customer_name or "—")}</strong></td></tr>
         <tr><td style="padding:8px 0;font-size:14px;"><span style="color:#64748b;">Email</span><br><a href="mailto:{html.escape(customer_email)}" style="color:#1e40af;">{html.escape(customer_email or "—")}</a></td></tr>
         <tr><td style="padding:8px 0;font-size:14px;"><span style="color:#64748b;">Phone</span><br><strong>{html.escape(customer_phone or "—")}</strong></td></tr>
+        <tr><td style="padding:8px 0;font-size:14px;"><span style="color:#64748b;">Delivery type</span><br><strong>{html.escape(delivery_type_label)}</strong></td></tr>
+        <tr><td style="padding:8px 0;font-size:14px;"><span style="color:#64748b;">Country</span><br><strong>{html.escape(country or ("International" if is_intl else "Nigeria"))}</strong></td></tr>
+        <tr><td style="padding:8px 0;font-size:14px;"><span style="color:#64748b;">{html.escape(delivery_fee_label)}</span><br><strong>{fee_display}</strong></td></tr>
+        {subtotal_line}
         <tr><td style="padding:8px 0;font-size:14px;"><span style="color:#64748b;">Payment</span><br><strong>{html.escape(payment_provider or "—")}</strong>
           {f'<br><span style="font-size:12px;color:#64748b;word-break:break-all;">{html.escape(payment_reference)}</span>' if payment_reference else ""}
         </td></tr>
@@ -271,7 +332,7 @@ def order_notification_owner_html(
     brand = get_email_brand()
     owner_url = f"{brand['site_url']}/owner/"
     return _email_shell(
-        preheader=f"New order #{order_id} from {customer_email}",
+        preheader=f"New order #{order_id} ({delivery_type_label}) from {customer_email}",
         headline="New customer order",
         body_html=body,
         cta_label="Open owner dashboard",

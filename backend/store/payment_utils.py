@@ -14,7 +14,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from .currency_utils import cart_total_ngn, convert_from_ngn
+from .currency_utils import cart_total_ngn, convert_from_ngn, resolve_delivery_from_metadata
 from .email_utils import (
     order_confirmation_customer_html,
     order_items_from_order,
@@ -121,6 +121,11 @@ def send_order_emails(order: Order, customer_email: str | None) -> None:
 
     payment_ref = order.flutterwave_tx_ref or order.paystack_reference or ""
     delivery = order.delivery_address or ""
+    delivery_type = getattr(order, "delivery_type", "local") or "local"
+    international_region = getattr(order, "international_region", "") or ""
+    country = getattr(order, "country", "") or ""
+    delivery_fee = getattr(order, "delivery_fee", None)
+    subtotal = getattr(order, "subtotal", None)
 
     if customer_email:
         params: dict[str, Any] = {
@@ -135,6 +140,11 @@ def send_order_emails(order: Order, customer_email: str | None) -> None:
                 customer_name=customer_name,
                 line_items=line_items,
                 delivery_address=delivery,
+                delivery_type=delivery_type,
+                international_region=international_region,
+                country=country,
+                delivery_fee=delivery_fee,
+                subtotal=subtotal,
             ),
         }
         if reply_to:
@@ -158,6 +168,11 @@ def send_order_emails(order: Order, customer_email: str | None) -> None:
                 customer_name=customer_name,
                 customer_phone=customer_phone,
                 delivery_address=delivery,
+                delivery_type=delivery_type,
+                international_region=international_region,
+                country=country,
+                delivery_fee=delivery_fee,
+                subtotal=subtotal,
                 line_items=line_items,
                 payment_provider=order.payment_provider or "",
                 payment_reference=payment_ref,
@@ -269,13 +284,26 @@ def finalize_order_from_cart(
     if pay_currency not in ("NGN", "USD", "GBP"):
         pay_currency = "NGN"
 
-    total_ngn_equivalent = cart_total_ngn(cart)
+    delivery_info = resolve_delivery_from_metadata(metadata)
+    merchandise_ngn = cart_total_ngn(cart)
+    delivery_fee_ngn = delivery_info["delivery_fee_ngn"]
+    total_ngn_equivalent = (merchandise_ngn + delivery_fee_ngn).quantize(Decimal("0.01"))
+
+    # Prefer gateway-charged amount for total_amount; merchandise subtotal in charge currency.
+    # delivery_fee is always persisted as the exact NGN fee configured at purchase time.
+    charge_total = Decimal(str(amount)).quantize(Decimal("0.01"))
+    subtotal_charged = convert_from_ngn(merchandise_ngn, pay_currency)
 
     order = Order.objects.create(
         customer=customer,
         delivery_address=delivery_address,
+        delivery_type=delivery_info["delivery_type"],
+        international_region=delivery_info["international_region"],
+        country=delivery_info["country"],
+        subtotal=subtotal_charged,
+        delivery_fee=delivery_fee_ngn,
         currency=pay_currency,
-        total_amount=Decimal(str(amount)).quantize(Decimal("0.01")),
+        total_amount=charge_total,
         total_ngn_equivalent=total_ngn_equivalent,
         status="confirmed",
         payment_provider=gateway,

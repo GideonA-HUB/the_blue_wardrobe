@@ -9,6 +9,7 @@ from importlib import import_module
 import json
 import uuid
 import requests
+from decimal import Decimal
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
@@ -17,7 +18,7 @@ from django.middleware.csrf import get_token
 from .models import (
     Collection, Design, DesignImage, SizeInventory, SizeMeasurement, Cart, CartItem, SiteAsset, ContactMessage, Subscriber, Order,
     Customer, OrderItem, PaymentLog, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, Material, DesignReview,
-    HomeHeroCopy, HeroMarqueeSlide, AtelierStorySlide,
+    HomeHeroCopy, HeroMarqueeSlide, AtelierStorySlide, StoreCurrencySettings,
 )
 from .payment_utils import finalize_order_from_cart, parse_flutterwave_meta, send_order_emails
 from .currency_utils import (
@@ -26,6 +27,7 @@ from .currency_utils import (
     convert_from_ngn,
     get_fx_for_serializer_context,
     public_fx_dict,
+    resolve_delivery_from_metadata,
 )
 from .email_utils import newsletter_welcome_html
 from .serializers import (
@@ -634,8 +636,9 @@ def initiate_paystack(request):
 @api_view(['POST'])
 def initiate_flutterwave(request):
     """
-    { email, currency: NGN|USD|GBP, metadata: { cart, customer, phone, deliveryAddress } }.
-    Amount is computed server-side from cart (NGN catalogue) and converted using StoreCurrencySettings.
+    { email, currency: NGN|USD|GBP, metadata: { cart, customer, phone, deliveryAddress,
+      isInternationalDelivery, internationalRegion } }.
+    Amount is computed server-side from cart (NGN) + delivery fee, then converted via FX settings.
     Returns Flutterwave checkout link in data.link.
     """
     if not settings.FLUTTERWAVE_SECRET_KEY:
@@ -658,11 +661,20 @@ def initiate_flutterwave(request):
     if not delivery:
         return Response({'detail': 'Delivery address is required'}, status=status.HTTP_400_BAD_REQUEST)
 
+    delivery_info = resolve_delivery_from_metadata(metadata)
+    if delivery_info['is_international'] and not delivery_info['international_region']:
+        return Response(
+            {'detail': 'Please select whether you are in the US, UK, or Canada.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     cart_lines = metadata.get('cart') or []
-    total_ngn = cart_total_ngn(cart_lines)
-    if total_ngn <= 0:
+    merchandise_ngn = cart_total_ngn(cart_lines)
+    if merchandise_ngn <= 0:
         return Response({'detail': 'Cart is empty or invalid'}, status=status.HTTP_400_BAD_REQUEST)
 
+    delivery_fee_ngn = delivery_info['delivery_fee_ngn']
+    total_ngn = (merchandise_ngn + delivery_fee_ngn).quantize(Decimal('0.01'))
     amount_charged = convert_from_ngn(total_ngn, currency)
     amount_raw = float(amount_charged)
 
@@ -675,6 +687,12 @@ def initiate_flutterwave(request):
         'email': email,
         'deliveryAddress': delivery,
         'payCurrency': currency,
+        'isInternationalDelivery': delivery_info['is_international'],
+        'internationalRegion': delivery_info['international_region'],
+        'deliveryType': delivery_info['delivery_type'],
+        'country': delivery_info['country'],
+        'deliveryFeeNgn': str(delivery_fee_ngn),
+        'merchandiseNgn': str(merchandise_ngn),
     })
 
     payload = {
@@ -847,8 +865,65 @@ def verify_flutterwave(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def currency_fx_public(request):
-    """Public FX rates (NGN per USD / GBP) for storefront display math."""
+    """Public FX rates + delivery fees for storefront checkout display."""
     return Response(public_fx_dict())
+
+
+@api_view(['GET', 'PATCH'])
+@permission_classes([IsAdminUser])
+def admin_store_settings(request):
+    """
+    Owner dashboard: read/update StoreCurrencySettings (FX + delivery fees).
+    """
+    solo = StoreCurrencySettings.get_solo()
+    if request.method == 'GET':
+        data = public_fx_dict()
+        data['updated_at'] = solo.updated_at.isoformat() if solo.updated_at else None
+        # Preview conversions of international fee for monitoring
+        intl = Decimal(str(solo.international_delivery_fee))
+        try:
+            data['international_fee_usd'] = str(convert_from_ngn(intl, 'USD'))
+            data['international_fee_gbp'] = str(convert_from_ngn(intl, 'GBP'))
+            data['international_fee_cad'] = str(convert_from_ngn(intl, 'CAD'))
+        except Exception:
+            data['international_fee_usd'] = None
+            data['international_fee_gbp'] = None
+            data['international_fee_cad'] = None
+        return Response(data)
+
+    payload = request.data or {}
+    field_map = {
+        'ngn_per_usd': 'ngn_per_usd',
+        'ngn_per_gbp': 'ngn_per_gbp',
+        'ngn_per_cad': 'ngn_per_cad',
+        'local_delivery_fee': 'local_delivery_fee',
+        'international_delivery_fee': 'international_delivery_fee',
+    }
+    updated = []
+    for key, attr in field_map.items():
+        if key in payload and payload[key] is not None and str(payload[key]).strip() != '':
+            try:
+                value = Decimal(str(payload[key]))
+            except Exception:
+                return Response({'detail': f'Invalid number for {key}'}, status=status.HTTP_400_BAD_REQUEST)
+            if value < 0:
+                return Response({'detail': f'{key} must be >= 0'}, status=status.HTTP_400_BAD_REQUEST)
+            setattr(solo, attr, value)
+            updated.append(attr)
+    if updated:
+        solo.save()
+    data = public_fx_dict()
+    data['updated_at'] = solo.updated_at.isoformat() if solo.updated_at else None
+    intl = Decimal(str(solo.international_delivery_fee))
+    try:
+        data['international_fee_usd'] = str(convert_from_ngn(intl, 'USD'))
+        data['international_fee_gbp'] = str(convert_from_ngn(intl, 'GBP'))
+        data['international_fee_cad'] = str(convert_from_ngn(intl, 'CAD'))
+    except Exception:
+        data['international_fee_usd'] = None
+        data['international_fee_gbp'] = None
+        data['international_fee_cad'] = None
+    return Response(data)
 
 
 @api_view(['GET'])

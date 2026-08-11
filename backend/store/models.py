@@ -439,8 +439,8 @@ class AtelierStorySlide(models.Model):
 
 class StoreCurrencySettings(models.Model):
     """
-    Singleton (pk=1): how many NGN equal one unit of foreign currency.
-    Used to derive USD/GBP display prices from NGN catalogue prices and for Flutterwave checkout conversion.
+    Singleton (pk=1): FX rates + delivery fees for checkout.
+    Catalogue prices stay in NGN; Flutterwave converts using these rates.
     """
 
     ngn_per_usd = models.DecimalField(
@@ -455,11 +455,29 @@ class StoreCurrencySettings(models.Model):
         default=Decimal("1980"),
         help_text="NGN per 1 GBP (e.g. 1980 means £1 ≈ ₦1,980)",
     )
+    ngn_per_cad = models.DecimalField(
+        max_digits=14,
+        decimal_places=4,
+        default=Decimal("1120"),
+        help_text="NGN per 1 CAD (display only; payments stay NGN/USD/GBP)",
+    )
+    local_delivery_fee = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0"),
+        help_text="Nigeria local delivery fee in NGN (0 = free)",
+    )
+    international_delivery_fee = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("102000.00"),
+        help_text="International delivery fee in NGN (US / UK / Canada)",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Store currency & FX"
-        verbose_name_plural = "Store currency & FX"
+        verbose_name = "Store currency & delivery settings"
+        verbose_name_plural = "Store currency & delivery settings"
 
     def save(self, *args, **kwargs):
         self.pk = 1
@@ -472,7 +490,13 @@ class StoreCurrencySettings(models.Model):
     def get_solo(cls):
         obj, _ = cls.objects.get_or_create(
             pk=1,
-            defaults={"ngn_per_usd": Decimal("1550"), "ngn_per_gbp": Decimal("1980")},
+            defaults={
+                "ngn_per_usd": Decimal("1550"),
+                "ngn_per_gbp": Decimal("1980"),
+                "ngn_per_cad": Decimal("1120"),
+                "local_delivery_fee": Decimal("0"),
+                "international_delivery_fee": Decimal("102000.00"),
+            },
         )
         return obj
 
@@ -500,8 +524,49 @@ class Order(models.Model):
         ('paystack', 'Paystack'),
         ('flutterwave', 'Flutterwave'),
     ]
+    DELIVERY_TYPE_CHOICES = [
+        ('local', 'Local (Nigeria)'),
+        ('international', 'International'),
+    ]
+    INTERNATIONAL_REGION_CHOICES = [
+        ('', '—'),
+        ('US', 'United States'),
+        ('UK', 'United Kingdom'),
+        ('CA', 'Canada'),
+    ]
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
     delivery_address = models.TextField(blank=True, default='')
+    delivery_type = models.CharField(
+        max_length=20,
+        choices=DELIVERY_TYPE_CHOICES,
+        default='local',
+        help_text='Local Nigeria vs international shipping',
+    )
+    international_region = models.CharField(
+        max_length=2,
+        choices=INTERNATIONAL_REGION_CHOICES,
+        blank=True,
+        default='',
+        help_text='US / UK / CA when delivery is international',
+    )
+    country = models.CharField(
+        max_length=64,
+        blank=True,
+        default='Nigeria',
+        help_text='Ship-to country label',
+    )
+    subtotal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text='Merchandise subtotal in charge currency (before delivery fee)',
+    )
+    delivery_fee = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text='Delivery fee in NGN at purchase time (from store settings)',
+    )
     currency = models.CharField(
         max_length=3,
         default='NGN',
@@ -528,6 +593,13 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order #{self.id} - {self.status}"
+
+    @property
+    def delivery_label(self):
+        if self.delivery_type == 'international':
+            region = self.international_region or 'INTL'
+            return f"International Delivery ({region})"
+        return "Delivery (Nigeria)"
 
 
 class OrderItem(models.Model):
