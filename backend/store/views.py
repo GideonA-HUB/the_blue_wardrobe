@@ -15,6 +15,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 from django.middleware.csrf import get_token
 
+from django.db.models import Prefetch
+
 from .models import (
     Collection, Design, DesignImage, SizeInventory, SizeMeasurement, Cart, CartItem, SiteAsset, ContactMessage, Subscriber, Order,
     Customer, OrderItem, PaymentLog, Video, VideoComment, VideoLike, VideoCommentLike, InfoCard, Material, DesignReview,
@@ -55,7 +57,10 @@ class CollectionViewSet(viewsets.ReadOnlyModelViewSet):
         return ctx
 
     def get_queryset(self):
-        queryset = Collection.objects.prefetch_related('materials', 'designs').all().order_by('order', 'code', '-created_at')
+        queryset = Collection.objects.prefetch_related(
+            'materials',
+            Prefetch('designs', queryset=Design.objects.order_by('-created_at', '-id')),
+        ).all().order_by('order', 'code', '-created_at')
         featured = (self.request.query_params.get('featured') or '').strip().lower()
         if featured in {'1', 'true', 'yes'}:
             queryset = queryset.filter(is_featured=True)
@@ -63,7 +68,9 @@ class CollectionViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class DesignViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Design.objects.prefetch_related('images', 'size_inventory', 'size_measurements', 'reviews').all()
+    queryset = Design.objects.prefetch_related(
+        'images', 'size_inventory', 'size_measurements', 'reviews'
+    ).all().order_by('-created_at', '-id')
     serializer_class = DesignSerializer
 
     def get_serializer_context(self):
@@ -72,7 +79,7 @@ class DesignViewSet(viewsets.ReadOnlyModelViewSet):
         return ctx
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().order_by('-created_at', '-id')
         filter_param = (self.request.query_params.get('filter') or '').strip().lower()
         if filter_param in ('preorders', 'preorder', 'atelier-reserve', 'atelier_reserve'):
             from django.utils import timezone as dj_tz
@@ -81,7 +88,7 @@ class DesignViewSet(viewsets.ReadOnlyModelViewSet):
             now = dj_tz.now()
             qs = qs.filter(is_preorder=True).filter(
                 Q(preorder_end_at__isnull=True) | Q(preorder_end_at__gt=now)
-            ).order_by('preorder_start_at', '-created_at')
+            ).order_by('-created_at', '-id')
         return qs
 
     @action(detail=False, methods=['get'], url_path='atelier-reserve')
@@ -100,7 +107,7 @@ class DesignViewSet(viewsets.ReadOnlyModelViewSet):
             )
             .filter(is_preorder=True)
             .filter(Q(preorder_end_at__isnull=True) | Q(preorder_end_at__gt=now))
-            .order_by('preorder_start_at', '-created_at')[:100]
+            .order_by('-created_at', '-id')[:100]
         )
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
@@ -468,7 +475,7 @@ class AdminCollectionViewSet(viewsets.ModelViewSet):
 
 
 class AdminDesignViewSet(viewsets.ModelViewSet):
-    queryset = Design.objects.all()
+    queryset = Design.objects.all().order_by('-created_at', '-id')
     serializer_class = DesignSerializer
     permission_classes = [IsAdminUser]
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, useLocation, useNavigationType } from 'react-router-dom'
 import Home from './pages/Home'
 import Designs from './pages/Designs'
 import Collections from './pages/Collections'
@@ -25,26 +25,27 @@ import ScrollControls from './components/ScrollControls'
 export default function App() {
   const [loading, setLoading] = useState(true)
   const location = useLocation()
+  const navType = useNavigationType()
+  const isFirstLoad = React.useRef(true)
 
   useEffect(() => {
-    // Show loading spinner on initial load
-    setLoading(true)
-    const timer = setTimeout(() => {
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false
+      setLoading(true)
+      const timer = setTimeout(() => setLoading(false), 1200)
+      return () => clearTimeout(timer)
+    }
+
+    // Back/forward should not flash a full-page spinner (it resets scroll).
+    if (navType === 'POP') {
       setLoading(false)
-    }, 1200)
+      return
+    }
 
-    return () => clearTimeout(timer)
-  }, [])
-
-  useEffect(() => {
-    // Show brief loading on route change
     setLoading(true)
-    const timer = setTimeout(() => {
-      setLoading(false)
-    }, 600)
-
+    const timer = setTimeout(() => setLoading(false), 600)
     return () => clearTimeout(timer)
-  }, [location.pathname])
+  }, [location.pathname, navType])
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--tbw-bg)] text-[var(--tbw-text)] transition-colors duration-300">

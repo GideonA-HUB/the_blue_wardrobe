@@ -187,6 +187,7 @@ class DesignAdmin(admin.ModelAdmin):
     search_fields = ('sku', 'title')
     list_filter = ('collection', 'is_preorder', 'created_at')
     list_editable = ('is_preorder',)
+    ordering = ('-created_at', '-id')
     readonly_fields = ('created_at', 'updated_at')
     inlines = [DesignImageInline, SizeMeasurementInline, SizeInventoryInline]
     actions = ['start_14_day_preorder', 'stop_preorder']

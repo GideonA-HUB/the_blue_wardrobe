@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigationType, useLocation } from 'react-router-dom'
 import api from '../lib/api'
 import DesignPriceLines from '../components/DesignPriceLines'
+import DesignCardBadges from '../components/DesignCardBadges'
+import DesignPagination from '../components/DesignPagination'
+import { restoreScrollPosition } from '../lib/scrollMemory'
 
 type Design = {
   id: number
@@ -27,10 +30,13 @@ type Design = {
   is_preorder?: boolean
   preorder_wait_days?: number
   preorder_status?: string
+  created_at?: string
 }
 
 export default function Designs() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navType = useNavigationType()
+  const location = useLocation()
   const filterParam = (searchParams.get('filter') || '').toLowerCase()
   const isPreorderFilter =
     filterParam === 'preorders' ||
@@ -40,11 +46,13 @@ export default function Designs() {
   const [designs, setDesigns] = useState<Design[]>([])
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState<'newest' | 'price-low' | 'price-high' | 'rating'>('newest')
-  const [currentPage, setCurrentPage] = useState(1)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  
-  const designsPerPage = 6
-  const totalPages = Math.ceil(designs.length / designsPerPage)
+
+  const pageFromUrl = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
+  // Desktop is a 4-column grid — 8 per page fills 4 above + 4 below.
+  const designsPerPage = 8
+  const totalPages = Math.max(1, Math.ceil(designs.length / designsPerPage))
+  const currentPage = Math.min(pageFromUrl, totalPages)
   const startIndex = (currentPage - 1) * designsPerPage
   const endIndex = startIndex + designsPerPage
   const currentDesigns = designs.slice(startIndex, endIndex)
@@ -61,12 +69,16 @@ export default function Designs() {
           ? await api.get('/designs/atelier-reserve/')
           : await api.get('/designs/')
         
-        // Sort designs based on selected criteria
         let sortedDesigns = [...response.data]
         
         switch (sortBy) {
           case 'newest':
-            // API should already return newest first
+            sortedDesigns.sort((a, b) => {
+              const ta = a.created_at ? new Date(a.created_at).getTime() : 0
+              const tb = b.created_at ? new Date(b.created_at).getTime() : 0
+              if (tb !== ta) return tb - ta
+              return b.id - a.id
+            })
             break
           case 'price-low':
             sortedDesigns.sort((a, b) => a.effective_price - b.effective_price)
@@ -80,7 +92,6 @@ export default function Designs() {
         }
         
         setDesigns(sortedDesigns)
-        setCurrentPage(1)
       } catch (error) {
         console.error('Failed to fetch designs:', error)
       } finally {
@@ -91,58 +102,40 @@ export default function Designs() {
     fetchDesigns()
   }, [sortBy, isPreorderFilter])
 
+  useEffect(() => {
+    if (loading || navType !== 'POP') return
+    restoreScrollPosition(location.key)
+  }, [loading, navType, location.key])
+
+  const setPageInUrl = (page: number) => {
+    const next = new URLSearchParams(searchParams)
+    if (page <= 1) next.delete('page')
+    else next.set('page', String(page))
+    setSearchParams(next)
+  }
+
   const handlePageChange = (page: number) => {
     if (page === currentPage || page < 1 || page > totalPages) return
     
     setIsTransitioning(true)
     
-    // Smooth scroll to top of designs grid
     const designsGrid = document.getElementById('designs-grid')
     if (designsGrid) {
       designsGrid.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
+
+    setPageInUrl(page)
     
     setTimeout(() => {
-      setCurrentPage(page)
       setIsTransitioning(false)
     }, 300)
   }
 
-  const renderPaginationNumbers = () => {
-    const pages = []
-    const maxVisiblePages = 5
-    
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i)
-      }
-    } else {
-      if (currentPage <= 3) {
-        for (let i = 1; i <= Math.min(5, totalPages); i++) {
-          pages.push(i)
-        }
-        if (totalPages > 5) {
-          pages.push('...')
-          pages.push(totalPages)
-        }
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1)
-        pages.push('...')
-        for (let i = Math.max(totalPages - 4, 1); i <= totalPages; i++) {
-          pages.push(i)
-        }
-      } else {
-        pages.push(1)
-        pages.push('...')
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-          pages.push(i)
-        }
-        pages.push('...')
-        pages.push(totalPages)
-      }
-    }
-    
-    return pages
+  const handleSortChange = (value: 'newest' | 'price-low' | 'price-high' | 'rating') => {
+    setSortBy(value)
+    const next = new URLSearchParams(searchParams)
+    next.delete('page')
+    setSearchParams(next)
   }
 
   return (
@@ -183,7 +176,7 @@ export default function Designs() {
             <select
               id="sort"
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+              onChange={(e) => handleSortChange(e.target.value as 'newest' | 'price-low' | 'price-high' | 'rating')}
               className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-wardrobe-light focus:border-transparent transition-all duration-200"
             >
               <option value="newest">Newest First</option>
@@ -201,8 +194,8 @@ export default function Designs() {
         className="relative mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8"
       >
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 md:gap-6 lg:gap-8">
-            {[...Array(6)].map((_, index) => (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6 lg:gap-8">
+            {[...Array(8)].map((_, index) => (
               <div key={index} className="animate-pulse rounded-xl border border-gray-100/80 bg-white p-2.5 sm:p-4">
                 <div className="aspect-[3/4] w-full bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg mb-2 sm:mb-4" />
                 <div className="h-3 sm:h-4 bg-gray-200 rounded mb-1.5 sm:mb-2" />
@@ -216,7 +209,7 @@ export default function Designs() {
               isTransitioning ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'
             }`}
           >
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-stretch gap-2 sm:gap-4 md:gap-6 lg:gap-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 items-stretch gap-2 sm:gap-4 md:gap-6 lg:gap-8">
               {currentDesigns.map((design, index) => (
                 <div
                   key={design.id}
@@ -227,6 +220,7 @@ export default function Designs() {
                 >
                   <Link
                     to={`/designs/${design.id}`}
+                    id={`design-${design.id}`}
                     className="group luxury-shadow flex h-full flex-col rounded-xl sm:rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white block border border-gray-100/80 dark:border-slate-700"
                   >
                     <div className="relative aspect-[3/4] w-full bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden cursor-pointer group">
@@ -268,26 +262,12 @@ export default function Designs() {
                           </div>
                         </div>
                       )}
-                      {design.is_preorder && (
-                        <div className="absolute left-2 top-2 rounded-full bg-blue-wardrobe-dark/90 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white sm:left-4 sm:top-4 sm:px-2 sm:py-1 sm:text-xs">
-                          Atelier Reserve
-                        </div>
-                      )}
-                      {design.has_discount && !design.is_preorder && (
-                        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full animate-bounce">
-                          {design.discount_percentage}% OFF
-                        </div>
-                      )}
-                      {design.has_discount && design.is_preorder && (
-                        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
-                          {design.discount_percentage}% OFF
-                        </div>
-                      )}
-                      {design.total_stock === 0 && !design.is_preorder && (
-                        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
-                          OUT OF STOCK
-                        </div>
-                      )}
+                      <DesignCardBadges
+                        isPreorder={design.is_preorder}
+                        hasDiscount={design.has_discount}
+                        discountPercentage={design.discount_percentage}
+                        totalStock={design.total_stock}
+                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
                     <div className="flex flex-1 flex-col p-2.5 sm:p-4 md:p-6">
@@ -326,68 +306,14 @@ export default function Designs() {
               ))}
             </div>
             
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div 
-                className="mt-12 flex flex-col items-center gap-4"
-                style={{
-                  animation: `fadeInUp 0.8s ease-out 0.6s both`,
-                }}
-              >
-                <div className="flex items-center gap-2 flex-wrap justify-center">
-                  {/* Previous Button */}
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                      currentPage === 1
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white border border-blue-wardrobe-light/25 text-blue-wardrobe-dark hover:bg-blue-wardrobe-light hover:text-white hover:scale-105 hover:shadow-lg'
-                    }`}
-                  >
-                    Previous
-                  </button>
-                  
-                  {/* Page Numbers */}
-                  {renderPaginationNumbers().map((page, index) => (
-                    <div key={index}>
-                      {page === '...' ? (
-                        <span className="px-3 py-2 text-gray-400">...</span>
-                      ) : (
-                        <button
-                          onClick={() => handlePageChange(page as number)}
-                          className={`w-10 h-10 rounded-full text-sm font-medium transition-all duration-300 ${
-                            currentPage === page
-                              ? 'bg-blue-wardrobe-light text-white scale-110 shadow-lg'
-                              : 'bg-white border border-blue-wardrobe-light/25 text-blue-wardrobe-dark hover:bg-blue-wardrobe-light hover:text-white hover:scale-105 hover:shadow-lg'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  
-                  {/* Next Button */}
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                      currentPage === totalPages
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white border border-blue-wardrobe-light/25 text-blue-wardrobe-dark hover:bg-blue-wardrobe-light hover:text-white hover:scale-105 hover:shadow-lg'
-                    }`}
-                  >
-                    Next
-                  </button>
-                </div>
-                
-                {/* Page Info */}
-                <div className="text-sm text-gray-500 text-center">
-                  Showing {startIndex + 1}-{Math.min(endIndex, designs.length)} of {designs.length} designs
-                </div>
-              </div>
-            )}
+            <DesignPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              totalCount={designs.length}
+              onPageChange={handlePageChange}
+            />
           </div>
         ) : (
           <div className="text-center py-16">

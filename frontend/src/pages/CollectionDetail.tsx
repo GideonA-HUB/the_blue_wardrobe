@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import api from '../lib/api'
 import DesignPriceLines from '../components/DesignPriceLines'
+import DesignCardBadges from '../components/DesignCardBadges'
 
 type Material = {
   id: number
@@ -21,6 +22,7 @@ type Design = {
   effective_price_gbp?: number | null
   discount_percentage: number
   total_stock: number
+  is_preorder?: boolean
   images: DesignImage[]
 }
 
@@ -193,16 +195,12 @@ export default function CollectionDetail() {
                       </div>
                     </div>
                   )}
-                  {d.has_discount && (
-                    <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
-                      {d.discount_percentage}% OFF
-                    </div>
-                  )}
-                  {d.total_stock === 0 && (
-                    <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
-                      OUT OF STOCK
-                    </div>
-                  )}
+                  <DesignCardBadges
+                    isPreorder={d.is_preorder}
+                    hasDiscount={d.has_discount}
+                    discountPercentage={d.discount_percentage}
+                    totalStock={d.total_stock}
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="p-2.5 sm:p-4 md:p-6">

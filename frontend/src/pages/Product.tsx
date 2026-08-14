@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useNavigationType } from 'react-router-dom'
 import api, { fetchCSRFToken } from '../lib/api'
 import { applyPageSeo } from '../lib/seo'
 import { useCart } from '../store/cart'
@@ -79,6 +79,7 @@ interface Design {
 export default function Product() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const navType = useNavigationType()
   const [design, setDesign] = useState<Design | null>(null)
   const [loading, setLoading] = useState(true)
   const [addingToWardrobe, setAddingToWardrobe] = useState(false)
@@ -98,6 +99,11 @@ export default function Product() {
   })
   const [submittingReview, setSubmittingReview] = useState(false)
   
+  useEffect(() => {
+    if (navType === 'POP') return
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [id, navType])
+
   // Debug: Log cart items whenever they change
   useEffect(() => {
     console.log('Cart items updated:', items)

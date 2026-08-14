@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { Link, useSearchParams, useNavigationType, useLocation } from 'react-router-dom'
 import api from '../lib/api'
 import AnimatedHero, { type HomeHeroPayload } from '../components/AnimatedHero'
 import type { AtelierSlide } from '../components/ui/interactive-selector'
@@ -10,6 +9,9 @@ import VideoSection from '../components/VideoSection'
 import InfoCardsSection from '../components/InfoCardsSection'
 import DesignPriceLines from '../components/DesignPriceLines'
 import AtelierReserveSection from '../components/AtelierReserveSection'
+import DesignCardBadges from '../components/DesignCardBadges'
+import DesignPagination from '../components/DesignPagination'
+import { restoreScrollPosition } from '../lib/scrollMemory'
 
 type Design = {
   id: number
@@ -41,15 +43,19 @@ type HomepageApi = {
 }
 
 export default function Home() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navType = useNavigationType()
+  const location = useLocation()
   const [allDesigns, setAllDesigns] = useState<Design[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
+  const featuredPage = Math.max(1, parseInt(searchParams.get('fd') || '1', 10) || 1)
   const [loading, setLoading] = useState(true)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const scrollY = useOptimizedScroll()
   const [homepage, setHomepage] = useState<HomepageApi | null>(null)
   
   const designsPerPage = 6
-  const totalPages = Math.ceil(allDesigns.length / designsPerPage)
+  const totalPages = Math.max(1, Math.ceil(allDesigns.length / designsPerPage))
+  const currentPage = Math.min(featuredPage, totalPages)
   const startIndex = (currentPage - 1) * designsPerPage
   const endIndex = startIndex + designsPerPage
   const currentDesigns = allDesigns.slice(startIndex, endIndex)
@@ -57,13 +63,13 @@ export default function Home() {
   useEffect(() => {
     document.title = 'THE BLUE WARDROBE — Luxury Dress Diaries'
     
-    // Fetch all designs for homepage
     const fetchDesigns = async () => {
       try {
         setLoading(true)
         const response = await api.get('/designs/')
-        setAllDesigns(response.data)
-        setCurrentPage(1)
+        const rows = Array.isArray(response.data) ? [...response.data] : []
+        rows.sort((a: Design, b: Design) => b.id - a.id)
+        setAllDesigns(rows)
       } catch (error) {
         console.error('Failed to fetch designs:', error)
       } finally {
@@ -79,60 +85,29 @@ export default function Home() {
       .catch(() => setHomepage(null))
   }, [])
 
+  useEffect(() => {
+    if (loading || navType !== 'POP') return
+    restoreScrollPosition(location.key)
+  }, [loading, navType, location.key])
+
   const handlePageChange = (page: number) => {
     if (page === currentPage || page < 1 || page > totalPages) return
     
     setIsTransitioning(true)
     
-    // Smooth scroll to top of designs section
     const designsSection = document.getElementById('designs-section')
     if (designsSection) {
       designsSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
+
+    const next = new URLSearchParams(searchParams)
+    if (page <= 1) next.delete('fd')
+    else next.set('fd', String(page))
+    setSearchParams(next)
     
     setTimeout(() => {
-      setCurrentPage(page)
       setIsTransitioning(false)
     }, 300)
-  }
-
-  const renderPaginationNumbers = () => {
-    const pages = []
-    const maxVisiblePages = 5
-    
-    if (totalPages <= maxVisiblePages) {
-      // Show all pages if total is small
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i)
-      }
-    } else {
-      // Show smart pagination for larger numbers
-      if (currentPage <= 3) {
-        for (let i = 1; i <= Math.min(5, totalPages); i++) {
-          pages.push(i)
-        }
-        if (totalPages > 5) {
-          pages.push('...')
-          pages.push(totalPages)
-        }
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1)
-        pages.push('...')
-        for (let i = Math.max(totalPages - 4, 1); i <= totalPages; i++) {
-          pages.push(i)
-        }
-      } else {
-        pages.push(1)
-        pages.push('...')
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-          pages.push(i)
-        }
-        pages.push('...')
-        pages.push(totalPages)
-      }
-    }
-    
-    return pages
   }
 
   return (
@@ -203,6 +178,7 @@ export default function Home() {
                 >
                   <Link
                     to={`/designs/${design.id}`}
+                    id={`design-${design.id}`}
                     className="group luxury-shadow flex h-full flex-col rounded-xl sm:rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white block border border-gray-100/80 dark:border-slate-700"
                   >
                     <div className="relative aspect-[3/4] w-full bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden cursor-pointer group">
@@ -244,21 +220,12 @@ export default function Home() {
                           </div>
                         </div>
                       )}
-                      {design.is_preorder && (
-                        <div className="absolute left-2 top-2 rounded-full bg-blue-wardrobe-dark/90 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white sm:left-4 sm:top-4 sm:px-2 sm:py-1 sm:text-xs">
-                          Atelier Reserve
-                        </div>
-                      )}
-                      {design.has_discount && !design.is_preorder && (
-                        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full animate-bounce">
-                          {design.discount_percentage}% OFF
-                        </div>
-                      )}
-                      {design.total_stock === 0 && (
-                        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-600 text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
-                          OUT OF STOCK
-                        </div>
-                      )}
+                      <DesignCardBadges
+                        isPreorder={design.is_preorder}
+                        hasDiscount={design.has_discount}
+                        discountPercentage={design.discount_percentage}
+                        totalStock={design.total_stock}
+                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
                     <div className="flex flex-1 flex-col p-2.5 sm:p-4 md:p-6">
@@ -297,68 +264,14 @@ export default function Home() {
               ))}
             </div>
             
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div 
-                className="mt-12 mb-8 md:mt-16 md:mb-12 flex flex-col items-center gap-4"
-                style={{
-                  animation: `fadeInUp 0.8s ease-out 0.6s both`,
-                }}
-              >
-                <div className="flex items-center gap-2 flex-wrap justify-center">
-                  {/* Previous Button */}
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                      currentPage === 1
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white border border-blue-wardrobe-light/25 text-blue-wardrobe-dark hover:bg-blue-wardrobe-light hover:text-white hover:scale-105 hover:shadow-lg'
-                    }`}
-                  >
-                    Previous
-                  </button>
-                  
-                  {/* Page Numbers */}
-                  {renderPaginationNumbers().map((page, index) => (
-                    <div key={index}>
-                      {page === '...' ? (
-                        <span className="px-3 py-2 text-gray-400">...</span>
-                      ) : (
-                        <button
-                          onClick={() => handlePageChange(page as number)}
-                          className={`w-10 h-10 rounded-full text-sm font-medium transition-all duration-300 ${
-                            currentPage === page
-                              ? 'bg-blue-wardrobe-light text-white scale-110 shadow-lg'
-                              : 'bg-white border border-blue-wardrobe-light/25 text-blue-wardrobe-dark hover:bg-blue-wardrobe-light hover:text-white hover:scale-105 hover:shadow-lg'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  
-                  {/* Next Button */}
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                      currentPage === totalPages
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white border border-blue-wardrobe-light/25 text-blue-wardrobe-dark hover:bg-blue-wardrobe-light hover:text-white hover:scale-105 hover:shadow-lg'
-                    }`}
-                  >
-                    Next
-                  </button>
-                </div>
-                
-                {/* Page Info */}
-                <div className="text-sm text-gray-500 text-center">
-                  Showing {startIndex + 1}-{Math.min(endIndex, allDesigns.length)} of {allDesigns.length} designs
-                </div>
-              </div>
-            )}
+            <DesignPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              totalCount={allDesigns.length}
+              onPageChange={handlePageChange}
+            />
           </div>
         ) : (
           <div className="text-center py-16">

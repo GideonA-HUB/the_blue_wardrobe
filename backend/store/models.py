@@ -135,6 +135,9 @@ class Design(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['-created_at', '-id']
+
     def __str__(self):
         return f"{self.sku} - {self.title}"
 
