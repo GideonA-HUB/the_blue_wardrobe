@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useSearchParams, useNavigationType, useLocation } from 'react-router-dom'
+import { Link, useSearchParams, useNavigationType } from 'react-router-dom'
 import api from '../lib/api'
 import DesignPriceLines from '../components/DesignPriceLines'
 import DesignCardBadges from '../components/DesignCardBadges'
 import DesignPagination from '../components/DesignPagination'
-import { restoreScrollPosition } from '../lib/scrollMemory'
 
 type Design = {
   id: number
@@ -36,7 +35,6 @@ type Design = {
 export default function Designs() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navType = useNavigationType()
-  const location = useLocation()
   const filterParam = (searchParams.get('filter') || '').toLowerCase()
   const isPreorderFilter =
     filterParam === 'preorders' ||
@@ -101,11 +99,6 @@ export default function Designs() {
     
     fetchDesigns()
   }, [sortBy, isPreorderFilter])
-
-  useEffect(() => {
-    if (loading || navType !== 'POP') return
-    restoreScrollPosition(location.key)
-  }, [loading, navType, location.key])
 
   const setPageInUrl = (page: number) => {
     const next = new URLSearchParams(searchParams)
@@ -215,12 +208,12 @@ export default function Designs() {
                   key={design.id}
                   className="h-full transform transition-all duration-700 hover:scale-105"
                   style={{
-                    animation: `fadeInUp 0.8s ease-out ${index * 0.1}s both`,
+                    animation: navType === 'POP' ? undefined : `fadeInUp 0.8s ease-out ${index * 0.1}s both`,
                   }}
                 >
                   <Link
                     to={`/designs/${design.id}`}
-                    id={`design-${design.id}`}
+                    id={`catalog-design-${design.id}`}
                     className="group luxury-shadow flex h-full flex-col rounded-xl sm:rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white block border border-gray-100/80 dark:border-slate-700"
                   >
                     <div className="relative aspect-[3/4] w-full bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden cursor-pointer group">

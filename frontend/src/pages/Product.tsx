@@ -6,6 +6,7 @@ import { useCart } from '../store/cart'
 import Toast from '../components/Toast'
 import DesignPriceLines from '../components/DesignPriceLines'
 import ShareButtons from '../components/ShareButtons'
+import { withInstantScroll } from '../lib/scrollMemory'
 
 interface SizeMeasurement {
   id: number
@@ -101,7 +102,9 @@ export default function Product() {
   
   useEffect(() => {
     if (navType === 'POP') return
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    withInstantScroll(() => {
+      window.scrollTo(0, 0)
+    })
   }, [id, navType])
 
   // Debug: Log cart items whenever they change

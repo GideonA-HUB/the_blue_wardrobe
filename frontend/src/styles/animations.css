@@ -100,9 +100,9 @@
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
 }
 
-/* Smooth scroll behavior */
+/* Programmatic Back restore must not be animated (CSS smooth fights scrollTo). */
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 /* Loading animations */

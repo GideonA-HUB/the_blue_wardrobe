@@ -1,22 +1,40 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { useLocation, useNavigationType } from 'react-router-dom'
 import {
-  getScrollPosition,
-  restoreScrollPosition,
+  captureScroll,
+  isInternalAppLink,
+  restoreWhenReady,
   saveScrollPosition,
+  withInstantScroll,
 } from '../lib/scrollMemory'
 
 /**
- * - New pages (link clicks) open at the top.
- * - Browser Back/Forward restores the exact previous scroll position
- *   (e.g. the dress card you clicked on the homepage).
- * - In-page pagination (search-only) is left to the page handlers.
+ * New pages open at the top. Back/Forward restores the exact dress/card
+ * the shopper left from — captured on link click, before the next page
+ * scrolls to 0.
  */
 export default function ScrollToTop() {
   const location = useLocation()
   const navType = useNavigationType()
   const prevPathname = useRef(location.pathname)
-  const prevKey = useRef(location.key)
+  const locationKeyRef = useRef(location.key)
+
+  locationKeyRef.current = location.key
+
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      const anchor = target.closest('a')
+      if (!(anchor instanceof HTMLAnchorElement)) return
+      if (!isInternalAppLink(anchor)) return
+      const cardId = anchor.id || undefined
+      captureScroll(locationKeyRef.current, cardId)
+    }
+
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => document.removeEventListener('pointerdown', onPointerDown, true)
+  }, [])
 
   useEffect(() => {
     const key = location.key
@@ -24,52 +42,36 @@ export default function ScrollToTop() {
     window.addEventListener('scroll', persist, { passive: true })
     return () => {
       window.removeEventListener('scroll', persist)
-      saveScrollPosition(key, window.scrollY)
+      // Do not persist here — the next page may already be at Y=0.
     }
   }, [location.key])
 
   useLayoutEffect(() => {
-    if (prevKey.current && prevKey.current !== location.key) {
-      saveScrollPosition(prevKey.current, window.scrollY)
-    }
-    prevKey.current = location.key
-
     if (navType === 'POP') {
-      restoreScrollPosition(location.key)
       prevPathname.current = location.pathname
-      return
+      return restoreWhenReady(location.key)
     }
 
     const pathnameChanged = prevPathname.current !== location.pathname
     prevPathname.current = location.pathname
 
-    if (!pathnameChanged) {
-      return
-    }
+    if (!pathnameChanged) return
 
     if (location.hash) {
       const id = location.hash.replace(/^#/, '')
-      const target = document.getElementById(id)
-      if (target) {
-        target.scrollIntoView({ block: 'start', behavior: 'auto' })
+      const el = document.getElementById(id)
+      if (el) {
+        withInstantScroll(() => {
+          el.scrollIntoView({ block: 'start', behavior: 'auto' })
+        })
         return
       }
     }
 
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    withInstantScroll(() => {
+      window.scrollTo(0, 0)
+    })
   }, [location.key, location.hash, location.pathname, navType])
-
-  // After images/data load on Back, re-apply saved Y.
-  useEffect(() => {
-    if (navType !== 'POP') return
-    if (getScrollPosition(location.key) == null) return
-    const t1 = window.setTimeout(() => restoreScrollPosition(location.key), 400)
-    const t2 = window.setTimeout(() => restoreScrollPosition(location.key), 900)
-    return () => {
-      window.clearTimeout(t1)
-      window.clearTimeout(t2)
-    }
-  }, [location.key, navType])
 
   return null
 }

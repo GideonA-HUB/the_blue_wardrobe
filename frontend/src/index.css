@@ -30,7 +30,8 @@
 
 @layer utilities {
   html {
-    scroll-behavior: smooth;
+    /* Instant programmatic restore; pagination/buttons pass behavior: 'smooth' in JS */
+    scroll-behavior: auto;
   }
 
   .animate-spin {

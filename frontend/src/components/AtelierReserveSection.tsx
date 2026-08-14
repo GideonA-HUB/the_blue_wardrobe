@@ -4,6 +4,7 @@ import api from '../lib/api'
 import DesignPriceLines from './DesignPriceLines'
 import DesignCardBadges from './DesignCardBadges'
 import DesignPagination from './DesignPagination'
+import { getCachedAtelierDesigns, setCachedAtelierDesigns } from '../lib/designsCache'
 import {
   formatCountdownLabel,
   getAtelierCountdownTarget,
@@ -54,8 +55,8 @@ function CountdownDisplay({
 
 export default function AtelierReserveSection() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [designs, setDesigns] = useState<PreorderDesign[]>([])
-  const [loading, setLoading] = useState(true)
+  const [designs, setDesigns] = useState<PreorderDesign[]>(() => getCachedAtelierDesigns<PreorderDesign>() ?? [])
+  const [loading, setLoading] = useState(() => getCachedAtelierDesigns<PreorderDesign>() == null)
   const [isTransitioning, setIsTransitioning] = useState(false)
 
   const designsPerPage = 6
@@ -71,7 +72,11 @@ export default function AtelierReserveSection() {
     api
       .get('/designs/atelier-reserve/')
       .then((r) => {
-        if (!cancelled) setDesigns(Array.isArray(r.data) ? r.data : [])
+        if (!cancelled) {
+          const rows = Array.isArray(r.data) ? r.data : []
+          setCachedAtelierDesigns(rows)
+          setDesigns(rows)
+        }
       })
       .catch(() => {
         if (!cancelled) setDesigns([])
@@ -172,7 +177,7 @@ export default function AtelierReserveSection() {
             {currentDesigns.map((design) => (
               <Link
                 key={design.id}
-                id={`design-${design.id}`}
+                id={`atelier-design-${design.id}`}
                 to={`/designs/${design.id}`}
                 className="group flex h-full flex-col overflow-hidden rounded-xl border border-gray-100/80 bg-white luxury-shadow transition-all duration-500 hover:luxury-shadow-lg dark:border-slate-700 dark:bg-slate-900 sm:rounded-lg"
               >

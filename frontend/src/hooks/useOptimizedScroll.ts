@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
  * Prevents janky animations by throttling scroll events
  */
 export const useOptimizedScroll = () => {
-  const [scrollY, setScrollY] = useState(0)
+  const [scrollY, setScrollY] = useState(() => (typeof window !== 'undefined' ? window.scrollY : 0))
   const ticking = useRef(false)
 
   const updateScrollY = useCallback(() => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useSearchParams, useNavigationType, useLocation } from 'react-router-dom'
+import { Link, useSearchParams, useNavigationType } from 'react-router-dom'
 import api from '../lib/api'
 import AnimatedHero, { type HomeHeroPayload } from '../components/AnimatedHero'
 import type { AtelierSlide } from '../components/ui/interactive-selector'
@@ -11,7 +11,7 @@ import DesignPriceLines from '../components/DesignPriceLines'
 import AtelierReserveSection from '../components/AtelierReserveSection'
 import DesignCardBadges from '../components/DesignCardBadges'
 import DesignPagination from '../components/DesignPagination'
-import { restoreScrollPosition } from '../lib/scrollMemory'
+import { getCachedAllDesigns, setCachedAllDesigns } from '../lib/designsCache'
 
 type Design = {
   id: number
@@ -45,10 +45,9 @@ type HomepageApi = {
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navType = useNavigationType()
-  const location = useLocation()
-  const [allDesigns, setAllDesigns] = useState<Design[]>([])
+  const [allDesigns, setAllDesigns] = useState<Design[]>(() => getCachedAllDesigns<Design>() ?? [])
   const featuredPage = Math.max(1, parseInt(searchParams.get('fd') || '1', 10) || 1)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => getCachedAllDesigns<Design>() == null)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const scrollY = useOptimizedScroll()
   const [homepage, setHomepage] = useState<HomepageApi | null>(null)
@@ -69,6 +68,7 @@ export default function Home() {
         const response = await api.get('/designs/')
         const rows = Array.isArray(response.data) ? [...response.data] : []
         rows.sort((a: Design, b: Design) => b.id - a.id)
+        setCachedAllDesigns(rows)
         setAllDesigns(rows)
       } catch (error) {
         console.error('Failed to fetch designs:', error)
@@ -84,11 +84,6 @@ export default function Home() {
       .then((r) => setHomepage(r.data))
       .catch(() => setHomepage(null))
   }, [])
-
-  useEffect(() => {
-    if (loading || navType !== 'POP') return
-    restoreScrollPosition(location.key)
-  }, [loading, navType, location.key])
 
   const handlePageChange = (page: number) => {
     if (page === currentPage || page < 1 || page > totalPages) return
@@ -173,12 +168,12 @@ export default function Home() {
                   key={design.id}
                   className="h-full transform transition-all duration-700 hover:scale-105"
                   style={{
-                    animation: `fadeInUp 0.8s ease-out ${index * 0.15}s both`,
+                    animation: navType === 'POP' ? undefined : `fadeInUp 0.8s ease-out ${index * 0.15}s both`,
                   }}
                 >
                   <Link
                     to={`/designs/${design.id}`}
-                    id={`design-${design.id}`}
+                    id={`featured-design-${design.id}`}
                     className="group luxury-shadow flex h-full flex-col rounded-xl sm:rounded-lg overflow-hidden hover:luxury-shadow-lg transition-all duration-500 bg-white block border border-gray-100/80 dark:border-slate-700"
                   >
                     <div className="relative aspect-[3/4] w-full bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden cursor-pointer group">
