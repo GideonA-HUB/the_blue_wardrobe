@@ -126,6 +126,11 @@ type Design = {
   stock: number
   collection_id: number
   collection?: string
+  is_preorder?: boolean
+  is_featured?: boolean
+  preorder_start_at?: string | null
+  preorder_end_at?: string | null
+  preorder_wait_days?: number
 }
 
 type Customer = {
@@ -759,13 +764,20 @@ export default function AdminDashboard() {
                         <td className="py-3 px-4 font-mono text-sm">{design.sku}</td>
                         <td className="py-3 px-4 font-semibold text-blue-wardrobe-dark">{design.title}</td>
                         <td className="py-3 px-4">
-                          {design.is_preorder ? (
-                            <span className="inline-flex rounded-full bg-blue-wardrobe-dark px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white">
-                              Preorder
-                            </span>
-                          ) : (
-                            <span className="text-xs text-gray-400">—</span>
-                          )}
+                          <div className="flex flex-wrap gap-1">
+                            {design.is_featured && !design.is_preorder && (
+                              <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-emerald-800">
+                                Featured
+                              </span>
+                            )}
+                            {design.is_preorder ? (
+                              <span className="inline-flex rounded-full bg-blue-wardrobe-dark px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white">
+                                Preorder
+                              </span>
+                            ) : !design.is_featured ? (
+                              <span className="text-xs text-gray-400">—</span>
+                            ) : null}
+                          </div>
                         </td>
                         <td className="py-3 px-4 text-sm text-gray-600">{design.collection || 'N/A'}</td>
                         <td className="py-3 px-4 font-semibold">NGN {design.price.toLocaleString()}</td>
@@ -1499,6 +1511,7 @@ function Modal({ type, item, collections, materials, onClose, onSave }: {
         collection_id: '',
         images: [],
         is_preorder: false,
+        is_featured: true,
         preorder_start_at: '',
         preorder_end_at: '',
         preorder_wait_days: 14,
@@ -1516,6 +1529,7 @@ function Modal({ type, item, collections, materials, onClose, onSave }: {
         ...item,
         collection_id: collectionId,
         is_preorder: Boolean(item.is_preorder),
+        is_featured: item.is_featured !== undefined ? Boolean(item.is_featured) : !Boolean(item.is_preorder),
         preorder_start_at: isoToDatetimeLocal(item.preorder_start_at),
         preorder_end_at: isoToDatetimeLocal(item.preorder_end_at),
         preorder_wait_days: item.preorder_wait_days ?? 14,
@@ -1541,6 +1555,7 @@ function Modal({ type, item, collections, materials, onClose, onSave }: {
           collection_id: '',
           images: [],
           is_preorder: false,
+          is_featured: true,
           preorder_start_at: '',
           preorder_end_at: '',
           preorder_wait_days: 14,
@@ -1575,6 +1590,7 @@ function Modal({ type, item, collections, materials, onClose, onSave }: {
           description: formData.description,
           price: formData.price,
           collection_id: formData.collection_id,
+          is_featured: Boolean(formData.is_featured) && !Boolean(formData.is_preorder),
           is_preorder: Boolean(formData.is_preorder),
           preorder_start_at: formData.is_preorder
             ? datetimeLocalToIso(formData.preorder_start_at)
@@ -1754,6 +1770,31 @@ function Modal({ type, item, collections, materials, onClose, onSave }: {
                 </div>
               </div>
 
+              {/* Featured Designs */}
+              <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/40 p-4 space-y-2">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(formData.is_featured) && !Boolean(formData.is_preorder)}
+                    disabled={Boolean(formData.is_preorder)}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        is_featured: e.target.checked,
+                        is_preorder: e.target.checked ? false : formData.is_preorder,
+                      })
+                    }
+                    className="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+                  />
+                  <span className="text-sm font-medium text-blue-wardrobe-dark">
+                    Featured Designs (homepage)
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500">
+                  Show this dress in Featured Designs. Disabled while Atelier Reserve / preorder is enabled.
+                </p>
+              </div>
+
               {/* Atelier Reserve / Preorder */}
               <div className="rounded-xl border border-blue-wardrobe-light/20 bg-blue-50/40 p-4 space-y-4">
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -1764,6 +1805,7 @@ function Modal({ type, item, collections, materials, onClose, onSave }: {
                       setFormData({
                         ...formData,
                         is_preorder: e.target.checked,
+                        is_featured: e.target.checked ? false : formData.is_featured,
                         preorder_wait_days: formData.preorder_wait_days || 14,
                       })
                     }

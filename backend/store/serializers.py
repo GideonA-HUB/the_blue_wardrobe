@@ -155,7 +155,7 @@ class DesignSerializer(serializers.ModelSerializer):
             'average_rating', 'total_reviews', 'rating_distribution', 'reviews',
             'price_usd', 'price_gbp', 'effective_price_usd', 'effective_price_gbp',
             'is_preorder', 'preorder_start_at', 'preorder_end_at', 'preorder_wait_days',
-            'preorder_status', 'is_preorder_purchasable',
+            'preorder_status', 'is_preorder_purchasable', 'is_featured',
         ]
     
     def get_video_url(self, obj):

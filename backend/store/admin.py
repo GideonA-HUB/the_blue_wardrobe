@@ -179,18 +179,19 @@ class DesignAdmin(admin.ModelAdmin):
         'title',
         'price',
         'discount_price',
+        'is_featured',
         'is_preorder',
         'preorder_wait_days',
         'get_total_stock',
         'collection',
     )
     search_fields = ('sku', 'title')
-    list_filter = ('collection', 'is_preorder', 'created_at')
-    list_editable = ('is_preorder',)
+    list_filter = ('collection', 'is_featured', 'is_preorder', 'created_at')
+    list_editable = ('is_featured', 'is_preorder')
     ordering = ('-created_at', '-id')
     readonly_fields = ('created_at', 'updated_at')
     inlines = [DesignImageInline, SizeMeasurementInline, SizeInventoryInline]
-    actions = ['start_14_day_preorder', 'stop_preorder']
+    actions = ['start_14_day_preorder', 'stop_preorder', 'mark_featured', 'unmark_featured']
     fieldsets = (
         (None, {
             'fields': (
@@ -203,11 +204,19 @@ class DesignAdmin(admin.ModelAdmin):
                 'video',
             ),
         }),
+        ('Featured Designs', {
+            'description': (
+                'Check this to show the dress in the homepage Featured Designs section. '
+                'Atelier Reserve (preorder) dresses are excluded from Featured automatically.'
+            ),
+            'fields': ('is_featured',),
+        }),
         ('Atelier Reserve (Preorder)', {
             'classes': ('collapse',),
             'description': (
                 'Mark unreleased dresses for private preorder. '
-                'If start/end are empty when Preorder is enabled, they default to now and now + 14 days.'
+                'If start/end are empty when Preorder is enabled, they default to now and now + 14 days. '
+                'Enabling preorder clears Featured Designs for this dress.'
             ),
             'fields': (
                 'is_preorder',
@@ -252,6 +261,24 @@ class DesignAdmin(admin.ModelAdmin):
             design.save()
             updated += 1
         self.message_user(request, f'Stopped Atelier Reserve for {updated} design(s).')
+
+    @admin.action(description='Mark selected as Featured Designs')
+    def mark_featured(self, request, queryset):
+        updated = 0
+        for design in queryset.filter(is_preorder=False):
+            design.is_featured = True
+            design.save(update_fields=['is_featured', 'updated_at'])
+            updated += 1
+        skipped = queryset.filter(is_preorder=True).count()
+        msg = f'Marked {updated} design(s) as Featured.'
+        if skipped:
+            msg += f' Skipped {skipped} Atelier Reserve preorder(s).'
+        self.message_user(request, msg)
+
+    @admin.action(description='Remove selected from Featured Designs')
+    def unmark_featured(self, request, queryset):
+        updated = queryset.update(is_featured=False)
+        self.message_user(request, f'Removed {updated} design(s) from Featured Designs.')
 
     def clean(self, obj):
         # Handle video field issues before saving

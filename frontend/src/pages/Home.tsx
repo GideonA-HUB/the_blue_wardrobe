@@ -65,7 +65,7 @@ export default function Home() {
     const fetchDesigns = async () => {
       try {
         setLoading(true)
-        const response = await api.get('/designs/')
+        const response = await api.get('/designs/?filter=featured')
         const rows = Array.isArray(response.data) ? [...response.data] : []
         rows.sort((a: Design, b: Design) => b.id - a.id)
         setCachedAllDesigns(rows)

@@ -81,6 +81,8 @@ class DesignViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         qs = super().get_queryset().order_by('-created_at', '-id')
         filter_param = (self.request.query_params.get('filter') or '').strip().lower()
+        featured_param = (self.request.query_params.get('featured') or '').strip().lower()
+
         if filter_param in ('preorders', 'preorder', 'atelier-reserve', 'atelier_reserve'):
             from django.utils import timezone as dj_tz
             from django.db.models import Q
@@ -89,6 +91,9 @@ class DesignViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(is_preorder=True).filter(
                 Q(preorder_end_at__isnull=True) | Q(preorder_end_at__gt=now)
             ).order_by('-created_at', '-id')
+        elif filter_param in ('featured', 'feature') or featured_param in {'1', 'true', 'yes'}:
+            # Homepage Featured Designs — never mix with Atelier Reserve preorders
+            qs = qs.filter(is_featured=True, is_preorder=False).order_by('-created_at', '-id')
         return qs
 
     @action(detail=False, methods=['get'], url_path='atelier-reserve')

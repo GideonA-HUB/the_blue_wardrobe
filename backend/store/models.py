@@ -113,6 +113,11 @@ class Design(models.Model):
         storage=get_video_storage,
         help_text='Product video file (MP4, WebM, etc.)'
     )
+    # Homepage "Featured Designs" — separate from Atelier Reserve / preorder
+    is_featured = models.BooleanField(
+        default=False,
+        help_text='Show this dress in the Featured Designs section on the homepage (not for Atelier Reserve preorders)',
+    )
     # Atelier Reserve (preorder) — unreleased dresses customers can reserve
     is_preorder = models.BooleanField(
         default=False,
@@ -145,6 +150,8 @@ class Design(models.Model):
         from datetime import timedelta
 
         if self.is_preorder:
+            # Keep Featured Designs and Atelier Reserve mutually exclusive
+            self.is_featured = False
             now = timezone.now()
             if not self.preorder_start_at:
                 self.preorder_start_at = now
